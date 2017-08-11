@@ -20,8 +20,8 @@ import java.net.URL;
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.springframework.http.HttpStatus.CREATED;
-import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpMethod.DELETE;
+import static org.springframework.http.HttpStatus.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -49,13 +49,13 @@ public class UserControllerIntegrationTest {
     @Test
     public void shouldReturnListOfUsersOnGet() throws Exception {
 
-        User persistedUser1 = User.builder().lastName("Mustermann").firstName("Max").build();
+        final User persistedUser1 = User.builder().lastName("Mustermann").firstName("Max").build();
         userRepository.save(persistedUser1);
-        User persistedUser2 = User.builder().lastName("Lavendel").firstName("Lara").build();
+        final User persistedUser2 = User.builder().lastName("Lavendel").firstName("Lara").build();
         userRepository.save(persistedUser2);
 
-        UserList listOfUsers = UserList.builder().user(persistedUser1).user(persistedUser2).build();
-        ResponseEntity<String> response = template.getForEntity(base.toString(),
+        final UserList listOfUsers = UserList.builder().user(persistedUser1).user(persistedUser2).build();
+        final ResponseEntity<String> response = template.getForEntity(base.toString(),
                 String.class);
         assertThat(response.getStatusCode(), is(OK));
         assertThat(response.getBody(), is(GSON.toJson(listOfUsers)));
@@ -64,10 +64,19 @@ public class UserControllerIntegrationTest {
     @Test
     public void shouldCreateAUserOnPost() throws Exception {
 
-        User userToPersist = User.builder().lastName("Mustermann").firstName("Max").build();
+        final User userToPersist = User.builder().lastName("Mustermann").firstName("Max").build();
 
-        ResponseEntity<String> response = template.postForEntity(base.toString(), userToPersist, String.class);
+        final ResponseEntity<String> response = template.postForEntity(base.toString(), userToPersist, String.class);
         assertThat(response.getStatusCode(), is(CREATED));
         assertThat(response.getHeaders().get("Location").get(0).contains("/user/"), is(true));
+    }
+
+    @Test
+    public void shouldDeleteUserOnDelete() throws Exception {
+        final User userToPersist = User.builder().lastName("Mustermann").firstName("Max").build();
+        final User persistedUser = userRepository.save(userToPersist);
+
+        final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(), DELETE, null, String.class);
+        assertThat(response.getStatusCode(), is(NO_CONTENT));
     }
 }

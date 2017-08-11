@@ -1,6 +1,7 @@
 package de.otto.prototype.service;
 
 import de.otto.prototype.exceptions.InvalidUserException;
+import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
 import org.junit.Test;
@@ -21,56 +22,81 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class UserServiceTest {
 
-	@Mock
-	private UserRepository userRepository;
+    @Mock
+    private UserRepository userRepository;
 
-	@InjectMocks
-	private UserService testee;
+    @InjectMocks
+    private UserService testee;
 
-	@Test
-	public void shouldReturnEmptyListIfNoUserIsFound() throws Exception {
-		when(userRepository.streamAll()).thenReturn(Stream.of());
+    @Test
+    public void shouldReturnEmptyListIfNoUserIsFound() throws Exception {
+        when(userRepository.streamAll()).thenReturn(Stream.of());
 
-		Stream<User> returnedList = testee.findAll();
+        final Stream<User> returnedList = testee.findAll();
 
-		assertThat(returnedList.collect(toList()).size(), is(0));
-	}
+        assertThat(returnedList.collect(toList()).size(), is(0));
+    }
 
-	@Test
-	public void shouldReturnListOfUsersFound() throws Exception {
-		User userToReturn = User.builder().lastName("Mustermann").build();
-		when(userRepository.streamAll()).thenReturn(Stream.of(userToReturn));
+    @Test
+    public void shouldReturnListOfUsersFound() throws Exception {
+        final User userToReturn = User.builder().lastName("Mustermann").build();
+        when(userRepository.streamAll()).thenReturn(Stream.of(userToReturn));
 
-		List<User> listOfReturnedUser = testee.findAll().collect(toList());
-		Supplier<Stream<User>> sup = listOfReturnedUser::stream;
-		assertThat(sup.get().collect(toList()).size(), is(1));
-		assertThat(sup.get().collect(toList()).get(0), is(userToReturn));
-		verify(userRepository, times(1)).streamAll();
-		verifyNoMoreInteractions(userRepository);
-	}
+        final List<User> listOfReturnedUser = testee.findAll().collect(toList());
+        final Supplier<Stream<User>> sup = listOfReturnedUser::stream;
+        assertThat(sup.get().collect(toList()).size(), is(1));
+        assertThat(sup.get().collect(toList()).get(0), is(userToReturn));
+        verify(userRepository, times(1)).streamAll();
+        verifyNoMoreInteractions(userRepository);
+    }
 
-	@Test
-	public void shouldReturnCreatedUser() throws Exception {
-		User userToPersist = User.builder().lastName("Mustermann").build();
-		when(userRepository.save(userToPersist)).thenReturn(userToPersist.toBuilder().id(1234L).build());
+    @Test
+    public void shouldReturnCreatedUser() throws Exception {
+        final User userToPersist = User.builder().lastName("Mustermann").build();
+        when(userRepository.save(userToPersist)).thenReturn(userToPersist.toBuilder().id(1234L).build());
 
-		User persistedUser = testee.create(userToPersist);
-		assertThat(persistedUser.getLastName(), is("Mustermann"));
-		assertThat(persistedUser.getId(), is(1234L));
-		verify(userRepository, times(1)).save(userToPersist);
-		verifyNoMoreInteractions(userRepository);
-	}
+        final User persistedUser = testee.create(userToPersist);
+        assertThat(persistedUser.getLastName(), is("Mustermann"));
+        assertThat(persistedUser.getId(), is(1234L));
+        verify(userRepository, times(1)).save(userToPersist);
+        verifyNoMoreInteractions(userRepository);
+    }
 
-	@Test(expected = InvalidUserException.class)
-	public void shouldThrowInvalidUserExceptionIfUserIdIsSet() throws Exception {
-		User userToPersist = User.builder().id(1234L).build();
+    @Test(expected = InvalidUserException.class)
+    public void shouldThrowInvalidUserExceptionIfUserIdIsSet() throws Exception {
+        final User userToPersist = User.builder().id(1234L).build();
 
-		try {
-			testee.create(userToPersist);
-		} catch (InvalidUserException e) {
-			assertThat(e.getMessage(), is("id is already set"));
-			verify(userRepository, never()).save(any(User.class));
-			throw e;
-		}
-	}
+        try {
+            testee.create(userToPersist);
+        } catch (InvalidUserException e) {
+            assertThat(e.getMessage(), is("id is already set"));
+            verify(userRepository, never()).save(any(User.class));
+            throw e;
+        }
+    }
+
+    @Test
+    public void shouldDeleteUser() throws Exception {
+        final Long userId = 124L;
+        when(userRepository.findOne(userId)).thenReturn(User.builder().build());
+
+        testee.delete(userId);
+        verify(userRepository, times(1)).delete(userId);
+        verify(userRepository, times(1)).findOne(userId);
+        verifyNoMoreInteractions(userRepository);
+    }
+
+    @Test(expected = NotFoundException.class)
+    public void shouldThrowNotFoundExceptionForUnkownUserId() throws Exception {
+        final Long userId = 124L;
+        when(userRepository.findOne(userId)).thenReturn(null);
+
+        try {
+            testee.delete(userId);
+        } catch (InvalidUserException e) {
+            verify(userRepository, times(1)).findOne(userId);
+            verifyNoMoreInteractions(userRepository);
+            throw e;
+        }
+    }
 }
