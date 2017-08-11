@@ -38,21 +38,21 @@ public class UserController {
     @Transactional(readOnly = true)
     @RequestMapping(method = GET, produces = APPLICATION_JSON_VALUE)
     public ResponseEntity<UserList> getAll() {
-        Stream<User> allUsers = userService.findAll();
-        UserList listOfUser = UserList.builder().users(allUsers.collect(toList())).build();
+        final Stream<User> allUsers = userService.findAll();
+        final UserList listOfUser = UserList.builder().users(allUsers.collect(toList())).build();
         return ok().body(listOfUser);
     }
 
     @RequestMapping(value = "/{userId}", method = GET, produces = APPLICATION_JSON_VALUE)
     public ResponseEntity<User> getOne(final @PathVariable("userId") String userId) {
-        Optional<User> foundUser = userService.findOne(Long.parseLong(userId));
+        final Optional<User> foundUser = userService.findOne(Long.parseLong(userId));
         return foundUser.map(ResponseEntity::ok)
                 .orElse(notFound().build());
     }
 
     @RequestMapping(method = POST, consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public ResponseEntity<User> create(final @RequestBody User user) {
-        User persistedUser = userService.create(user);
+        final User persistedUser = userService.create(user);
         return created(URI.create(URL_USER + "/" + persistedUser.getId())).build();
     }
 

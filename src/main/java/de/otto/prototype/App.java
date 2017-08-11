@@ -23,8 +23,8 @@ public class App {
 	}
 
 	@Bean
-	public CommandLineRunner commandLineRunner(ApplicationContext ctx, UserRepository userRepository) {
-		return args -> {
+    public CommandLineRunner init(ApplicationContext ctx, UserRepository userRepository) {
+        return args -> {
 
 			log.info("Let's inspect the beans provided by Spring Boot:");
 
