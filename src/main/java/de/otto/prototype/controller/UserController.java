@@ -11,12 +11,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.lang.Long.parseLong;
-import static java.net.URI.create;
 import static java.util.stream.Collectors.toList;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.ResponseEntity.*;
@@ -50,11 +50,17 @@ public class UserController {
                 .orElse(notFound().build());
     }
 
-
     @RequestMapping(method = POST, consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-    public ResponseEntity<User> createUser(final @RequestBody User user) {
+    public ResponseEntity<User> create(final @RequestBody User user) {
         User persistedUser = userService.create(user);
-        return created(create(URL_USER + "/" + persistedUser.getId())).build();
+        return created(URI.create(URL_USER + "/" + persistedUser.getId())).build();
+    }
+
+    @RequestMapping(value = "/{userId}", method = PUT, consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    public ResponseEntity<User> update(final @PathVariable("userId") String userId, final @RequestBody User user) {
+        if (!userId.equals(user.getId().toString()))
+            return notFound().build();
+        return ok(userService.update(user));
     }
 
     @RequestMapping(value = "/{userId}", method = DELETE)

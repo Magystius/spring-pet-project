@@ -89,6 +89,51 @@ public class UserServiceTest {
         verifyNoMoreInteractions(userRepository);
     }
 
+    @Test
+    public void shouldReturnUpdatedUser() throws Exception {
+        final long userId = 1234L;
+        final User userToUpdate = User.builder().id(userId).lastName("Mustermann").build();
+        final User updatedUser = User.builder().id(userId).lastName("Neumann").build();
+        when(userRepository.findOne(userId)).thenReturn(userToUpdate);
+        when(userRepository.save(updatedUser)).thenReturn(updatedUser);
+
+        final User persistedUser = testee.update(updatedUser);
+        assertThat(persistedUser.getLastName(), is("Neumann"));
+        assertThat(persistedUser.getId(), is(userId));
+        verify(userRepository, times(1)).findOne(userId);
+        verify(userRepository, times(1)).save(updatedUser);
+        verifyNoMoreInteractions(userRepository);
+    }
+
+    @Test(expected = NotFoundException.class)
+    public void shouldReturnNotFoundExceptionIfIdIsNull() throws Exception {
+        final User userToUpdate = User.builder().lastName("Mustermann").build();
+
+        try {
+            testee.update(userToUpdate);
+        } catch (InvalidUserException e) {
+            assertThat(e.getMessage(), is("id not found"));
+            verifyNoMoreInteractions(userRepository);
+            throw e;
+        }
+    }
+
+    @Test(expected = NotFoundException.class)
+    public void shouldReturnNotFoundExceptionIfIdUnknown() throws Exception {
+        long userId = 1234L;
+        final User userToUpdate = User.builder().id(userId).lastName("Mustermann").build();
+        when(userRepository.findOne(userId)).thenReturn(null);
+
+        try {
+            testee.update(userToUpdate);
+        } catch (InvalidUserException e) {
+            assertThat(e.getMessage(), is("id not found"));
+            verify(userRepository, times(1)).findOne(userId);
+            verifyNoMoreInteractions(userRepository);
+            throw e;
+        }
+    }
+
     @Test(expected = InvalidUserException.class)
     public void shouldThrowInvalidUserExceptionIfUserIdIsSet() throws Exception {
         final User userToPersist = User.builder().id(1234L).build();
@@ -121,6 +166,7 @@ public class UserServiceTest {
         try {
             testee.delete(userId);
         } catch (InvalidUserException e) {
+            assertThat(e.getMessage(), is("id not found"));
             verify(userRepository, times(1)).findOne(userId);
             verifyNoMoreInteractions(userRepository);
             throw e;

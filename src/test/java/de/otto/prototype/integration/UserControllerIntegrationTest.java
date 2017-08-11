@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.embedded.LocalServerPort;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -21,6 +22,7 @@ import static de.otto.prototype.controller.UserController.URL_USER;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.springframework.http.HttpMethod.DELETE;
+import static org.springframework.http.HttpMethod.PUT;
 import static org.springframework.http.HttpStatus.*;
 
 @RunWith(SpringRunner.class)
@@ -56,6 +58,7 @@ public class UserControllerIntegrationTest {
         final UserList listOfUsers = UserList.builder().user(persistedUser1).user(persistedUser2).build();
         final ResponseEntity<String> response = template.getForEntity(base.toString(),
                 String.class);
+
         assertThat(response.getStatusCode(), is(OK));
         assertThat(response.getBody(), is(GSON.toJson(listOfUsers)));
     }
@@ -66,6 +69,7 @@ public class UserControllerIntegrationTest {
 
         final ResponseEntity<String> response = template.getForEntity(base.toString() + "/" + persistedUser.getId(),
                 String.class);
+
         assertThat(response.getStatusCode(), is(OK));
         assertThat(response.getBody(), is(GSON.toJson(persistedUser)));
     }
@@ -75,8 +79,21 @@ public class UserControllerIntegrationTest {
         final User userToPersist = User.builder().lastName("Mustermann").firstName("Max").build();
 
         final ResponseEntity<String> response = template.postForEntity(base.toString(), userToPersist, String.class);
+
         assertThat(response.getStatusCode(), is(CREATED));
         assertThat(response.getHeaders().get("Location").get(0).contains("/user/"), is(true));
+    }
+
+    @Test
+    public void shouldUpdateAUserOnPut() throws Exception {
+        final User userToUpdate = User.builder().lastName("Mustermann").firstName("Max").build();
+        final Long persistedId = userRepository.save(userToUpdate).getId();
+        final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
+
+        final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId, PUT, new HttpEntity<>(updatedUser), String.class);
+
+        assertThat(response.getStatusCode(), is(OK));
+        assertThat(response.getBody(), is(GSON.toJson(updatedUser)));
     }
 
     @Test
@@ -85,6 +102,7 @@ public class UserControllerIntegrationTest {
         final User persistedUser = userRepository.save(userToPersist);
 
         final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(), DELETE, null, String.class);
+
         assertThat(response.getStatusCode(), is(NO_CONTENT));
     }
 }

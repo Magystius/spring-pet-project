@@ -25,6 +25,7 @@ import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.lang.Long.parseLong;
 import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.Mockito.*;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -112,7 +113,7 @@ public class UserControllerTest {
         when(userService.create(userToPersist)).thenReturn(userToPersist.toBuilder().id(persistedUserId).build());
 
         mvc.perform(post(URL_USER)
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .contentType(APPLICATION_JSON_VALUE)
                 .content(GSON.toJson(userToPersist)))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("location", URL_USER + "/" + persistedUserId));
@@ -122,12 +123,58 @@ public class UserControllerTest {
     }
 
     @Test
+    public void shouldUpdateUserOnPut() throws Exception {
+        final long userId = 1234L;
+        final User updatedUser = User.builder().id(userId).firstName("Max").lastName("Mustermann").build();
+        when(userService.update(updatedUser)).thenReturn(updatedUser);
+
+        mvc.perform(put(URL_USER + "/" + userId)
+                .contentType(APPLICATION_JSON_VALUE)
+                .accept(APPLICATION_JSON_VALUE)
+                .content(GSON.toJson(updatedUser)))
+                .andExpect(status().isOk());
+
+        verify(userService, times(1)).update(updatedUser);
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void shouldReturnNotFoundIfIDsDifferOnPut() throws Exception {
+        final long userId = 1234L;
+        final User updatedUser = User.builder().id(userId).firstName("Max").lastName("Mustermann").build();
+
+        mvc.perform(put(URL_USER + "/" + "differentId")
+                .contentType(APPLICATION_JSON_VALUE)
+                .accept(APPLICATION_JSON_VALUE)
+                .content(GSON.toJson(updatedUser)))
+                .andExpect(status().isNotFound());
+
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void shouldReturNotFoundIfIdNotFoundOnPut() throws Exception {
+        final long userId = 1234L;
+        final User updatedUser = User.builder().id(userId).firstName("Max").lastName("Mustermann").build();
+        when(userService.update(updatedUser)).thenThrow(new NotFoundException("id not found"));
+
+        mvc.perform(put(URL_USER + "/" + userId)
+                .contentType(APPLICATION_JSON_VALUE)
+                .accept(APPLICATION_JSON_VALUE)
+                .content(GSON.toJson(updatedUser)))
+                .andExpect(status().isNotFound());
+
+        verify(userService, times(1)).update(updatedUser);
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
     public void shouldReturnBadRequestIfIdIsAlreadySetOnPost() throws Exception {
         final User userToPersist = User.builder().firstName("Max").id(1234L).build();
         when(userService.create(userToPersist)).thenThrow(new InvalidUserException("id is already set"));
 
         mvc.perform(post(URL_USER)
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .contentType(APPLICATION_JSON_VALUE)
                 .content(GSON.toJson(userToPersist)))
                 .andExpect(status().isBadRequest());
 

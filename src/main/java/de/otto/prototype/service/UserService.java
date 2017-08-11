@@ -35,6 +35,13 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public User update(final User user) {
+        if (user.getId() == null || userRepository.findOne(user.getId()) == null) {
+            throw new NotFoundException("user not found");
+        }
+        return userRepository.save(user);
+    }
+
     public void delete(final Long userId) {
         if (userRepository.findOne(userId) == null) {
             throw new NotFoundException("user id not found");
