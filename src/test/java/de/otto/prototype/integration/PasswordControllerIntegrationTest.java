@@ -46,7 +46,7 @@ public class PasswordControllerIntegrationTest {
 
     @Test
     public void shouldReturnUpdatedUserOnPost() throws Exception {
-        final User persistedUser = userRepository.save(User.builder().lastName("Mustermann").firstName("Max").password("somePassword").build());
+        final User persistedUser = userRepository.save(User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build());
         final String newPassword = "anotherPassword";
         final User updatedUser = persistedUser.toBuilder().password(newPassword).build();
 

@@ -50,9 +50,9 @@ public class UserControllerIntegrationTest {
 
     @Test
     public void shouldReturnListOfUsersOnGetAll() throws Exception {
-        final User persistedUser1 = User.builder().lastName("Mustermann").firstName("Max").build();
+        final User persistedUser1 = User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
         userRepository.save(persistedUser1);
-        final User persistedUser2 = User.builder().lastName("Lavendel").firstName("Lara").build();
+        final User persistedUser2 = User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
         userRepository.save(persistedUser2);
 
         final UserList listOfUsers = UserList.builder().user(persistedUser1).user(persistedUser2).build();
@@ -65,7 +65,7 @@ public class UserControllerIntegrationTest {
 
     @Test
     public void shouldReturnAUserOnGet() throws Exception {
-        final User persistedUser = userRepository.save(User.builder().lastName("Mustermann").firstName("Max").build());
+        final User persistedUser = userRepository.save(User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build());
 
         final ResponseEntity<String> response = template.getForEntity(base.toString() + "/" + persistedUser.getId(),
                 String.class);
@@ -76,7 +76,7 @@ public class UserControllerIntegrationTest {
 
     @Test
     public void shouldCreateAUserOnPost() throws Exception {
-        final User userToPersist = User.builder().lastName("Mustermann").firstName("Max").build();
+        final User userToPersist = User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
 
         final ResponseEntity<String> response = template.postForEntity(base.toString(), userToPersist, String.class);
 
@@ -86,7 +86,7 @@ public class UserControllerIntegrationTest {
 
     @Test
     public void shouldUpdateAUserOnPut() throws Exception {
-        final User userToUpdate = User.builder().lastName("Mustermann").firstName("Max").build();
+        final User userToUpdate = User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
         final Long persistedId = userRepository.save(userToUpdate).getId();
         final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
 
@@ -98,7 +98,7 @@ public class UserControllerIntegrationTest {
 
     @Test
     public void shouldDeleteUserOnDelete() throws Exception {
-        final User userToPersist = User.builder().lastName("Mustermann").firstName("Max").build();
+        final User userToPersist = User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
         final User persistedUser = userRepository.save(userToPersist);
 
         final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(), DELETE, null, String.class);
