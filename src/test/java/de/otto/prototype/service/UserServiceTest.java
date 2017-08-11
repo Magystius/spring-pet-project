@@ -1,5 +1,6 @@
 package de.otto.prototype.service;
 
+import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
 import org.junit.Test;
@@ -46,5 +47,30 @@ public class UserServiceTest {
 		assertThat(sup.get().collect(toList()).get(0), is(userToReturn));
 		verify(userRepository, times(1)).streamAll();
 		verifyNoMoreInteractions(userRepository);
+	}
+
+	@Test
+	public void shouldReturnCreatedUser() throws Exception {
+		User userToPersist = User.builder().lastName("Mustermann").build();
+		when(userRepository.save(userToPersist)).thenReturn(userToPersist.toBuilder().id(1234L).build());
+
+		User persistedUser = testee.create(userToPersist);
+		assertThat(persistedUser.getLastName(), is("Mustermann"));
+		assertThat(persistedUser.getId(), is(1234L));
+		verify(userRepository, times(1)).save(userToPersist);
+		verifyNoMoreInteractions(userRepository);
+	}
+
+	@Test(expected = InvalidUserException.class)
+	public void shouldThrowInvalidUserExceptionIfUserIdIsSet() throws Exception {
+		User userToPersist = User.builder().id(1234L).build();
+
+		try {
+			testee.create(userToPersist);
+		} catch (InvalidUserException e) {
+			assertThat(e.getMessage(), is("id is already set"));
+			verify(userRepository, never()).save(any(User.class));
+			throw e;
+		}
 	}
 }

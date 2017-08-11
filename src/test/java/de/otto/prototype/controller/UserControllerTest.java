@@ -1,5 +1,7 @@
 package de.otto.prototype.controller;
 
+import com.google.gson.Gson;
+import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.model.User;
 import de.otto.prototype.service.UserService;
 import org.junit.Before;
@@ -12,59 +14,90 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.Collections;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.joining;
+import static de.otto.prototype.controller.UserController.URL_USER;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class UserControllerTest {
 
-	private MockMvc mvc;
+    private static final Gson GSON = new Gson();
 
-	@Mock
-	private UserService userService;
+    private MockMvc mvc;
 
-	@InjectMocks
-	private UserController testee;
+    @Mock
+    private UserService userService;
 
-	@Before
-	public void init() {
-		mvc = MockMvcBuilders
-				.standaloneSetup(testee)
-				.build();
-	}
+    @InjectMocks
+    private UserController testee;
 
-	@Test
-	public void shouldReturnEmptyListIfNoUsersOnGet() throws Exception {
-		when(userService.findAll()).thenReturn(Stream.of());
+    @Before
+    public void init() {
+        mvc = MockMvcBuilders
+                .standaloneSetup(testee)
+                .build();
+    }
 
-		mvc.perform(get("/user").accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk())
-				.andExpect(content().string(is("")));
+    @Test
+    public void shouldReturnEmptyListIfNoUsersOnGet() throws Exception {
+        when(userService.findAll()).thenReturn(Stream.of());
 
-		verify(userService, times(1)).findAll();
-		verifyNoMoreInteractions(userService);
-	}
+        mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().string(is(GSON.toJson(Collections.EMPTY_LIST))));
 
-	@Test
-	public void shouldReturnListOfUsersOnGet() throws Exception {
-		Supplier<Stream<User>> sup = () -> Stream.of(User.builder().lastName("Mustermann").build());
-		String stringifiedUsers = sup.get()
-				.map(User::toString)
-				.collect(joining("; "));
-		when(userService.findAll()).thenReturn(sup.get());
+        verify(userService, times(1)).findAll();
+        verifyNoMoreInteractions(userService);
+    }
 
-		mvc.perform(get("/user").accept(MediaType.APPLICATION_JSON))
-				.andExpect(status().isOk())
-				.andExpect(content().string(is(stringifiedUsers)));
+    @Test
+    public void shouldReturnListOfUsersOnGet() throws Exception {
+        Supplier<Stream<User>> sup = () -> Stream.of(User.builder().lastName("Mustermann").build());
+        when(userService.findAll()).thenReturn(sup.get());
 
-		verify(userService, times(1)).findAll();
-		verifyNoMoreInteractions(userService);
-	}
+        mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().string(is(GSON.toJson(sup.get().collect(toList())))));
+
+        verify(userService, times(1)).findAll();
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void shouldCreateUserAndReturnItsLocationOnPost() throws Exception {
+        User userToPersist = User.builder().firstName("Max").lastName("Mustermann").build();
+        long persistedUserId = 1234L;
+        when(userService.create(userToPersist)).thenReturn(userToPersist.toBuilder().id(persistedUserId).build());
+
+        mvc.perform(post(URL_USER)
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(GSON.toJson(userToPersist)))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("location", URL_USER + "/" + persistedUserId));
+
+        verify(userService, times(1)).create(userToPersist);
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void shouldReturnBadRequestIfIdIsAlreadySetOnPost() throws Exception {
+        User userToPersist = User.builder().firstName("Max").id(1234L).build();
+        when(userService.create(userToPersist)).thenThrow(new InvalidUserException("id is already set"));
+
+        mvc.perform(post(URL_USER)
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .content(GSON.toJson(userToPersist)))
+                .andExpect(status().isBadRequest());
+
+        verify(userService, times(1)).create(userToPersist);
+        verifyNoMoreInteractions(userService);
+    }
 }
