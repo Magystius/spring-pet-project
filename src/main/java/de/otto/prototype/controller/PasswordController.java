@@ -10,8 +10,9 @@ import org.springframework.web.bind.annotation.*;
 
 import static de.otto.prototype.controller.PasswordController.URL_PASSWORD;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 import static org.springframework.http.ResponseEntity.ok;
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
 @RequestMapping(URL_PASSWORD)
@@ -26,10 +27,9 @@ public class PasswordController {
         this.passwordService = passwordService;
     }
 
-    //TODO:JAJA ICH WEIẞ, DAS IST NICHT GERADE SCHLAU... ;-)
-    @RequestMapping(method = GET, produces = APPLICATION_JSON_VALUE)
+    @RequestMapping(method = POST, consumes = TEXT_PLAIN_VALUE, produces = APPLICATION_JSON_VALUE)
     public ResponseEntity<User> updateUserPassword(final @RequestParam("id") String id,
-                                                   final @RequestParam("password") String password) {
+                                                   final @RequestBody String password) {
         final User updatedUser = passwordService.update(Long.parseLong(id), password);
         return ok(updatedUser);
     }

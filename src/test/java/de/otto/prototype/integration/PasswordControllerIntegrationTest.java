@@ -45,12 +45,12 @@ public class PasswordControllerIntegrationTest {
     }
 
     @Test
-    public void shouldReturnUpdatedUserOnGet() throws Exception {
+    public void shouldReturnUpdatedUserOnPost() throws Exception {
         final User persistedUser = userRepository.save(User.builder().lastName("Mustermann").firstName("Max").password("somePassword").build());
         final String newPassword = "anotherPassword";
         final User updatedUser = persistedUser.toBuilder().password(newPassword).build();
 
-        final ResponseEntity<String> response = template.getForEntity(base.toString() + "?id=" + persistedUser.getId() + "&password=" + newPassword,
+        final ResponseEntity<String> response = template.postForEntity(base.toString() + "?id=" + persistedUser.getId(), newPassword,
                 String.class);
 
         assertThat(response.getStatusCode(), is(OK));

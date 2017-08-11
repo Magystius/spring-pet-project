@@ -17,7 +17,8 @@ import static de.otto.prototype.controller.PasswordController.URL_PASSWORD;
 import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,14 +43,16 @@ public class PasswordControllerTest {
     }
 
     @Test
-    public void shouldUpdatePasswordOnGet() throws Exception {
+    public void shouldUpdatePasswordOnPost() throws Exception {
         final long id = 1234L;
         final String password = "somePassword";
         final User updatedUser = User.builder().id(id).firstName("Max").lastName("Mustermann").password(password).build();
         when(passwordService.update(id, password)).thenReturn(updatedUser);
 
-        mvc.perform(get(URL_PASSWORD + "?id=" + id + "&password=" + password)
-                .accept(APPLICATION_JSON_VALUE))
+        mvc.perform(post(URL_PASSWORD + "?id=" + id)
+                .contentType(TEXT_PLAIN_VALUE)
+                .accept(APPLICATION_JSON_VALUE)
+                .content(password))
                 .andExpect(status().isOk())
                 .andExpect(content().string(is(GSON.toJson(updatedUser))));
 
@@ -63,8 +66,10 @@ public class PasswordControllerTest {
         final String password = "somePassword";
         when(passwordService.update(id, password)).thenThrow(new NotFoundException("id not found"));
 
-        mvc.perform(get(URL_PASSWORD + "?id=" + id + "&password=" + password)
-                .accept(APPLICATION_JSON_VALUE))
+        mvc.perform(post(URL_PASSWORD + "?id=" + id)
+                .contentType(TEXT_PLAIN_VALUE)
+                .accept(APPLICATION_JSON_VALUE)
+                .content(password))
                 .andExpect(status().isNotFound());
 
         verify(passwordService, times(1)).update(id, password);
