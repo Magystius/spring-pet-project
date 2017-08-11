@@ -47,8 +47,7 @@ public class UserControllerIntegrationTest {
     }
 
     @Test
-    public void shouldReturnListOfUsersOnGet() throws Exception {
-
+    public void shouldReturnListOfUsersOnGetAll() throws Exception {
         final User persistedUser1 = User.builder().lastName("Mustermann").firstName("Max").build();
         userRepository.save(persistedUser1);
         final User persistedUser2 = User.builder().lastName("Lavendel").firstName("Lara").build();
@@ -62,8 +61,17 @@ public class UserControllerIntegrationTest {
     }
 
     @Test
-    public void shouldCreateAUserOnPost() throws Exception {
+    public void shouldReturnAUserOnGet() throws Exception {
+        final User persistedUser = userRepository.save(User.builder().lastName("Mustermann").firstName("Max").build());
 
+        final ResponseEntity<String> response = template.getForEntity(base.toString() + "/" + persistedUser.getId(),
+                String.class);
+        assertThat(response.getStatusCode(), is(OK));
+        assertThat(response.getBody(), is(GSON.toJson(persistedUser)));
+    }
+
+    @Test
+    public void shouldCreateAUserOnPost() throws Exception {
         final User userToPersist = User.builder().lastName("Mustermann").firstName("Max").build();
 
         final ResponseEntity<String> response = template.postForEntity(base.toString(), userToPersist, String.class);

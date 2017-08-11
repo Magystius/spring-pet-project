@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -48,7 +49,7 @@ public class UserControllerTest {
     }
 
     @Test
-    public void shouldReturnEmptyListIfNoUsersOnGet() throws Exception {
+    public void shouldReturnEmptyListIfNoUsersOnGetAll() throws Exception {
         when(userService.findAll()).thenReturn(Stream.of());
 
         mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
@@ -60,16 +61,47 @@ public class UserControllerTest {
     }
 
     @Test
-    public void shouldReturnListOfUsersOnGet() throws Exception {
+    public void shouldReturnListOfUsersOnGetAll() throws Exception {
         final Supplier<Stream<User>> sup = () -> Stream.of(User.builder().lastName("Mustermann").build());
         final UserList listOfUsers = UserList.builder().users(sup.get().collect(Collectors.toList())).build();
         when(userService.findAll()).thenReturn(sup.get());
 
-        mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
+        mvc.perform(get(URL_USER)
+                .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().string(is(GSON.toJson(listOfUsers))));
 
         verify(userService, times(1)).findAll();
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void shouldReturnAUserIfFoundOnGetOne() throws Exception {
+        final long userId = 1234L;
+        final User userToFind = User.builder().id(userId).lastName("Mustermann").firstName("Max").build();
+
+        when(userService.findOne(userId)).thenReturn(Optional.of(userToFind));
+
+        mvc.perform(get(URL_USER + "/" + userId)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().string(is(GSON.toJson(userToFind))));
+
+        verify(userService, times(1)).findOne(userId);
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void shouldReturn404IfUserNotFoundOnGetOne() throws Exception {
+        final long userId = 1234L;
+
+        when(userService.findOne(userId)).thenReturn(Optional.empty());
+
+        mvc.perform(get(URL_USER + "/" + userId)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+
+        verify(userService, times(1)).findOne(userId);
         verifyNoMoreInteractions(userService);
     }
 
@@ -118,7 +150,7 @@ public class UserControllerTest {
     public void shouldReturnNotFoundIfUserIdNotFoundOnDelete() throws Exception {
         String userIdToDelete = "1234";
 
-        doThrow(new NotFoundException("id not found")).when(userService).delete(Long.parseLong(userIdToDelete));
+        doThrow(new NotFoundException("id not found")).when(userService).delete(parseLong(userIdToDelete));
 
         mvc.perform(delete(URL_USER + "/" + userIdToDelete))
                 .andExpect(status().isNotFound());

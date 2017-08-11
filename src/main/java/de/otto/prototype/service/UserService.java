@@ -7,6 +7,7 @@ import de.otto.prototype.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
 import java.util.stream.Stream;
 
 @Component
@@ -21,6 +22,10 @@ public class UserService {
 
     public Stream<User> findAll() {
         return userRepository.streamAll();
+    }
+
+    public Optional<User> findOne(final Long userId) {
+        return Optional.ofNullable(userRepository.findOne(userId));
     }
 
     public User create(final User user) {

@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -47,6 +48,32 @@ public class UserServiceTest {
         assertThat(sup.get().collect(toList()).size(), is(1));
         assertThat(sup.get().collect(toList()).get(0), is(userToReturn));
         verify(userRepository, times(1)).streamAll();
+        verifyNoMoreInteractions(userRepository);
+    }
+
+    @Test
+    public void shouldReturnAUserIfFound() throws Exception {
+        Long userId = 1234L;
+        String userLastName = "Mustermann";
+        final User userToReturn = User.builder().id(userId).lastName(userLastName).build();
+        when(userRepository.findOne(userId)).thenReturn(userToReturn);
+
+        final User foundUser = testee.findOne(userId).orElse(null);
+        assert foundUser != null;
+        assertThat(foundUser.getId(), is(userId));
+        assertThat(foundUser.getLastName(), is(userLastName));
+        verify(userRepository, times(1)).findOne(userId);
+        verifyNoMoreInteractions(userRepository);
+    }
+
+    @Test
+    public void shouldReturnNoUserIfNotFound() throws Exception {
+        Long userId = 1234L;
+        when(userRepository.findOne(userId)).thenReturn(null);
+
+        final Optional<User> foundUser = testee.findOne(userId);
+        assertThat(foundUser.isPresent(), is(false));
+        verify(userRepository, times(1)).findOne(userId);
         verifyNoMoreInteractions(userRepository);
     }
 
