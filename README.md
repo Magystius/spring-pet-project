@@ -2,4 +2,4 @@
 
 # Spring Validation Demo
 
-A simple protto
+A simple prototype ;-)
