@@ -3,6 +3,7 @@ package de.otto.prototype.controller;
 import com.google.gson.Gson;
 import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.model.User;
+import de.otto.prototype.model.UserList;
 import de.otto.prototype.service.UserService;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,10 +17,10 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Collections;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static de.otto.prototype.controller.UserController.URL_USER;
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -52,7 +53,7 @@ public class UserControllerTest {
 
         mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().string(is(GSON.toJson(Collections.EMPTY_LIST))));
+                .andExpect(content().string(is(GSON.toJson(UserList.builder().build()))));
 
         verify(userService, times(1)).findAll();
         verifyNoMoreInteractions(userService);
@@ -61,11 +62,12 @@ public class UserControllerTest {
     @Test
     public void shouldReturnListOfUsersOnGet() throws Exception {
         Supplier<Stream<User>> sup = () -> Stream.of(User.builder().lastName("Mustermann").build());
+        UserList listOfUsers = UserList.builder().users(sup.get().collect(Collectors.toList())).build();
         when(userService.findAll()).thenReturn(sup.get());
 
         mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(content().string(is(GSON.toJson(sup.get().collect(toList())))));
+                .andExpect(content().string(is(GSON.toJson(listOfUsers))));
 
         verify(userService, times(1)).findAll();
         verifyNoMoreInteractions(userService);
