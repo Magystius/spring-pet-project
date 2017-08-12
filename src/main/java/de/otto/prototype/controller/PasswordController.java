@@ -1,14 +1,15 @@
 package de.otto.prototype.controller;
 
-import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.User;
 import de.otto.prototype.service.PasswordService;
 import de.otto.prototype.validation.SecurePassword;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import static de.otto.prototype.controller.PasswordController.URL_PASSWORD;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -35,11 +36,6 @@ public class PasswordController {
 												   final @SecurePassword @RequestBody() String password) {
 		final User updatedUser = passwordService.update(Long.parseLong(id), password);
 		return ok(updatedUser);
-	}
-
-	@ExceptionHandler(NotFoundException.class)
-	@ResponseStatus(HttpStatus.NOT_FOUND)
-	public void notFoundHandler() {
 	}
 
 }

@@ -1,15 +1,15 @@
 package de.otto.prototype.controller;
 
-import de.otto.prototype.exceptions.InvalidUserException;
-import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.User;
 import de.otto.prototype.model.UserList;
 import de.otto.prototype.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.util.Optional;
@@ -69,14 +69,4 @@ public class UserController {
         return noContent().build();
     }
 
-
-    @ExceptionHandler(InvalidUserException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public void invalidClusterOrderHandler() {
-    }
-
-    @ExceptionHandler(NotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public void notFoundHandler() {
-    }
 }
