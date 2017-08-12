@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static de.otto.prototype.controller.UserController.URL_USER;
-import static java.lang.Long.parseLong;
 import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -81,7 +80,7 @@ public class UserControllerTest {
 
     @Test
     public void shouldReturnAUserIfFoundOnGetOne() throws Exception {
-        final long userId = 1234L;
+        final Long userId = 1234L;
         final User userToFind = User.builder().id(userId).lastName("Mustermann").firstName("Max").build();
 
         when(userService.findOne(userId)).thenReturn(Optional.of(userToFind));
@@ -98,7 +97,7 @@ public class UserControllerTest {
 
     @Test
     public void shouldReturn404IfUserNotFoundOnGetOne() throws Exception {
-        final long userId = 1234L;
+        final Long userId = 1234L;
 
         when(userService.findOne(userId)).thenReturn(Optional.empty());
 
@@ -114,7 +113,7 @@ public class UserControllerTest {
     @Test
     public void shouldCreateUserAndReturnItsLocationOnPost() throws Exception {
         final User userToPersist = User.builder().firstName("Max").lastName("Mustermann").build();
-        final long persistedUserId = 1234L;
+        final Long persistedUserId = 1234L;
         when(userService.create(userToPersist)).thenReturn(userToPersist.toBuilder().id(persistedUserId).build());
 
         mvc.perform(post(URL_USER)
@@ -130,7 +129,7 @@ public class UserControllerTest {
 
     @Test
     public void shouldUpdateUserOnPut() throws Exception {
-        final long userId = 1234L;
+        final Long userId = 1234L;
         final User updatedUser = User.builder().id(userId).firstName("Max").lastName("Mustermann").build();
         when(userService.update(updatedUser)).thenReturn(updatedUser);
 
@@ -147,7 +146,7 @@ public class UserControllerTest {
 
     @Test
     public void shouldReturnNotFoundIfIDsDifferOnPut() throws Exception {
-        final long userId = 1234L;
+        final Long userId = 1234L;
         final User updatedUser = User.builder().id(userId).firstName("Max").lastName("Mustermann").build();
 
         mvc.perform(put(URL_USER + "/" + "differentId")
@@ -162,7 +161,7 @@ public class UserControllerTest {
 
     @Test
     public void shouldReturNotFoundIfIdNotFoundOnPut() throws Exception {
-        final long userId = 1234L;
+        final Long userId = 1234L;
         final User updatedUser = User.builder().id(userId).firstName("Max").lastName("Mustermann").build();
         when(userService.update(updatedUser)).thenThrow(new NotFoundException("id not found"));
 
@@ -194,27 +193,27 @@ public class UserControllerTest {
 
     @Test
     public void shouldDeleteUserOnDelete() throws Exception {
-        String userIdToDelete = "1234";
+        final Long userIdToDelete = 1234L;
 
         mvc.perform(delete(URL_USER + "/" + userIdToDelete))
                 .andDo(print())
                 .andExpect(status().isNoContent());
 
-        verify(userService, times(1)).delete(parseLong(userIdToDelete));
+        verify(userService, times(1)).delete(userIdToDelete);
         verifyNoMoreInteractions(userService);
     }
 
     @Test
     public void shouldReturnNotFoundIfUserIdNotFoundOnDelete() throws Exception {
-        String userIdToDelete = "1234";
+        final Long userIdToDelete = 1234L;
 
-        doThrow(new NotFoundException("id not found")).when(userService).delete(parseLong(userIdToDelete));
+        doThrow(new NotFoundException("id not found")).when(userService).delete(userIdToDelete);
 
         mvc.perform(delete(URL_USER + "/" + userIdToDelete))
                 .andDo(print())
                 .andExpect(status().isNotFound());
 
-        verify(userService, times(1)).delete(parseLong(userIdToDelete));
+        verify(userService, times(1)).delete(userIdToDelete);
         verifyNoMoreInteractions(userService);
     }
 }

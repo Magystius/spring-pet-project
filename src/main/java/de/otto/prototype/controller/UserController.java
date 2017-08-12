@@ -44,9 +44,9 @@ public class UserController {
     }
 
     @RequestMapping(value = "/{userId}", method = GET, produces = APPLICATION_JSON_VALUE)
-    public ResponseEntity<User> getOne(final @PathVariable("userId") String userId) {
-        final Optional<User> foundUser = userService.findOne(Long.parseLong(userId));
-        return foundUser.map(ResponseEntity::ok)
+	public ResponseEntity<User> getOne(final @PathVariable("userId") Long userId) {
+		final Optional<User> foundUser = userService.findOne(userId);
+		return foundUser.map(ResponseEntity::ok)
                 .orElse(notFound().build());
     }
 

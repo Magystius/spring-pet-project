@@ -17,6 +17,7 @@ public class SecurePasswordValidatorTest {
 
 	@Before
 	public void setup() {
+		//TODO: could we use autowired here?
 		localValidatorFactory = new LocalValidatorFactoryBean();
 		localValidatorFactory.setProviderClass(HibernateValidator.class);
 		localValidatorFactory.afterPropertiesSet();
