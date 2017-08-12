@@ -11,7 +11,7 @@ public class SecurePasswordValidator implements ConstraintValidator<SecurePasswo
 
 	@Override
 	public boolean isValid(String password, ConstraintValidatorContext context) {
-		return password != null /*&& password.matches("[0-9]+")*/
+		return password != null && !password.isEmpty() /*&& password.matches("[0-9]+")*/
 				&& (password.length() > 7) && (password.length() < 17);
 	}
 }
