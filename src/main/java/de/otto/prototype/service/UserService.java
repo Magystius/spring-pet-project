@@ -5,12 +5,12 @@ import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 import java.util.stream.Stream;
 
-@Component
+@Service
 public class UserService {
 
     private UserRepository userRepository;

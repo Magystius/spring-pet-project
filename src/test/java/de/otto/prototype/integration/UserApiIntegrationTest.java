@@ -27,7 +27,7 @@ import static org.springframework.http.HttpStatus.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class UserControllerIntegrationTest {
+public class UserApiIntegrationTest {
 
     private static final Gson GSON = new Gson();
 

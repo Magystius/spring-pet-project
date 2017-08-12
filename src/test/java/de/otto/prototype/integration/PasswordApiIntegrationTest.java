@@ -30,7 +30,7 @@ import static org.springframework.http.HttpStatus.OK;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class PasswordControllerIntegrationTest {
+public class PasswordApiIntegrationTest {
 
 	private static final Gson GSON = new Gson();
 

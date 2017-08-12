@@ -19,6 +19,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -53,6 +54,7 @@ public class PasswordControllerTest {
                 .contentType(TEXT_PLAIN_VALUE)
                 .accept(APPLICATION_JSON_VALUE)
                 .content(password))
+                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().string(is(GSON.toJson(updatedUser))));
 
@@ -70,6 +72,7 @@ public class PasswordControllerTest {
                 .contentType(TEXT_PLAIN_VALUE)
                 .accept(APPLICATION_JSON_VALUE)
                 .content(password))
+                .andDo(print())
                 .andExpect(status().isNotFound());
 
         verify(passwordService, times(1)).update(id, password);

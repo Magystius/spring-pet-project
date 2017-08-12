@@ -27,6 +27,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -54,6 +55,7 @@ public class UserControllerTest {
         when(userService.findAll()).thenReturn(Stream.of());
 
         mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().string(is(GSON.toJson(UserList.builder().build()))));
 
@@ -69,6 +71,7 @@ public class UserControllerTest {
 
         mvc.perform(get(URL_USER)
                 .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().string(is(GSON.toJson(listOfUsers))));
 
@@ -85,6 +88,7 @@ public class UserControllerTest {
 
         mvc.perform(get(URL_USER + "/" + userId)
                 .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().string(is(GSON.toJson(userToFind))));
 
@@ -100,6 +104,7 @@ public class UserControllerTest {
 
         mvc.perform(get(URL_USER + "/" + userId)
                 .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
                 .andExpect(status().isNotFound());
 
         verify(userService, times(1)).findOne(userId);
@@ -115,6 +120,7 @@ public class UserControllerTest {
         mvc.perform(post(URL_USER)
                 .contentType(APPLICATION_JSON_VALUE)
                 .content(GSON.toJson(userToPersist)))
+                .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(header().string("location", URL_USER + "/" + persistedUserId));
 
@@ -132,6 +138,7 @@ public class UserControllerTest {
                 .contentType(APPLICATION_JSON_VALUE)
                 .accept(APPLICATION_JSON_VALUE)
                 .content(GSON.toJson(updatedUser)))
+                .andDo(print())
                 .andExpect(status().isOk());
 
         verify(userService, times(1)).update(updatedUser);
@@ -147,6 +154,7 @@ public class UserControllerTest {
                 .contentType(APPLICATION_JSON_VALUE)
                 .accept(APPLICATION_JSON_VALUE)
                 .content(GSON.toJson(updatedUser)))
+                .andDo(print())
                 .andExpect(status().isNotFound());
 
         verifyNoMoreInteractions(userService);
@@ -162,6 +170,7 @@ public class UserControllerTest {
                 .contentType(APPLICATION_JSON_VALUE)
                 .accept(APPLICATION_JSON_VALUE)
                 .content(GSON.toJson(updatedUser)))
+                .andDo(print())
                 .andExpect(status().isNotFound());
 
         verify(userService, times(1)).update(updatedUser);
@@ -176,6 +185,7 @@ public class UserControllerTest {
         mvc.perform(post(URL_USER)
                 .contentType(APPLICATION_JSON_VALUE)
                 .content(GSON.toJson(userToPersist)))
+                .andDo(print())
                 .andExpect(status().isBadRequest());
 
         verify(userService, times(1)).create(userToPersist);
@@ -187,6 +197,7 @@ public class UserControllerTest {
         String userIdToDelete = "1234";
 
         mvc.perform(delete(URL_USER + "/" + userIdToDelete))
+                .andDo(print())
                 .andExpect(status().isNoContent());
 
         verify(userService, times(1)).delete(parseLong(userIdToDelete));
@@ -200,6 +211,7 @@ public class UserControllerTest {
         doThrow(new NotFoundException("id not found")).when(userService).delete(parseLong(userIdToDelete));
 
         mvc.perform(delete(URL_USER + "/" + userIdToDelete))
+                .andDo(print())
                 .andExpect(status().isNotFound());
 
         verify(userService, times(1)).delete(parseLong(userIdToDelete));
