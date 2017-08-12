@@ -10,8 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.ConstraintViolationException;
-
 import static de.otto.prototype.controller.PasswordController.URL_PASSWORD;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
@@ -34,7 +32,7 @@ public class PasswordController {
 
 	@RequestMapping(method = POST, consumes = TEXT_PLAIN_VALUE, produces = APPLICATION_JSON_VALUE)
 	public ResponseEntity<User> updateUserPassword(final @RequestParam("id") String id,
-												   final @SecurePassword @RequestBody String password) {
+												   final @SecurePassword @RequestBody() String password) {
 		final User updatedUser = passwordService.update(Long.parseLong(id), password);
 		return ok(updatedUser);
 	}
@@ -42,11 +40,6 @@ public class PasswordController {
 	@ExceptionHandler(NotFoundException.class)
 	@ResponseStatus(HttpStatus.NOT_FOUND)
 	public void notFoundHandler() {
-	}
-
-	@ExceptionHandler(ConstraintViolationException.class)
-	@ResponseStatus(HttpStatus.BAD_REQUEST)
-	public void validationErrorHandler() {
 	}
 
 }

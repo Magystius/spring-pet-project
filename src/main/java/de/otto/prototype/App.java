@@ -9,6 +9,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 
 import static java.util.Arrays.sort;
 import static java.util.Arrays.stream;
@@ -23,16 +24,8 @@ public class App {
 	}
 
 	@Bean
-    public CommandLineRunner init(ApplicationContext ctx, UserRepository userRepository) {
-        return args -> {
-
-			log.info("Let's inspect the beans provided by Spring Boot:");
-
-			String[] beanNames = ctx.getBeanDefinitionNames();
-			sort(beanNames);
-			stream(beanNames).forEach(log::info);
-
-
+	public CommandLineRunner init(UserRepository userRepository) {
+		return args -> {
 			log.info("-------------------------------");
 			log.info("Save some users");
 			userRepository.save(User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build());
@@ -46,6 +39,25 @@ public class App {
 			}
 			log.info("");
 		};
+	}
+
+	@Bean
+	public CommandLineRunner checkApp(ApplicationContext ctx) {
+		return args -> {
+			log.info("Let's inspect the beans provided by Spring Boot:");
+
+			String[] beanNames = ctx.getBeanDefinitionNames();
+			sort(beanNames);
+			stream(beanNames).forEach(log::info);
+		};
+	}
+
+	@Bean(name = "messageSource")
+	public ReloadableResourceBundleMessageSource messageSource() {
+		ReloadableResourceBundleMessageSource messageBundle = new ReloadableResourceBundleMessageSource();
+		messageBundle.setBasename("classpath:messages/messages");
+		messageBundle.setDefaultEncoding("UTF-8");
+		return messageBundle;
 	}
 
 }
