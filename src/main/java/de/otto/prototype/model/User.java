@@ -1,7 +1,7 @@
 package de.otto.prototype.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import de.otto.prototype.validation.SecurePasswordConstraint;
+import de.otto.prototype.validation.SecurePassword;
 import lombok.*;
 import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -29,24 +29,24 @@ public class User {
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	private Long id;
 
-    @NotEmpty
-    @Size(min = 3, max = 30)
-    private String firstName;
-    @Size(min = 3, max = 30)
-    private String secondName;
-    @NotEmpty
-    @Size(min = 3, max = 30)
-    private String lastName;
-    @NotNull
-    @Min(18)
-    @Max(150)
-    private int age;
+	@NotEmpty
+	@Size(min = 3, max = 30)
+	private String firstName;
+	@Size(min = 3, max = 30)
+	private String secondName;
+	@NotEmpty
+	@Size(min = 3, max = 30)
+	private String lastName;
+	@NotNull
+	@Min(18)
+	@Max(150)
+	private int age;
 
 	private boolean vip;
-    @NotEmpty
-    @Email
-    private String mail;
-    @NotEmpty
-    @SecurePasswordConstraint
-    private String password;
+	@NotEmpty
+	@Email
+	private String mail;
+	@NotEmpty
+	@SecurePassword
+	private String password;
 }
