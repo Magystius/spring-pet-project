@@ -18,4 +18,6 @@ public @interface SecurePassword {
 	Class<?>[] groups() default {};
 
 	Class<? extends Payload>[] payload() default {};
+
+	String pattern() default "[0-9]+";
 }

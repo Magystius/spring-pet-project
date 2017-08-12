@@ -55,7 +55,7 @@ public class SecurePasswordValidatorTest {
 	}
 
 	private class Password {
-		@SecurePassword
+		@SecurePassword(pattern = ".*")
 		String password;
 
 		Password(String password) {

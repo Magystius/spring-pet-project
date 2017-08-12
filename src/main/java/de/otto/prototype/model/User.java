@@ -47,6 +47,6 @@ public class User {
 	@Email
 	private String mail;
 	@NotEmpty
-	@SecurePassword
+	@SecurePassword(pattern = ".*")
 	private String password;
 }

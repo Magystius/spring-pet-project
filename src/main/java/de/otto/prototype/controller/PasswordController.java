@@ -33,7 +33,7 @@ public class PasswordController {
 
 	@RequestMapping(method = POST, consumes = TEXT_PLAIN_VALUE, produces = APPLICATION_JSON_VALUE)
 	public ResponseEntity<User> updateUserPassword(final @RequestParam("id") String id,
-												   final @SecurePassword @RequestBody() String password) {
+												   final @SecurePassword(pattern = ".*") @RequestBody() String password) {
 		final User updatedUser = passwordService.update(Long.parseLong(id), password);
 		return ok(updatedUser);
 	}
