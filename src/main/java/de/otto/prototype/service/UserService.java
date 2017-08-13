@@ -1,6 +1,5 @@
 package de.otto.prototype.service;
 
-import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
@@ -29,14 +28,11 @@ public class UserService {
     }
 
     public User create(final User user) {
-        if (user.getId() != null) {
-            throw new InvalidUserException("id is already set");
-        }
         return userRepository.save(user);
     }
 
     public User update(final User user) {
-        if (user.getId() == null || userRepository.findOne(user.getId()) == null) {
+        if (userRepository.findOne(user.getId()) == null) {
             throw new NotFoundException("user not found");
         }
         return userRepository.save(user);

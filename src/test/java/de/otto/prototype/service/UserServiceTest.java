@@ -106,19 +106,6 @@ public class UserServiceTest {
     }
 
     @Test(expected = NotFoundException.class)
-    public void shouldReturnNotFoundExceptionIfIdIsNull() throws Exception {
-        final User userToUpdate = User.builder().lastName("Mustermann").build();
-
-        try {
-            testee.update(userToUpdate);
-        } catch (InvalidUserException e) {
-            assertThat(e.getMessage(), is("id not found"));
-            verifyNoMoreInteractions(userRepository);
-            throw e;
-        }
-    }
-
-    @Test(expected = NotFoundException.class)
     public void shouldReturnNotFoundExceptionIfIdUnknown() throws Exception {
         long userId = 1234L;
         final User userToUpdate = User.builder().id(userId).lastName("Mustermann").build();
@@ -130,19 +117,6 @@ public class UserServiceTest {
             assertThat(e.getMessage(), is("id not found"));
             verify(userRepository, times(1)).findOne(userId);
             verifyNoMoreInteractions(userRepository);
-            throw e;
-        }
-    }
-
-    @Test(expected = InvalidUserException.class)
-    public void shouldThrowInvalidUserExceptionIfUserIdIsSet() throws Exception {
-        final User userToPersist = User.builder().id(1234L).build();
-
-        try {
-            testee.create(userToPersist);
-        } catch (InvalidUserException e) {
-            assertThat(e.getMessage(), is("id is already set"));
-            verify(userRepository, never()).save(any(User.class));
             throw e;
         }
     }
