@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Spring Val Demo</title>
+</head>
+<body>
+<p><a href="https://travis-ci.org/Magystius/spring-val-demo"><img
+        src="https://travis-ci.org/Magystius/spring-val-demo.svg?branch=master" alt="Build Status"/></a>
+    <a href="https://coveralls.io/github/Magystius/spring-val-demo?branch=master"><img
+            src="https://coveralls.io/repos/github/Magystius/spring-val-demo/badge.svg?branch=master"
+            alt="Coverage Status"/></a>
+    <a href="https://codebeat.co/projects/github-com-magystius-spring-val-demo-master"><img
+            src="https://codebeat.co/badges/95aead95-65be-4bc4-874c-3faf22c04fbb" alt="codebeat badge"/></a>
+    <a href="https://github.com/magystius/spring-val-demo/blob/master/LICENSE.md"><img
+            src="https://img.shields.io/github/license/magystius/spring-val-demo.svg" alt="License"/></a></p>
+
+<h1 id="springvalidationdemo">Spring Validation Demo</h1>
+
+<p>Demo App für Spring Boot</p>
+
+<h3 id="usage">Usage:</h3>
+
+<p><strong>GET ALL</strong></p>
+
+<pre><code class="` language-`">curl -i -H "Accept: application/json"  -X GET /user
+</code></pre>
+
+<p><code>
+    _Response_ -</code>200`</p>
+
+<pre><code class="`json language-`json">{
+  "users": [
+    {
+      "id": 1,
+      "firstName": "AWS",
+      "lastName": "AWS",
+      "age": 30,
+      "vip": false,
+      "mail": "max.mustermann@otto.de",
+      "password": "somePassword"
+    },
+    {
+      "id": 2,
+      "firstName": "AWS4",
+      "lastName": "AWS2",
+      "age": 30,
+      "vip": false,
+      "mail": "max.mustermann@otto.de",
+      "password": "somePassword"
+    },
+    {
+      "id": 3,
+      "firstName": "Lara",
+      "lastName": "Lavendel",
+      "age": 30,
+      "vip": false,
+      "mail": "max.mustermann@otto.de",
+      "password": "somePassword"
+    }
+  ]
+}
+</code></pre>
+
+<p>`</p>
+
+<p><strong>GET ONE</strong></p>
+
+<pre><code class="` language-`">curl -i -H "Accept: application/json"  -X GET /user/{userId}
+</code></pre>
+
+<p><code>
+    _Response_ -</code>200`</p>
+
+<pre><code class="`json language-`json">{
+  "id": 1,
+  "firstName": "AWS",
+  "lastName": "AWS",
+  "age": 30,
+  "vip": false,
+  "mail": "max.mustermann@otto.de",
+  "password": "somePassword"
+}
+</code></pre>
+
+<p>`</p>
+
+<p><strong>CREATE</strong></p>
+
+<pre><code class="` language-`">curl -i -H "Content-Type: application/json" -X POST /user
+</code></pre>
+
+<p>`
+    <em>Body</em></p>
+
+<pre><code class="`json language-`json">{
+  "firstName": "AWS",
+  "secondName": "Joachim",
+  "lastName": "AWS",
+  "age": 30,
+  "vip": false,
+  "mail": "max.mustermann@otto.de",
+  "password": "somePassword",
+  "bio": "some text"
+}
+</code></pre>
+
+<p><code>
+    _Response_</code>201 Location: /user/4`</p>
+
+<p><strong>UPDATE</strong></p>
+
+<pre><code class="` language-`">curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X PUT /user/{userId}
+</code></pre>
+
+<p>`
+    <em>Body</em></p>
+
+<pre><code class="`json language-`json">{
+  "id": 4,
+  "firstName": "NEU",
+  "secondName": "Joachim",
+  "lastName": "AWS",
+  "age": 30,
+  "vip": false,
+  "mail": "max.mustermann@otto.de",
+  "password": "somePassword",
+  "bio": "some text"
+}
+</code></pre>
+
+<p><code>
+    _Response_</code>200`</p>
+
+<pre><code class="`json language-`json">{
+"id": 4,
+"firstName": "NEU",
+"secondName": "Joachim",
+"lastName": "AWS",
+"age": 30,
+"vip": false,
+"mail": "max.mustermann@otto.de",
+"password": "somePassword",
+"bio": "some text"
+}
+</code></pre>
+
+<p>`
+    <strong>DELETE</strong></p>
+
+<pre><code class="` language-`">curl -i  -X DELETE /user/{userId}
+</code></pre>
+
+<p><code>
+    _Response_ -</code>204`</p>
+
+<h3 id="errors">Errors</h3>
+
+<p>If possible the following error object will returned on any proccessing error</p>
+
+<p><em>Response</em> - <code>400</code></p>
+
+<pre><code class="`json language-`json">{
+  "errors": [
+    {
+      "attribute": "user",
+      "errorMessage": "Das Password ist unsicher"
+    },
+    {
+      "attribute": "user",
+      "errorMessage": "Alter muss mindestens 18 sein"
+    },
+    {
+      "attribute": "user",
+      "errorMessage": "Das Pssword ist verpflichtend"
+    }
+  ],
+  "user": {
+    "firstName": "AWS",
+    "secondName": "Joachim",
+    "lastName": "AWS",
+    "vip": false,
+    "mail": "max.mustermann@otto.de",
+    "bio": "some text"
+  }
+}
+</code></pre>
+
+<p>`</p>
+</body>
+</html>
