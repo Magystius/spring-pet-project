@@ -5,8 +5,11 @@ notifications:
     on_failure: always
 after_success:
 - mvn clean test jacoco:report coveralls:report
+before_deploy:
+- mvn jar:jar
 deploy:
   skip_cleanup: true
+  zip_file: target/spring-val-demo-0.0.0.jar
   provider: elasticbeanstalk
   access_key_id: AKIAJVLUHTOJOC3YX3IA
   secret_access_key:
