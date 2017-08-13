@@ -7,6 +7,8 @@
 
 Demo App für Spring Boot
 
+**Live Version:** [AWS - (Running on Commit: c3d01fc)](http://springvaldemo-env.ztrucrxpam.eu-central-1.elasticbeanstalk.com/)
+
 ### Usage:
 
 **GET ALL**
