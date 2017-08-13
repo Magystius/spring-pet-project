@@ -43,8 +43,8 @@ public class User {
 	private int age;
 
 	private boolean vip;
-	@NotEmpty(message = "error.mail")
-	@Email
+	@NotEmpty(message = "error.mail.empty")
+	@Email(message = "error.mail.invalid")
 	private String mail;
 	@NotEmpty(message = "error.password.empty")
 	@SecurePassword(pattern = ".*")

@@ -74,6 +74,7 @@ public class UserControllerTest {
 				{validMinimumUser.toBuilder().lastName("").build(), buildUVRep(of(buildUVERep("error.name.empty"), buildUVERep("error.name.range")))},
 				{validMinimumUser.toBuilder().age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))},
 				{validMinimumUser.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))},
+				{validMinimumUser.toBuilder().mail("notamail").build(), buildUVRep(of(buildUVERep("error.mail.invalid")))},
 				{validMinimumUser.toBuilder().password("").build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))},
 		};
 	}
@@ -89,6 +90,7 @@ public class UserControllerTest {
 				{validMinimumUser.toBuilder().id(validUserId).lastName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))},
 				{validMinimumUser.toBuilder().id(validUserId).age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))},
 				{validMinimumUser.toBuilder().id(validUserId).age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))},
+				{validMinimumUser.toBuilder().id(validUserId).mail("notamail").build(), buildUVRep(of(buildUVERep("error.mail.invalid")))},
 				{validMinimumUser.toBuilder().id(validUserId).password("").build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))},
 		};
 	}
