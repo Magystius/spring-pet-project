@@ -55,7 +55,7 @@ public class UserControllerTest {
 	private static final User validMinimumUser =
 			User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
 
-	private static final long validUserId = 1234L;
+	private static final Long validUserId = 1234L;
 
 	private static MessageSource messageSource;
 

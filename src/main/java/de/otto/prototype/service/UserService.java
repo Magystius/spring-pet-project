@@ -6,7 +6,11 @@ import de.otto.prototype.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.validation.Validator;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 @Service
@@ -14,10 +18,13 @@ public class UserService {
 
     private UserRepository userRepository;
 
+	private Validator validator;
+
     @Autowired
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+	public UserService(UserRepository userRepository, Validator validator) {
+		this.userRepository = userRepository;
+		this.validator = validator;
+	}
 
     public Stream<User> findAll() {
         return userRepository.streamAll();
@@ -28,14 +35,16 @@ public class UserService {
     }
 
     public User create(final User user) {
-        return userRepository.save(user);
+		validateUser(user, User.New.class);
+		return userRepository.save(user);
     }
 
     public User update(final User user) {
         if (userRepository.findOne(user.getId()) == null) {
             throw new NotFoundException("user not found");
         }
-        return userRepository.save(user);
+		validateUser(user, User.Existing.class);
+		return userRepository.save(user);
     }
 
     public void delete(final Long userId) {
@@ -44,4 +53,10 @@ public class UserService {
         }
         userRepository.delete(userId);
     }
+
+	private void validateUser(User user, Class group) {
+		Set<ConstraintViolation<User>> errors = validator.validate(user, group);
+		if (!errors.isEmpty())
+			throw new ConstraintViolationException(errors);
+	}
 }
