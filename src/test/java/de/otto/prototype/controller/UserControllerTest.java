@@ -76,6 +76,7 @@ public class UserControllerTest {
 				{validMinimumUser.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))},
 				{validMinimumUser.toBuilder().mail("notamail").build(), buildUVRep(of(buildUVERep("error.mail.invalid")))},
 				{validMinimumUser.toBuilder().password("").build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))},
+				{validMinimumUser.toBuilder().bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))}
 		};
 	}
 
@@ -92,6 +93,7 @@ public class UserControllerTest {
 				{validMinimumUser.toBuilder().id(validUserId).age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))},
 				{validMinimumUser.toBuilder().id(validUserId).mail("notamail").build(), buildUVRep(of(buildUVERep("error.mail.invalid")))},
 				{validMinimumUser.toBuilder().id(validUserId).password("").build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))},
+				{validMinimumUser.toBuilder().id(validUserId).bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))}
 		};
 	}
 

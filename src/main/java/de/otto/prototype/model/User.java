@@ -5,6 +5,7 @@ import de.otto.prototype.validation.SecurePassword;
 import lombok.*;
 import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.NotEmpty;
+import org.hibernate.validator.constraints.SafeHtml;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -14,6 +15,7 @@ import javax.validation.constraints.*;
 import javax.validation.groups.Default;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+import static org.hibernate.validator.constraints.SafeHtml.WhiteListType.NONE;
 
 @Entity
 @Data
@@ -49,6 +51,9 @@ public class User {
 	@NotEmpty(message = "error.password.empty")
 	@SecurePassword(pattern = ".*")
 	private String password;
+
+	@SafeHtml(whitelistType = NONE, message = "error.bio.invalid")
+	private String bio;
 
 	public interface Existing extends Default {
 	}
