@@ -2,6 +2,8 @@ package de.otto.prototype.integration;
 
 
 import com.google.gson.Gson;
+import de.otto.prototype.controller.representation.UserValidationEntryRepresentation;
+import de.otto.prototype.controller.representation.UserValidationRepresentation;
 import de.otto.prototype.model.User;
 import de.otto.prototype.model.UserList;
 import de.otto.prototype.repository.UserRepository;
@@ -12,11 +14,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.embedded.LocalServerPort;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.net.URL;
+import java.util.Locale;
 
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static org.hamcrest.CoreMatchers.is;
@@ -31,10 +37,14 @@ public class UserApiIntegrationTest {
 
     private static final Gson GSON = new Gson();
 
+    private static final Locale LOCALE = LocaleContextHolder.getLocale();
+
     @LocalServerPort
     private int port;
 
     private URL base;
+
+    private MessageSource messageSource;
 
     @Autowired
     private TestRestTemplate template;
@@ -44,8 +54,16 @@ public class UserApiIntegrationTest {
 
     @Before
     public void setUp() throws Exception {
+        initMessageSource();
         this.base = new URL("http://localhost:" + port + URL_USER);
         userRepository.deleteAll();
+    }
+
+    private void initMessageSource() {
+        ReloadableResourceBundleMessageSource messageBundle = new ReloadableResourceBundleMessageSource();
+        messageBundle.setBasename("classpath:messages/messages");
+        messageBundle.setDefaultEncoding("UTF-8");
+        messageSource = messageBundle;
     }
 
     @Test
@@ -104,5 +122,42 @@ public class UserApiIntegrationTest {
         final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(), DELETE, null, String.class);
 
         assertThat(response.getStatusCode(), is(NO_CONTENT));
+    }
+
+    @Test
+    public void shouldReturnBadRequestIfInvalidIdOnGet() throws Exception {
+        final ResponseEntity<String> response = template.getForEntity(base.toString() + "/0",
+                String.class);
+
+        String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
+        UserValidationEntryRepresentation errorEntry = UserValidationEntryRepresentation.builder().attribute("getOne.userId").errorMessage(errorMessage).build();
+        UserValidationRepresentation returnedErrors = UserValidationRepresentation.builder().error(errorEntry).build();
+        assertThat(response.getStatusCode(), is(BAD_REQUEST));
+        assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
+    }
+
+    @Test
+    public void shouldReturnBadRequestIfInvalidIdOnPut() throws Exception {
+        final User userToUpdate = User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
+        final Long persistedId = userRepository.save(userToUpdate).getId();
+        final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
+        final ResponseEntity<String> response = template.exchange(base.toString() + "/0", PUT, new HttpEntity<>(updatedUser), String.class);
+
+        String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
+        UserValidationEntryRepresentation errorEntry = UserValidationEntryRepresentation.builder().attribute("update.userId").errorMessage(errorMessage).build();
+        UserValidationRepresentation returnedErrors = UserValidationRepresentation.builder().error(errorEntry).build();
+        assertThat(response.getStatusCode(), is(BAD_REQUEST));
+        assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
+    }
+
+    @Test
+    public void shouldReturnBadRequestIfInvalidIdOnDelete() throws Exception {
+        final ResponseEntity<String> response = template.exchange(base.toString() + "/0", DELETE, null, String.class);
+
+        String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
+        UserValidationEntryRepresentation errorEntry = UserValidationEntryRepresentation.builder().attribute("delete.userId").errorMessage(errorMessage).build();
+        UserValidationRepresentation returnedErrors = UserValidationRepresentation.builder().error(errorEntry).build();
+        assertThat(response.getStatusCode(), is(BAD_REQUEST));
+        assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
     }
 }

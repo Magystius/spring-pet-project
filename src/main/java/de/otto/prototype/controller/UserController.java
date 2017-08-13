@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.constraints.Min;
 import java.net.URI;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -25,6 +26,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.*;
 
 @RestController
 @RequestMapping(URL_USER)
+@Validated
 public class UserController {
 
 	public static final String URL_USER = "/user";
@@ -45,7 +47,7 @@ public class UserController {
 	}
 
 	@RequestMapping(value = "/{userId}", method = GET, produces = APPLICATION_JSON_VALUE)
-	public ResponseEntity<User> getOne(final @PathVariable("userId") Long userId) {
+	public ResponseEntity<User> getOne(final @Min(value = 1, message = "error.id.invalid") @PathVariable("userId") Long userId) {
 		final Optional<User> foundUser = userService.findOne(userId);
 		return foundUser.map(ResponseEntity::ok)
 				.orElse(notFound().build());
@@ -58,14 +60,15 @@ public class UserController {
 	}
 
 	@RequestMapping(value = "/{userId}", method = PUT, consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-	public ResponseEntity<User> update(final @PathVariable("userId") String userId, final @Validated(User.Existing.class) @RequestBody User user) {
+	public ResponseEntity<User> update(final @Min(value = 1, message = "error.id.invalid") @PathVariable("userId") String userId,
+									   final @Validated(User.Existing.class) @RequestBody User user) {
 		if (!userId.equals(user.getId().toString()))
 			return notFound().build();
 		return ok(userService.update(user));
 	}
 
 	@RequestMapping(value = "/{userId}", method = DELETE)
-	public ResponseEntity delete(final @PathVariable("userId") String userId) {
+	public ResponseEntity delete(final @Min(value = 1, message = "error.id.invalid") @PathVariable("userId") String userId) {
 		userService.delete(parseLong(userId));
 		return noContent().build();
 	}
