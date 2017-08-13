@@ -40,16 +40,9 @@ public class ControllerValidationHandler {
 	@ResponseStatus(BAD_REQUEST)
 	@ResponseBody
 	public UserValidationRepresentation processValidationError(ConstraintViolationException exception) {
-		ImmutableList<UserValidationEntryRepresentation> errors = exception.getConstraintViolations().stream().map(constraintViolation -> {
-			String msgCode = constraintViolation.getMessage();
-			String errObj = constraintViolation.getPropertyPath().toString();
-			String msg = msgCode;
-			try {
-				msg = msgSource.getMessage(msgCode, null, LOCALE);
-			} catch (NoSuchMessageException ignored) {
-			}
-			return UserValidationEntryRepresentation.builder().attribute(errObj).errorMessage(msg).build();
-		}).collect(collectingAndThen(toList(), ImmutableList::copyOf));
+		ImmutableList<UserValidationEntryRepresentation> errors = exception.getConstraintViolations().stream()
+				.map(constraintViolation -> getUserValidationEntryRepresentation(constraintViolation.getMessage(), constraintViolation.getPropertyPath().toString()))
+				.collect(collectingAndThen(toList(), ImmutableList::copyOf));
 
 		return UserValidationRepresentation.builder().errors(errors).build();
 	}
@@ -58,18 +51,20 @@ public class ControllerValidationHandler {
 	@ResponseStatus(BAD_REQUEST)
 	@ResponseBody
 	public UserValidationRepresentation processValidationError(MethodArgumentNotValidException exception) {
-		ImmutableList<UserValidationEntryRepresentation> errors = exception.getBindingResult().getAllErrors().stream().map(objectError -> {
-			String msgCode = objectError.getDefaultMessage();
-			String errObj = objectError.getObjectName();
-			String msg = msgCode;
-			try {
-				msg = msgSource.getMessage(msgCode, null, LOCALE);
-			} catch (NoSuchMessageException ignored) {
-			}
-			return UserValidationEntryRepresentation.builder().attribute(errObj).errorMessage(msg).build();
-		}).collect(collectingAndThen(toList(), ImmutableList::copyOf));
+		ImmutableList<UserValidationEntryRepresentation> errors = exception.getBindingResult().getAllErrors().stream()
+				.map(objectError -> getUserValidationEntryRepresentation(objectError.getDefaultMessage(), objectError.getObjectName()))
+				.collect(collectingAndThen(toList(), ImmutableList::copyOf));
 
 		return UserValidationRepresentation.builder().errors(errors).build();
+	}
+
+	private UserValidationEntryRepresentation getUserValidationEntryRepresentation(String msgCode, String errObj) {
+		String msg = msgCode;
+		try {
+			msg = msgSource.getMessage(msgCode, null, LOCALE);
+		} catch (NoSuchMessageException ignored) {
+		}
+		return UserValidationEntryRepresentation.builder().attribute(errObj).errorMessage(msg).build();
 	}
 
 	@ExceptionHandler(InvalidUserException.class)
