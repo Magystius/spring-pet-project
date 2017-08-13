@@ -6,6 +6,7 @@ notifications:
 after_success:
 - mvn clean test jacoco:report coveralls:report
 deploy:
+  skip_cleanup: true
   provider: elasticbeanstalk
   access_key_id: AKIAJVLUHTOJOC3YX3IA
   secret_access_key:
@@ -14,8 +15,6 @@ deploy:
   app: spring-val-demo
   env: SpringValDemo-env
   bucket_name: spring-val-demo-bucket
-  zip_file: 'target/spring-val-demo-0.0.0.jar'
-  skip_cleanup: true
   on:
     repo: Magystius/spring-val-demo
     branch: master
