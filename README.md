@@ -23,8 +23,11 @@ _Response_ - `200`
       "lastName": "AWS",
       "age": 30,
       "vip": false,
-      "mail": "max.mustermann@otto.de",
-      "password": "somePassword"
+      "login": {
+        "id": 1,
+        "mail": "max.mustermann@otto.de",
+        "password": "somePassword"
+      }
     },
     {
       "id": 2,
@@ -32,8 +35,11 @@ _Response_ - `200`
       "lastName": "AWS2",
       "age": 30,
       "vip": false,
-      "mail": "max.mustermann@otto.de",
-      "password": "somePassword"
+      "login": {
+        "id": 2,
+        "mail": "max.mustermann@otto.de",
+        "password": "somePassword"
+      }
     },
     {
       "id": 3,
@@ -41,8 +47,11 @@ _Response_ - `200`
       "lastName": "Lavendel",
       "age": 30,
       "vip": false,
-      "mail": "max.mustermann@otto.de",
-      "password": "somePassword"
+      "login": {
+        "id": 3,
+        "mail": "max.mustermann@otto.de",
+        "password": "somePassword"
+      }
     }
   ]
 }
@@ -60,8 +69,11 @@ _Response_ - `200`
   "lastName": "AWS",
   "age": 30,
   "vip": false,
-  "mail": "max.mustermann@otto.de",
-  "password": "somePassword"
+  "login": {
+    "id": 1,
+    "mail": "max.mustermann@otto.de",
+    "password": "somePassword"
+  }
 }
 ````
 
@@ -77,8 +89,10 @@ _Body_
   "lastName": "AWS",
   "age": 30,
   "vip": false,
+  "login": {
   "mail": "max.mustermann@otto.de",
-  "password": "somePassword",
+  "password": "somePassword"
+  },
   "bio": "some text"
 }
 ````
@@ -91,29 +105,31 @@ curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X PUT
 _Body_
 ````json
 {
-  "id": 4,
   "firstName": "NEU",
   "secondName": "Joachim",
   "lastName": "AWS",
   "age": 30,
   "vip": false,
+  "login": {
   "mail": "max.mustermann@otto.de",
-  "password": "somePassword",
+  "password": "somePassword"
+  },
   "bio": "some text"
 }
 ````
 _Response_ `200`
 ````json
 {
-"id": 4,
-"firstName": "NEU",
-"secondName": "Joachim",
-"lastName": "AWS",
-"age": 30,
-"vip": false,
-"mail": "max.mustermann@otto.de",
-"password": "somePassword",
-"bio": "some text"
+  "firstName": "NEU",
+  "secondName": "Joachim",
+  "lastName": "AWS",
+  "age": 30,
+  "vip": false,
+  "login": {
+  "mail": "max.mustermann@otto.de",
+  "password": "somePassword"
+  },
+  "bio": "some text"
 }
 ````
 **DELETE**
@@ -143,11 +159,15 @@ _Response_ - `400`
     }
   ],
   "user": {
-    "firstName": "AWS",
+    "firstName": "NEU",
     "secondName": "Joachim",
     "lastName": "AWS",
+    "age": 30,
     "vip": false,
+    "login": {
     "mail": "max.mustermann@otto.de",
+    "password": "somePassword"
+    },
     "bio": "some text"
   }
 }

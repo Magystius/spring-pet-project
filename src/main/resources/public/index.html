@@ -37,8 +37,11 @@
       "lastName": "AWS",
       "age": 30,
       "vip": false,
-      "mail": "max.mustermann@otto.de",
-      "password": "somePassword"
+      "login": {
+        "id": 1,
+        "mail": "max.mustermann@otto.de",
+        "password": "somePassword"
+      }
     },
     {
       "id": 2,
@@ -46,8 +49,11 @@
       "lastName": "AWS2",
       "age": 30,
       "vip": false,
-      "mail": "max.mustermann@otto.de",
-      "password": "somePassword"
+      "login": {
+        "id": 2,
+        "mail": "max.mustermann@otto.de",
+        "password": "somePassword"
+      }
     },
     {
       "id": 3,
@@ -55,8 +61,11 @@
       "lastName": "Lavendel",
       "age": 30,
       "vip": false,
-      "mail": "max.mustermann@otto.de",
-      "password": "somePassword"
+      "login": {
+        "id": 3,
+        "mail": "max.mustermann@otto.de",
+        "password": "somePassword"
+      }
     }
   ]
 }
@@ -78,8 +87,11 @@
   "lastName": "AWS",
   "age": 30,
   "vip": false,
-  "mail": "max.mustermann@otto.de",
-  "password": "somePassword"
+  "login": {
+    "id": 1,
+    "mail": "max.mustermann@otto.de",
+    "password": "somePassword"
+  }
 }
 </code></pre>
 
@@ -99,8 +111,10 @@
   "lastName": "AWS",
   "age": 30,
   "vip": false,
+  "login": {
   "mail": "max.mustermann@otto.de",
-  "password": "somePassword",
+  "password": "somePassword"
+  },
   "bio": "some text"
 }
 </code></pre>
@@ -117,14 +131,15 @@
     <em>Body</em></p>
 
 <pre><code class="`json language-`json">{
-  "id": 4,
   "firstName": "NEU",
   "secondName": "Joachim",
   "lastName": "AWS",
   "age": 30,
   "vip": false,
+  "login": {
   "mail": "max.mustermann@otto.de",
-  "password": "somePassword",
+  "password": "somePassword"
+  },
   "bio": "some text"
 }
 </code></pre>
@@ -133,15 +148,16 @@
     _Response_</code>200`</p>
 
 <pre><code class="`json language-`json">{
-"id": 4,
-"firstName": "NEU",
-"secondName": "Joachim",
-"lastName": "AWS",
-"age": 30,
-"vip": false,
-"mail": "max.mustermann@otto.de",
-"password": "somePassword",
-"bio": "some text"
+  "firstName": "NEU",
+  "secondName": "Joachim",
+  "lastName": "AWS",
+  "age": 30,
+  "vip": false,
+  "login": {
+  "mail": "max.mustermann@otto.de",
+  "password": "somePassword"
+  },
+  "bio": "some text"
 }
 </code></pre>
 
@@ -176,11 +192,15 @@
     }
   ],
   "user": {
-    "firstName": "AWS",
+    "firstName": "NEU",
     "secondName": "Joachim",
     "lastName": "AWS",
+    "age": 30,
     "vip": false,
+    "login": {
     "mail": "max.mustermann@otto.de",
+    "password": "somePassword"
+    },
     "bio": "some text"
   }
 }
