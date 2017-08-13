@@ -3,6 +3,7 @@ package de.otto.prototype.controller.handlers;
 import com.google.common.collect.ImmutableList;
 import de.otto.prototype.controller.representation.UserValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.UserValidationRepresentation;
+import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -69,6 +70,14 @@ public class ControllerValidationHandler {
 		}).collect(collectingAndThen(toList(), ImmutableList::copyOf));
 
 		return UserValidationRepresentation.builder().errors(errors).build();
+	}
+
+	@ExceptionHandler(InvalidUserException.class)
+	@ResponseStatus(BAD_REQUEST)
+	@ResponseBody
+	public UserValidationRepresentation processValidationError(InvalidUserException exception) {
+		UserValidationEntryRepresentation error = UserValidationEntryRepresentation.builder().attribute(exception.getErrorCause()).errorMessage(exception.getErrorMsg()).build();
+		return UserValidationRepresentation.builder().error(error).build();
 	}
 
 	//TODO: remove this -> only here because unit test is broken...

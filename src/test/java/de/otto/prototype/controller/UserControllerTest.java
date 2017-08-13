@@ -7,6 +7,7 @@ import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import de.otto.prototype.controller.handlers.ControllerValidationHandler;
 import de.otto.prototype.controller.representation.UserValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.UserValidationRepresentation;
+import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.User;
 import de.otto.prototype.model.UserList;
@@ -104,7 +105,6 @@ public class UserControllerTest {
 	}
 
 	private static UserValidationRepresentation buildUVRep(List<UserValidationEntryRepresentation> errors) {
-		initMessageSource();
 		return UserValidationRepresentation.builder().errors(errors).build();
 	}
 
@@ -249,6 +249,27 @@ public class UserControllerTest {
 	}
 
 	@Test
+	public void shouldReturnBadRequestIfInvalidMailOnPut() throws Exception {
+		final User userToPersist = validMinimumUser.toBuilder().id(validUserId).mail("max.mustermann@web.de").build();
+		String errorMsg = "only mails by otto allowed";
+		String errorCause = "buasiness";
+		UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
+		when(userService.update(userToPersist)).thenThrow(new InvalidUserException(userToPersist, errorCause, errorMsg));
+
+		final MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
+				.contentType(APPLICATION_JSON_VALUE)
+				.content(GSON.toJson(userToPersist)))
+				.andDo(print())
+				.andExpect(status().isBadRequest())
+				.andReturn();
+
+		verify(userService, times(1)).update(userToPersist);
+		UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
+		assertThat(returnedErrors.getErrors().get(0), is(returnedError));
+		verifyNoMoreInteractions(userService);
+	}
+
+	@Test
 	public void shouldReturnBadRequestIfIdIsAlreadySetOnPost() throws Exception {
 		final User userToPersist = validMinimumUser.toBuilder().id(validUserId).build();
 
@@ -258,6 +279,27 @@ public class UserControllerTest {
 				.andDo(print())
 				.andExpect(status().isBadRequest());
 
+		verifyNoMoreInteractions(userService);
+	}
+
+	@Test
+	public void shouldReturnBadRequestIfInvalidMailOnPost() throws Exception {
+		final User userToPersist = validMinimumUser.toBuilder().mail("max.mustermann@web.de").build();
+		String errorMsg = "only mails by otto allowed";
+		String errorCause = "buasiness";
+		UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
+		when(userService.create(userToPersist)).thenThrow(new InvalidUserException(userToPersist, errorCause, errorMsg));
+
+		final MvcResult result = mvc.perform(post(URL_USER)
+				.contentType(APPLICATION_JSON_VALUE)
+				.content(GSON.toJson(userToPersist)))
+				.andDo(print())
+				.andExpect(status().isBadRequest())
+				.andReturn();
+
+		verify(userService, times(1)).create(userToPersist);
+		UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
+		assertThat(returnedErrors.getErrors().get(0), is(returnedError));
 		verifyNoMoreInteractions(userService);
 	}
 
