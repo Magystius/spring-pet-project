@@ -1,20 +1,17 @@
 package de.otto.prototype.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import de.otto.prototype.validation.SecurePassword;
 import lombok.*;
-import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.SafeHtml;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
+import javax.validation.Valid;
 import javax.validation.constraints.*;
 import javax.validation.groups.Default;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
+import static javax.persistence.CascadeType.ALL;
 import static org.hibernate.validator.constraints.SafeHtml.WhiteListType.NONE;
 
 @Entity
@@ -45,12 +42,11 @@ public class User {
 	private int age;
 
 	private boolean vip;
-	@NotEmpty(message = "error.mail.empty")
-	@Email(message = "error.mail.invalid")
-	private String mail;
-	@NotEmpty(message = "error.password.empty")
-	@SecurePassword(pattern = ".*")
-	private String password;
+
+	@Valid
+	@OneToOne(cascade = ALL)
+	@JoinColumn(name = "login_id")
+	private Login login;
 
 	@SafeHtml(whitelistType = NONE, message = "error.bio.invalid")
 	private String bio;

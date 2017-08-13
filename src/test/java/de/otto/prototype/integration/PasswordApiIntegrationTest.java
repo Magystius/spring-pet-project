@@ -4,6 +4,7 @@ package de.otto.prototype.integration;
 import com.google.gson.Gson;
 import de.otto.prototype.controller.representation.UserValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.UserValidationRepresentation;
+import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
 import org.junit.Before;
@@ -61,9 +62,10 @@ public class PasswordApiIntegrationTest {
 
 	@Test
 	public void shouldReturnUpdatedUserOnPost() throws Exception {
-		final User persistedUser = userRepository.save(User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build());
+		final Login login = Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
+		final User persistedUser = userRepository.save(User.builder().lastName("Mustermann").firstName("Max").age(30).login(login).build());
 		final String newPassword = "anotherPassword";
-		final User updatedUser = persistedUser.toBuilder().password(newPassword).build();
+		final User updatedUser = persistedUser.toBuilder().login(login.toBuilder().password(newPassword).build()).build();
 
 		final ResponseEntity<String> response = template.postForEntity(base.toString() + "?userId=" + persistedUser.getId(), newPassword,
 				String.class);

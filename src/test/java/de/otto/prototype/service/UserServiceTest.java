@@ -2,6 +2,7 @@ package de.otto.prototype.service;
 
 import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
+import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
 import org.hibernate.validator.HibernateValidator;
@@ -14,7 +15,6 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -28,15 +28,21 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class UserServiceTest {
 
-	private static final User validMinimumUser =
-			User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
-
 	private static final Long validUserId = 1234L;
+
+	private static final Long validLoginId = 4321L;
+
+	private static final Login validLogin =
+			Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
+	private static final Login validLoginWithId =
+			Login.builder().id(validLoginId).mail("max.mustermann@otto.de").password("somePassword").build();
+	private static final User validMinimumUser =
+			User.builder().lastName("Mustermann").firstName("Max").age(30).login(validLogin).build();
+	private static final User validMinimumUserWithId =
+			User.builder().id(validUserId).lastName("Mustermann").firstName("Max").age(30).login(validLoginWithId).build();
 
 	@Mock
 	private UserRepository userRepository;
-
-	private Validator validator;
 
 	private UserService testee;
 
@@ -45,9 +51,8 @@ public class UserServiceTest {
 		LocalValidatorFactoryBean validatorFactory = new LocalValidatorFactoryBean();
 		validatorFactory.setProviderClass(HibernateValidator.class);
 		validatorFactory.afterPropertiesSet();
-		validator = validatorFactory;
 
-		testee = new UserService(userRepository, validator);
+		testee = new UserService(userRepository, validatorFactory);
 	}
 
 	@Test
@@ -127,7 +132,7 @@ public class UserServiceTest {
 
 	@Test(expected = InvalidUserException.class)
 	public void shouldThrowInvalidUserExceptionOnNewUserWithWrongMail() {
-		User invalidUserToCreate = validMinimumUser.toBuilder().mail("max.mustermann@web.de").build();
+		User invalidUserToCreate = validMinimumUser.toBuilder().login(validLogin.toBuilder().mail("max.mustermann@web.de").build()).build();
 
 		try {
 			testee.create(invalidUserToCreate);
@@ -142,8 +147,8 @@ public class UserServiceTest {
 
 	@Test
 	public void shouldReturnUpdatedUser() throws Exception {
-		final User updatedUser = validMinimumUser.toBuilder().id(validUserId).lastName("Neumann").build();
-		when(userRepository.findOne(validUserId)).thenReturn(validMinimumUser);
+		final User updatedUser = validMinimumUserWithId.toBuilder().lastName("Neumann").build();
+		when(userRepository.findOne(validUserId)).thenReturn(validMinimumUserWithId);
 		when(userRepository.save(updatedUser)).thenReturn(updatedUser);
 
 		final User persistedUser = testee.update(updatedUser);
@@ -157,7 +162,7 @@ public class UserServiceTest {
 
 	@Test(expected = ConstraintViolationException.class)
 	public void shouldThrowConstraintViolationExceptionIfInvalidExistingUser() {
-		User invalidUserToUpdate = validMinimumUser.toBuilder().id(validUserId).firstName("a").build();
+		User invalidUserToUpdate = validMinimumUserWithId.toBuilder().firstName("a").build();
 		when(userRepository.findOne(validUserId)).thenReturn(invalidUserToUpdate);
 
 		try {
@@ -171,7 +176,7 @@ public class UserServiceTest {
 
 	@Test(expected = InvalidUserException.class)
 	public void shouldThrowInvalidUserExceptionOnExistingUserWithWrongMail() {
-		User invalidUserToUpdate = validMinimumUser.toBuilder().id(validUserId).mail("max.mustermann@web.de").build();
+		User invalidUserToUpdate = validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().mail("max.mustermann@web.de").build()).build();
 		when(userRepository.findOne(validUserId)).thenReturn(invalidUserToUpdate);
 
 		try {

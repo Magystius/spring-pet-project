@@ -2,6 +2,7 @@ package de.otto.prototype.service;
 
 import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
+import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,13 +29,13 @@ public class PasswordServiceTest {
     public void shouldReturnUpdatedUser() throws Exception {
         final long userId = 1234L;
         final String password = "somePassword";
-        final User userToUpdate = User.builder().id(userId).lastName("Mustermann").build();
-        final User updatedUser = User.builder().id(userId).lastName("Mustermann").password(password).build();
+        final User userToUpdate = User.builder().id(userId).lastName("Mustermann").login(Login.builder().build()).build();
+        final User updatedUser = User.builder().id(userId).lastName("Mustermann").login(Login.builder().password(password).build()).build();
         when(userService.findOne(userId)).thenReturn(of(userToUpdate));
         when(userService.update(updatedUser)).thenReturn(updatedUser);
 
         final User persistedUser = testee.update(userId, password);
-        assertThat(persistedUser.getPassword(), is(password));
+        assertThat(persistedUser.getLogin().getPassword(), is(password));
         assertThat(persistedUser.getId(), is(userId));
         verify(userService, times(1)).findOne(userId);
         verify(userService, times(1)).update(updatedUser);

@@ -4,6 +4,7 @@ package de.otto.prototype.integration;
 import com.google.gson.Gson;
 import de.otto.prototype.controller.representation.UserValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.UserValidationRepresentation;
+import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.model.UserList;
 import de.otto.prototype.repository.UserRepository;
@@ -39,6 +40,9 @@ public class UserApiIntegrationTest {
 
     private static final Locale LOCALE = LocaleContextHolder.getLocale();
 
+    private static final Login.LoginBuilder login = Login.builder().mail("max.mustermann@otto.de").password("somePassword");
+    private static final User.UserBuilder user = User.builder().lastName("Mustermann").firstName("Max").age(30);
+
     @LocalServerPort
     private int port;
 
@@ -68,10 +72,8 @@ public class UserApiIntegrationTest {
 
     @Test
     public void shouldReturnListOfUsersOnGetAll() throws Exception {
-        final User persistedUser1 = User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
-        userRepository.save(persistedUser1);
-        final User persistedUser2 = User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
-        userRepository.save(persistedUser2);
+        User persistedUser1 = userRepository.save(user.login(login.build()).build());
+        User persistedUser2 = userRepository.save(user.login(login.build()).build());
 
         final UserList listOfUsers = UserList.builder().user(persistedUser1).user(persistedUser2).build();
         final ResponseEntity<String> response = template.getForEntity(base.toString(),
@@ -83,7 +85,7 @@ public class UserApiIntegrationTest {
 
     @Test
     public void shouldReturnAUserOnGet() throws Exception {
-        final User persistedUser = userRepository.save(User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build());
+        final User persistedUser = userRepository.save(user.login(login.build()).build());
 
         final ResponseEntity<String> response = template.getForEntity(base.toString() + "/" + persistedUser.getId(),
                 String.class);
@@ -94,9 +96,7 @@ public class UserApiIntegrationTest {
 
     @Test
     public void shouldCreateAUserOnPost() throws Exception {
-        final User userToPersist = User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
-
-        final ResponseEntity<String> response = template.postForEntity(base.toString(), userToPersist, String.class);
+        final ResponseEntity<String> response = template.postForEntity(base.toString(), user.login(login.build()).build(), String.class);
 
         assertThat(response.getStatusCode(), is(CREATED));
         assertThat(response.getHeaders().get("Location").get(0).contains("/user/"), is(true));
@@ -104,7 +104,7 @@ public class UserApiIntegrationTest {
 
     @Test
     public void shouldUpdateAUserOnPut() throws Exception {
-        final User userToUpdate = User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
+        final User userToUpdate = userRepository.save(user.login(login.build()).build());
         final Long persistedId = userRepository.save(userToUpdate).getId();
         final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
 
@@ -116,7 +116,7 @@ public class UserApiIntegrationTest {
 
     @Test
     public void shouldDeleteUserOnDelete() throws Exception {
-        final User userToPersist = User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
+        final User userToPersist = userRepository.save(user.login(login.build()).build());
         final User persistedUser = userRepository.save(userToPersist);
 
         final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(), DELETE, null, String.class);
@@ -138,7 +138,7 @@ public class UserApiIntegrationTest {
 
     @Test
     public void shouldReturnBadRequestIfInvalidIdOnPut() throws Exception {
-        final User userToUpdate = User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
+        final User userToUpdate = userRepository.save(user.login(login.build()).build());
         final Long persistedId = userRepository.save(userToUpdate).getId();
         final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
         final ResponseEntity<String> response = template.exchange(base.toString() + "/0", PUT, new HttpEntity<>(updatedUser), String.class);

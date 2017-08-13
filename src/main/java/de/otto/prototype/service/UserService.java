@@ -60,7 +60,7 @@ public class UserService {
 		if (!errors.isEmpty())
 			throw new ConstraintViolationException(errors);
 
-		if (!user.getMail().endsWith("@otto.de"))
+		if (!user.getLogin().getMail().endsWith("@otto.de"))
 			throw new InvalidUserException(user, "business", "only mails by otto allowed");
 	}
 }

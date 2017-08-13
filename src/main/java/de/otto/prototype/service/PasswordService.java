@@ -1,6 +1,7 @@
 package de.otto.prototype.service;
 
 import de.otto.prototype.exceptions.NotFoundException;
+import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,8 @@ public class PasswordService {
             throw new NotFoundException("user not found");
         }
 
-        final User updatedUser = userToUpdate.get().toBuilder().password(password).build();
+        Login login = userToUpdate.get().getLogin().toBuilder().password(password).build();
+        final User updatedUser = userToUpdate.get().toBuilder().login(login).build();
         return userService.update(updatedUser);
     }
 }

@@ -2,6 +2,7 @@ package de.otto.prototype.controller;
 
 import com.google.gson.Gson;
 import de.otto.prototype.exceptions.NotFoundException;
+import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.service.PasswordService;
 import org.junit.Before;
@@ -47,7 +48,7 @@ public class PasswordControllerTest {
     public void shouldUpdatePasswordOnPost() throws Exception {
         final long id = 1234L;
         final String password = "somePassword";
-        final User updatedUser = User.builder().id(id).firstName("Max").lastName("Mustermann").password(password).build();
+        final User updatedUser = User.builder().id(id).firstName("Max").lastName("Mustermann").login(Login.builder().password(password).build()).build();
         when(passwordService.update(id, password)).thenReturn(updatedUser);
 
         mvc.perform(post(URL_PASSWORD + "?userId=" + id)

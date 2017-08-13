@@ -9,6 +9,7 @@ import de.otto.prototype.controller.representation.UserValidationEntryRepresenta
 import de.otto.prototype.controller.representation.UserValidationRepresentation;
 import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
+import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.model.UserList;
 import de.otto.prototype.service.UserService;
@@ -53,10 +54,18 @@ public class UserControllerTest {
 
 	private static final Locale LOCALE = LocaleContextHolder.getLocale();
 
-	private static final User validMinimumUser =
-			User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build();
-
 	private static final Long validUserId = 1234L;
+
+	private static final Long validLoginId = 4321L;
+
+	private static final Login validLogin =
+			Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
+	private static final Login validLoginWithId =
+			Login.builder().id(validLoginId).mail("max.mustermann@otto.de").password("somePassword").build();
+	private static final User validMinimumUser =
+			User.builder().lastName("Mustermann").firstName("Max").age(30).login(validLogin).build();
+	private static final User validMinimumUserWithId =
+			User.builder().id(validUserId).lastName("Mustermann").firstName("Max").age(30).login(validLoginWithId).build();
 
 	private static MessageSource messageSource;
 
@@ -75,8 +84,8 @@ public class UserControllerTest {
 				{validMinimumUser.toBuilder().lastName("").build(), buildUVRep(of(buildUVERep("error.name.empty"), buildUVERep("error.name.range")))},
 				{validMinimumUser.toBuilder().age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))},
 				{validMinimumUser.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))},
-				{validMinimumUser.toBuilder().mail("notamail").build(), buildUVRep(of(buildUVERep("error.mail.invalid")))},
-				{validMinimumUser.toBuilder().password("").build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))},
+				{validMinimumUser.toBuilder().login(validLogin.toBuilder().mail("keineMail").build()).build(), buildUVRep(of(buildUVERep("error.mail.invalid")))},
+				{validMinimumUser.toBuilder().login(validLogin.toBuilder().password("").build()).build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))},
 				{validMinimumUser.toBuilder().bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))}
 		};
 	}
@@ -84,17 +93,17 @@ public class UserControllerTest {
 	@DataProvider
 	public static Object[][] invalidExistingUserProvider() {
 		return new Object[][]{
-				{validMinimumUser.toBuilder().build(), buildUVRep(of((buildUVERep("error.id.existing"))))},
-				{validMinimumUser.toBuilder().id(validUserId).firstName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUser.toBuilder().id(validUserId).firstName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))},
-				{validMinimumUser.toBuilder().id(validUserId).secondName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUser.toBuilder().id(validUserId).lastName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUser.toBuilder().id(validUserId).lastName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))},
-				{validMinimumUser.toBuilder().id(validUserId).age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))},
-				{validMinimumUser.toBuilder().id(validUserId).age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))},
-				{validMinimumUser.toBuilder().id(validUserId).mail("notamail").build(), buildUVRep(of(buildUVERep("error.mail.invalid")))},
-				{validMinimumUser.toBuilder().id(validUserId).password("").build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))},
-				{validMinimumUser.toBuilder().id(validUserId).bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))}
+				{validMinimumUserWithId.toBuilder().id(null).build(), buildUVRep(of((buildUVERep("error.id.existing"))))},
+				{validMinimumUserWithId.toBuilder().firstName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
+				{validMinimumUserWithId.toBuilder().firstName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))},
+				{validMinimumUserWithId.toBuilder().secondName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
+				{validMinimumUserWithId.toBuilder().lastName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
+				{validMinimumUserWithId.toBuilder().lastName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))},
+				{validMinimumUserWithId.toBuilder().age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))},
+				{validMinimumUserWithId.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))},
+				{validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().mail("keineMail").build()).build(), buildUVRep(of(buildUVERep("error.mail.invalid")))},
+				{validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().password("").build()).build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))},
+				{validMinimumUserWithId.toBuilder().bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))}
 		};
 	}
 
@@ -203,7 +212,7 @@ public class UserControllerTest {
 
 	@Test
 	public void shouldUpdateUserOnPut() throws Exception {
-		final User updatedUser = validMinimumUser.toBuilder().id(validUserId).build();
+		final User updatedUser = validMinimumUserWithId.toBuilder().build();
 		when(userService.update(updatedUser)).thenReturn(updatedUser);
 
 		mvc.perform(put(URL_USER + "/" + validUserId)
@@ -219,7 +228,7 @@ public class UserControllerTest {
 
 	@Test
 	public void shouldReturnNotFoundIfIDsDifferOnPut() throws Exception {
-		final User updatedUser = validMinimumUser.toBuilder().id(validUserId).build();
+		final User updatedUser = validMinimumUserWithId.toBuilder().build();
 
 		Long differentId = 9999L;
 		mvc.perform(put(URL_USER + "/" + differentId)
@@ -234,7 +243,7 @@ public class UserControllerTest {
 
 	@Test
 	public void shouldReturNotFoundIfIdNotFoundOnPut() throws Exception {
-		final User updatedUser = validMinimumUser.toBuilder().id(validUserId).build();
+		final User updatedUser = validMinimumUserWithId.toBuilder().build();
 		when(userService.update(updatedUser)).thenThrow(new NotFoundException("id not found"));
 
 		mvc.perform(put(URL_USER + "/" + validUserId)
@@ -250,7 +259,7 @@ public class UserControllerTest {
 
 	@Test
 	public void shouldReturnBadRequestIfInvalidMailOnPut() throws Exception {
-		final User userToPersist = validMinimumUser.toBuilder().id(validUserId).mail("max.mustermann@web.de").build();
+		final User userToPersist = validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().mail("max.mustermann@web.de").build()).build();
 		String errorMsg = "only mails by otto allowed";
 		String errorCause = "buasiness";
 		UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
@@ -284,7 +293,7 @@ public class UserControllerTest {
 
 	@Test
 	public void shouldReturnBadRequestIfInvalidMailOnPost() throws Exception {
-		final User userToPersist = validMinimumUser.toBuilder().mail("max.mustermann@web.de").build();
+		final User userToPersist = validMinimumUser.toBuilder().login(validLogin.toBuilder().mail("max.mustermann@web.de").build()).build();
 		String errorMsg = "only mails by otto allowed";
 		String errorCause = "buasiness";
 		UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
