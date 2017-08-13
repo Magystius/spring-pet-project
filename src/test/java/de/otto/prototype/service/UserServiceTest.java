@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
+import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 import java.util.List;
@@ -114,9 +115,29 @@ public class UserServiceTest {
 
 	@Test(expected = ConstraintViolationException.class)
 	public void shouldThrowConstraintViolationExceptionIfInvalidNewUser() {
-		testee.create(validMinimumUser.toBuilder().firstName("a").build());
+		try {
+			testee.create(validMinimumUser.toBuilder().firstName("a").build());
+		} catch (ConstraintViolationException e) {
+			String msgCode = e.getConstraintViolations().stream().map(ConstraintViolation::getMessage).findFirst().orElse("");
+			assertThat(msgCode, is("error.name.range"));
+			verifyNoMoreInteractions(userRepository);
+			throw e;
+		}
+	}
 
-		verifyNoMoreInteractions(userRepository);
+	@Test(expected = InvalidUserException.class)
+	public void shouldThrowInvalidUserExceptionOnNewUserWithWrongMail() {
+		User invalidUserToCreate = validMinimumUser.toBuilder().mail("max.mustermann@web.de").build();
+
+		try {
+			testee.create(invalidUserToCreate);
+		} catch (InvalidUserException e) {
+			assertThat(e.getUser(), is(invalidUserToCreate));
+			assertThat(e.getErrorMsg(), is("only mails by otto allowed"));
+			assertThat(e.getErrorCause(), is("business"));
+			verifyNoMoreInteractions(userRepository);
+			throw e;
+		}
 	}
 
 	@Test
@@ -139,9 +160,28 @@ public class UserServiceTest {
 		User invalidUserToUpdate = validMinimumUser.toBuilder().id(validUserId).firstName("a").build();
 		when(userRepository.findOne(validUserId)).thenReturn(invalidUserToUpdate);
 
-		testee.update(invalidUserToUpdate);
+		try {
+			testee.update(invalidUserToUpdate);
+		} catch (ConstraintViolationException e) {
+			String msgCode = e.getConstraintViolations().stream().map(ConstraintViolation::getMessage).findFirst().orElse("");
+			assertThat(msgCode, is("error.name.range"));
+			throw e;
+		}
+	}
 
-		verifyNoMoreInteractions(userRepository);
+	@Test(expected = InvalidUserException.class)
+	public void shouldThrowInvalidUserExceptionOnExistingUserWithWrongMail() {
+		User invalidUserToUpdate = validMinimumUser.toBuilder().id(validUserId).mail("max.mustermann@web.de").build();
+		when(userRepository.findOne(validUserId)).thenReturn(invalidUserToUpdate);
+
+		try {
+			testee.update(invalidUserToUpdate);
+		} catch (InvalidUserException e) {
+			assertThat(e.getUser(), is(invalidUserToUpdate));
+			assertThat(e.getErrorMsg(), is("only mails by otto allowed"));
+			assertThat(e.getErrorCause(), is("business"));
+			throw e;
+		}
 	}
 
 	@Test(expected = NotFoundException.class)

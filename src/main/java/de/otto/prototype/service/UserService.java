@@ -1,5 +1,6 @@
 package de.otto.prototype.service;
 
+import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
@@ -58,5 +59,8 @@ public class UserService {
 		Set<ConstraintViolation<User>> errors = validator.validate(user, group);
 		if (!errors.isEmpty())
 			throw new ConstraintViolationException(errors);
+
+		if (!user.getMail().endsWith("@otto.de"))
+			throw new InvalidUserException(user, "business", "only mails by otto allowed");
 	}
 }
