@@ -65,7 +65,7 @@ public class PasswordApiIntegrationTest {
 		final String newPassword = "anotherPassword";
 		final User updatedUser = persistedUser.toBuilder().password(newPassword).build();
 
-		final ResponseEntity<String> response = template.postForEntity(base.toString() + "?id=" + persistedUser.getId(), newPassword,
+		final ResponseEntity<String> response = template.postForEntity(base.toString() + "?userId=" + persistedUser.getId(), newPassword,
 				String.class);
 
 		assertThat(response.getStatusCode(), is(OK));
@@ -74,11 +74,35 @@ public class PasswordApiIntegrationTest {
 
 	@Test
 	public void shouldReturnBadRequestIfPasswordIsUnsecureOnPost() throws Exception {
-		final ResponseEntity<String> response = template.postForEntity(base.toString() + "?id=1234", "unsec",
+		final ResponseEntity<String> response = template.postForEntity(base.toString() + "?userId=1234", "unsec",
 				String.class);
 
 		String errorMessage = messageSource.getMessage("error.password", null, LOCALE);
 		UserValidationEntryRepresentation errorEntry = UserValidationEntryRepresentation.builder().attribute("updateUserPassword.password").errorMessage(errorMessage).build();
+		UserValidationRepresentation returnedErrors = UserValidationRepresentation.builder().error(errorEntry).build();
+		assertThat(response.getStatusCode(), is(BAD_REQUEST));
+		assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
+	}
+
+	@Test
+	public void shouldReturnBadRequestIfInvalidIdOnPost() throws Exception {
+		final ResponseEntity<String> response = template.postForEntity(base.toString() + "?userId=0", "securePassword",
+				String.class);
+
+		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
+		UserValidationEntryRepresentation errorEntry = UserValidationEntryRepresentation.builder().attribute("updateUserPassword.id").errorMessage(errorMessage).build();
+		UserValidationRepresentation returnedErrors = UserValidationRepresentation.builder().error(errorEntry).build();
+		assertThat(response.getStatusCode(), is(BAD_REQUEST));
+		assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
+	}
+
+	@Test
+	public void shouldReturnBadRequestIfEmptyIdOnPost() throws Exception {
+		final ResponseEntity<String> response = template.postForEntity(base.toString() + "?userId=", "securePassword",
+				String.class);
+
+		String errorMessage = messageSource.getMessage("error.id.empty", null, LOCALE);
+		UserValidationEntryRepresentation errorEntry = UserValidationEntryRepresentation.builder().attribute("updateUserPassword.id").errorMessage(errorMessage).build();
 		UserValidationRepresentation returnedErrors = UserValidationRepresentation.builder().error(errorEntry).build();
 		assertThat(response.getStatusCode(), is(BAD_REQUEST));
 		assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));

@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+
 import static de.otto.prototype.controller.PasswordController.URL_PASSWORD;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
@@ -32,9 +35,9 @@ public class PasswordController {
 	}
 
 	@RequestMapping(method = POST, consumes = TEXT_PLAIN_VALUE, produces = APPLICATION_JSON_VALUE)
-	public ResponseEntity<User> updateUserPassword(final @RequestParam("id") String id,
+	public ResponseEntity<User> updateUserPassword(final @NotNull(message = "error.id.empty") @Min(value = 1, message = "error.id.invalid") @RequestParam("userId") Long id,
 												   final @SecurePassword(pattern = ".*") @RequestBody() String password) {
-		final User updatedUser = passwordService.update(Long.parseLong(id), password);
+		final User updatedUser = passwordService.update(id, password);
 		return ok(updatedUser);
 	}
 

@@ -17,43 +17,43 @@ import java.util.stream.Stream;
 @Service
 public class UserService {
 
-    private UserRepository userRepository;
+	private UserRepository userRepository;
 
 	private Validator validator;
 
-    @Autowired
+	@Autowired
 	public UserService(UserRepository userRepository, Validator validator) {
 		this.userRepository = userRepository;
 		this.validator = validator;
 	}
 
-    public Stream<User> findAll() {
-        return userRepository.streamAll();
-    }
+	public Stream<User> findAll() {
+		return userRepository.streamAll();
+	}
 
-    public Optional<User> findOne(final Long userId) {
-        return Optional.ofNullable(userRepository.findOne(userId));
-    }
+	public Optional<User> findOne(final Long userId) {
+		return Optional.ofNullable(userRepository.findOne(userId));
+	}
 
-    public User create(final User user) {
+	public User create(final User user) {
 		validateUser(user, User.New.class);
 		return userRepository.save(user);
-    }
+	}
 
-    public User update(final User user) {
-        if (userRepository.findOne(user.getId()) == null) {
-            throw new NotFoundException("user not found");
-        }
+	public User update(final User user) {
+		if (userRepository.findOne(user.getId()) == null) {
+			throw new NotFoundException("user not found");
+		}
 		validateUser(user, User.Existing.class);
 		return userRepository.save(user);
-    }
+	}
 
-    public void delete(final Long userId) {
-        if (userRepository.findOne(userId) == null) {
-            throw new NotFoundException("user id not found");
-        }
-        userRepository.delete(userId);
-    }
+	public void delete(final Long userId) {
+		if (userRepository.findOne(userId) == null) {
+			throw new NotFoundException("user id not found");
+		}
+		userRepository.delete(userId);
+	}
 
 	private void validateUser(User user, Class group) {
 		Set<ConstraintViolation<User>> errors = validator.validate(user, group);

@@ -50,7 +50,7 @@ public class PasswordControllerTest {
         final User updatedUser = User.builder().id(id).firstName("Max").lastName("Mustermann").password(password).build();
         when(passwordService.update(id, password)).thenReturn(updatedUser);
 
-        mvc.perform(post(URL_PASSWORD + "?id=" + id)
+        mvc.perform(post(URL_PASSWORD + "?userId=" + id)
                 .contentType(TEXT_PLAIN_VALUE)
                 .accept(APPLICATION_JSON_VALUE)
                 .content(password))
@@ -64,11 +64,11 @@ public class PasswordControllerTest {
 
     @Test
     public void shouldReturnNotFoundIfUnknownId() throws Exception {
-        final long id = 1234L;
+        final Long id = 1234L;
         final String password = "somePassword";
         when(passwordService.update(id, password)).thenThrow(new NotFoundException("id not found"));
 
-        mvc.perform(post(URL_PASSWORD + "?id=" + id)
+        mvc.perform(post(URL_PASSWORD + "?userId=" + id)
                 .contentType(TEXT_PLAIN_VALUE)
                 .accept(APPLICATION_JSON_VALUE)
                 .content(password))
