@@ -28,7 +28,7 @@ public class App {
 		return args -> {
 			log.info("-------------------------------");
 			log.info("Save some users");
-			userRepository.save(User.builder().lastName("Mustermann").firstName("Max").age(30).mail("max.mustermann@otto.de").password("somePassword").build());
+			userRepository.save(User.builder().lastName("AWS").firstName("AWS").age(30).mail("max.mustermann@otto.de").password("somePassword").build());
 			userRepository.save(User.builder().lastName("Musterfrau").firstName("Sabine").age(30).mail("max.mustermann@otto.de").password("somePassword").build());
 			userRepository.save(User.builder().lastName("Lavendel").firstName("Lara").age(30).mail("max.mustermann@otto.de").password("somePassword").build());
 			log.info("successfully saved some users");
