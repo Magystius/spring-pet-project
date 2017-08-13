@@ -6,8 +6,9 @@
     1. Standard JSR-303 Annotationen
     2. Eigene Annotatione inkl. Validatoren
     3. Annotation-driven Validation 
-    4. Programmatischer Aufruf via @Autowired Validator
-    5. Eigene @Validated Annotation mit zusätzlichen Features
+    4. Multi-Level Validation möglioh
+    5. Programmatischer Aufruf via @Autowired Validator
+    6. Eigene @Validated Annotation mit zusätzlichen Features
 - @SafeHtml benötigt jsoup-lib (keine peer-dependency?)
 - @Validated groups -> keine Nutzung über @Valid
 - Exception Handling:
@@ -15,6 +16,7 @@
     2. @Validated (Methodenebene) und @Valid -> MethodArgumentNotValidException
     3. Unterschiedlicher Aufbau der Exceptions, aber aus beiden lassen die Objekte auslesen
 - @Valid klappt eher suboptimal (partielle Arbeitsverweigerung)?
+- @Valid wird aber für embedded Objects bebraucht, da @Validated nicht für Fields möglich ist
 - @Valid wird von Spring nicht bei @RequestParam und @PathVariable berücksichtigt
 - Validation benötigt zumindest teilweise einen SpringContext != Unit Tests?
 - Apropo Tests... 
