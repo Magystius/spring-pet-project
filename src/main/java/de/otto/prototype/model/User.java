@@ -10,10 +10,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.*;
+import javax.validation.groups.Default;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
@@ -27,26 +25,34 @@ public class User {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
+	@NotNull(groups = Existing.class, message = "error.id.existing")
+	@Null(groups = New.class, message = "error.id.new")
 	private Long id;
 
-	@NotEmpty
-	@Size(min = 3, max = 30)
+	@NotEmpty(message = "error.name.empty")
+	@Size(min = 3, max = 30, message = "error.name.range")
 	private String firstName;
-	@Size(min = 3, max = 30)
+	@Size(min = 3, max = 30, message = "error.name.range")
 	private String secondName;
-	@NotEmpty
-	@Size(min = 3, max = 30)
+	@NotEmpty(message = "error.name.empty")
+	@Size(min = 3, max = 30, message = "error.name.range")
 	private String lastName;
-	@NotNull
-	@Min(18)
-	@Max(150)
+	@NotNull(message = "error.age.empty")
+	@Min(value = 18, message = "error.age.young")
+	@Max(value = 150, message = "error.age.old")
 	private int age;
 
 	private boolean vip;
-	@NotEmpty
+	@NotEmpty(message = "error.mail")
 	@Email
 	private String mail;
-	@NotEmpty
+	@NotEmpty(message = "error.password.empty")
 	@SecurePassword(pattern = ".*")
 	private String password;
+
+	public interface Existing extends Default {
+	}
+
+	public interface New extends Default {
+	}
 }
