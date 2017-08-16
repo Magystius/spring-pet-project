@@ -10,17 +10,13 @@ import de.otto.prototype.model.UserList;
 import de.otto.prototype.repository.UserRepository;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.embedded.LocalServerPort;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.net.URL;
 import java.util.Locale;
@@ -28,13 +24,11 @@ import java.util.Locale;
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.springframework.http.HttpMethod.DELETE;
-import static org.springframework.http.HttpMethod.PUT;
+import static org.springframework.http.HttpMethod.*;
 import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class UserApiIntegrationTest {
+public class UserApiIntegrationTest extends AbstractIntegrationTest {
 
     private static final Gson GSON = new Gson();
 
@@ -42,11 +36,6 @@ public class UserApiIntegrationTest {
 
     private static final Login.LoginBuilder login = Login.builder().mail("max.mustermann@otto.de").password("somePassword");
     private static final User.UserBuilder user = User.builder().lastName("Mustermann").firstName("Max").age(30);
-
-    @LocalServerPort
-    private int port;
-
-    private URL base;
 
     private MessageSource messageSource;
 
@@ -76,7 +65,9 @@ public class UserApiIntegrationTest {
         User persistedUser2 = userRepository.save(user.login(login.build()).build());
 
         final UserList listOfUsers = UserList.builder().user(persistedUser1).user(persistedUser2).build();
-        final ResponseEntity<String> response = template.getForEntity(base.toString(),
+        final ResponseEntity<String> response = template.exchange(base.toString(),
+                GET,
+                new HttpEntity<>(prepareHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                 String.class);
 
         assertThat(response.getStatusCode(), is(OK));
@@ -87,7 +78,9 @@ public class UserApiIntegrationTest {
     public void shouldReturnAUserOnGet() throws Exception {
         final User persistedUser = userRepository.save(user.login(login.build()).build());
 
-        final ResponseEntity<String> response = template.getForEntity(base.toString() + "/" + persistedUser.getId(),
+        final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
+                GET,
+                new HttpEntity<>(prepareHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                 String.class);
 
         assertThat(response.getStatusCode(), is(OK));
@@ -96,7 +89,11 @@ public class UserApiIntegrationTest {
 
     @Test
     public void shouldCreateAUserOnPost() throws Exception {
-        final ResponseEntity<String> response = template.postForEntity(base.toString(), user.login(login.build()).build(), String.class);
+        final ResponseEntity<String> response = template.exchange(base.toString(),
+                POST,
+                new HttpEntity<>(user.login(login.build()).build(),
+                        prepareHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                String.class);
 
         assertThat(response.getStatusCode(), is(CREATED));
         assertThat(response.getHeaders().get("Location").get(0).contains("/user/"), is(true));
@@ -108,7 +105,11 @@ public class UserApiIntegrationTest {
         final Long persistedId = userRepository.save(userToUpdate).getId();
         final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
 
-        final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId, PUT, new HttpEntity<>(updatedUser), String.class);
+        final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
+                PUT,
+                new HttpEntity<>(updatedUser,
+                        prepareHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                String.class);
 
         assertThat(response.getStatusCode(), is(OK));
         assertThat(response.getBody(), is(GSON.toJson(updatedUser)));
@@ -119,14 +120,19 @@ public class UserApiIntegrationTest {
         final User userToPersist = userRepository.save(user.login(login.build()).build());
         final User persistedUser = userRepository.save(userToPersist);
 
-        final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(), DELETE, null, String.class);
+        final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
+                DELETE,
+                new HttpEntity<>(prepareHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                String.class);
 
         assertThat(response.getStatusCode(), is(NO_CONTENT));
     }
 
     @Test
     public void shouldReturnBadRequestIfInvalidIdOnGet() throws Exception {
-        final ResponseEntity<String> response = template.getForEntity(base.toString() + "/0",
+        final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
+                GET,
+                new HttpEntity<>(prepareHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                 String.class);
 
         String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
@@ -141,7 +147,11 @@ public class UserApiIntegrationTest {
         final User userToUpdate = userRepository.save(user.login(login.build()).build());
         final Long persistedId = userRepository.save(userToUpdate).getId();
         final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
-        final ResponseEntity<String> response = template.exchange(base.toString() + "/0", PUT, new HttpEntity<>(updatedUser), String.class);
+        final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
+                PUT,
+                new HttpEntity<>(updatedUser,
+                        prepareHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                String.class);
 
         String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
         UserValidationEntryRepresentation errorEntry = UserValidationEntryRepresentation.builder().attribute("update.userId").errorMessage(errorMessage).build();
@@ -152,7 +162,10 @@ public class UserApiIntegrationTest {
 
     @Test
     public void shouldReturnBadRequestIfInvalidIdOnDelete() throws Exception {
-        final ResponseEntity<String> response = template.exchange(base.toString() + "/0", DELETE, null, String.class);
+        final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
+                DELETE,
+                new HttpEntity<>(prepareHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                String.class);
 
         String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
         UserValidationEntryRepresentation errorEntry = UserValidationEntryRepresentation.builder().attribute("delete.userId").errorMessage(errorMessage).build();
