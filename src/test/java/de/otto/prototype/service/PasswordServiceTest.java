@@ -4,11 +4,14 @@ import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
+import org.hibernate.validator.HibernateValidator;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
@@ -24,6 +27,15 @@ public class PasswordServiceTest {
 
     @InjectMocks
     private PasswordService testee;
+
+    @Before
+    public void setUp() throws Exception {
+        LocalValidatorFactoryBean validatorFactory = new LocalValidatorFactoryBean();
+        validatorFactory.setProviderClass(HibernateValidator.class);
+        validatorFactory.afterPropertiesSet();
+
+        testee = new PasswordService(userService, validatorFactory);
+    }
 
     @Test
     public void shouldReturnUpdatedUser() throws Exception {
@@ -66,6 +78,18 @@ public class PasswordServiceTest {
             verifyNoMoreInteractions(userService);
             throw e;
         }
+    }
+
+    @Test
+    public void shouldReturnFalseForInsecurePassword() {
+        Boolean result = testee.checkPassword("unsec");
+        assertThat(result, is(false));
+    }
+
+    @Test
+    public void shouldReturnTrueForSecurePassword() {
+        Boolean result = testee.checkPassword("securePassword");
+        assertThat(result, is(true));
     }
 
 }

@@ -14,31 +14,36 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
-import static de.otto.prototype.controller.PasswordController.URL_PASSWORD;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 import static org.springframework.http.ResponseEntity.ok;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @RestController
-@RequestMapping(URL_PASSWORD)
 @Validated
 public class PasswordController {
 
-	public static final String URL_PASSWORD = "/resetpassword";
+    public static final String URL_RESET_PASSWORD = "/resetpassword";
+    static final String URL_CHECK_PASSWORD = "/checkpassword";
 
-	private PasswordService passwordService;
+    private PasswordService passwordService;
 
-	@Autowired
-	public PasswordController(PasswordService passwordService) {
-		this.passwordService = passwordService;
-	}
+    @Autowired
+    public PasswordController(PasswordService passwordService) {
+        this.passwordService = passwordService;
+    }
 
-	@RequestMapping(method = POST, consumes = TEXT_PLAIN_VALUE, produces = APPLICATION_JSON_VALUE)
-	public ResponseEntity<User> updateUserPassword(final @NotNull(message = "error.id.empty") @Min(value = 1, message = "error.id.invalid") @RequestParam("userId") Long id,
-												   final @SecurePassword(pattern = ".*") @RequestBody() String password) {
-		final User updatedUser = passwordService.update(id, password);
-		return ok(updatedUser);
-	}
+    @RequestMapping(value = URL_RESET_PASSWORD, method = POST, consumes = TEXT_PLAIN_VALUE, produces = APPLICATION_JSON_VALUE)
+    public ResponseEntity<User> updateUserPassword(final @NotNull(message = "error.id.empty") @Min(value = 1, message = "error.id.invalid") @RequestParam("userId") Long id,
+                                                   final @SecurePassword(pattern = ".*") @RequestBody String password) {
+        final User updatedUser = passwordService.update(id, password);
+        return ok(updatedUser);
+    }
+
+    @RequestMapping(value = URL_CHECK_PASSWORD, method = POST, consumes = TEXT_PLAIN_VALUE, produces = TEXT_PLAIN_VALUE)
+    public ResponseEntity<String> checkPassword(final @RequestBody String password) {
+        final Boolean validationResult = passwordService.checkPassword(password);
+        return ok(Boolean.toString(validationResult));
+    }
 
 }

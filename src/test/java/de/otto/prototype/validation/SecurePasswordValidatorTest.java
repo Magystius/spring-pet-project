@@ -1,5 +1,6 @@
 package de.otto.prototype.validation;
 
+import de.otto.prototype.model.Password;
 import org.hibernate.validator.HibernateValidator;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,14 +26,14 @@ public class SecurePasswordValidatorTest {
 
 	@Test
 	public void shouldValidateSecurePassword() {
-		Password passwordToValidate = new Password("securePassword");
+		Password passwordToValidate = Password.builder().password("securePassword").build();
 		Set<ConstraintViolation<Password>> constraintViolations = localValidatorFactory.validate(passwordToValidate);
 		assertThat(constraintViolations.size(), is(0));
 	}
 
 	@Test
 	public void shouldValidateTooShortPassword() {
-		Password passwordToValidate = new Password("short");
+		Password passwordToValidate = Password.builder().password("short").build();
 		Set<ConstraintViolation<Password>> constraintViolations = localValidatorFactory.validate(passwordToValidate);
 		assertThat(constraintViolations.size(), is(1));
 		assertThat(constraintViolations.iterator().next().getMessage(), is("error.password"));
@@ -40,7 +41,7 @@ public class SecurePasswordValidatorTest {
 
 	@Test
 	public void shouldValidateTooLongPassword() {
-		Password passwordToValidate = new Password("loooooooooooooooong");
+		Password passwordToValidate = Password.builder().password("loooooooooooooooong").build();
 		Set<ConstraintViolation<Password>> constraintViolations = localValidatorFactory.validate(passwordToValidate);
 		assertThat(constraintViolations.size(), is(1));
 		assertThat(constraintViolations.iterator().next().getMessage(), is("error.password"));
@@ -48,18 +49,10 @@ public class SecurePasswordValidatorTest {
 
 	@Test
 	public void shouldValidateEmptyPassword() {
-		Password passwordToValidate = new Password("");
+		Password passwordToValidate = Password.builder().password("").build();
 		Set<ConstraintViolation<Password>> constraintViolations = localValidatorFactory.validate(passwordToValidate);
 		assertThat(constraintViolations.size(), is(1));
 		assertThat(constraintViolations.iterator().next().getMessage(), is("error.password"));
 	}
 
-	private class Password {
-		@SecurePassword(pattern = ".*")
-		String password;
-
-		Password(String password) {
-			this.password = password;
-		}
-	}
 }

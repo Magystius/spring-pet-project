@@ -14,7 +14,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import static de.otto.prototype.controller.PasswordController.URL_PASSWORD;
+import static de.otto.prototype.controller.PasswordController.URL_CHECK_PASSWORD;
+import static de.otto.prototype.controller.PasswordController.URL_RESET_PASSWORD;
 import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -51,7 +52,7 @@ public class PasswordControllerTest {
         final User updatedUser = User.builder().id(id).firstName("Max").lastName("Mustermann").login(Login.builder().password(password).build()).build();
         when(passwordService.update(id, password)).thenReturn(updatedUser);
 
-        mvc.perform(post(URL_PASSWORD + "?userId=" + id)
+        mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
                 .contentType(TEXT_PLAIN_VALUE)
                 .accept(APPLICATION_JSON_VALUE)
                 .content(password))
@@ -69,7 +70,7 @@ public class PasswordControllerTest {
         final String password = "somePassword";
         when(passwordService.update(id, password)).thenThrow(new NotFoundException("id not found"));
 
-        mvc.perform(post(URL_PASSWORD + "?userId=" + id)
+        mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
                 .contentType(TEXT_PLAIN_VALUE)
                 .accept(APPLICATION_JSON_VALUE)
                 .content(password))
@@ -77,6 +78,40 @@ public class PasswordControllerTest {
                 .andExpect(status().isNotFound());
 
         verify(passwordService, times(1)).update(id, password);
+        verifyNoMoreInteractions(passwordService);
+    }
+
+    @Test
+    public void shouldReturnTrueIfSecurePassword() throws Exception {
+        final String password = "somePassword";
+        when(passwordService.checkPassword(password)).thenReturn(true);
+
+        mvc.perform(post(URL_CHECK_PASSWORD)
+                .contentType(TEXT_PLAIN_VALUE)
+                .accept(TEXT_PLAIN_VALUE)
+                .content(password))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().string("true"));
+
+        verify(passwordService, times(1)).checkPassword(password);
+        verifyNoMoreInteractions(passwordService);
+    }
+
+    @Test
+    public void shouldReturnFalseIfInsecurePassword() throws Exception {
+        final String password = "unsec";
+        when(passwordService.checkPassword(password)).thenReturn(false);
+
+        mvc.perform(post(URL_CHECK_PASSWORD)
+                .contentType(TEXT_PLAIN_VALUE)
+                .accept(TEXT_PLAIN_VALUE)
+                .content(password))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().string("false"));
+
+        verify(passwordService, times(1)).checkPassword(password);
         verifyNoMoreInteractions(passwordService);
     }
 

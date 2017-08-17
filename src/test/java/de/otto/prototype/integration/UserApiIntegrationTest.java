@@ -63,7 +63,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 		final UserList listOfUsers = UserList.builder().user(persistedUser1).user(persistedUser2).build();
 		final ResponseEntity<String> response = template.exchange(base.toString(),
 				GET,
-				new HttpEntity<>(prepareHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+				new HttpEntity<>(prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
 				String.class);
 
 		assertThat(response.getStatusCode(), is(OK));
@@ -76,7 +76,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 
 		final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
 				GET,
-				new HttpEntity<>(prepareHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+				new HttpEntity<>(prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
 				String.class);
 
 		assertThat(response.getStatusCode(), is(OK));
@@ -88,7 +88,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 		final ResponseEntity<String> response = template.exchange(base.toString(),
 				POST,
 				new HttpEntity<>(user.login(login.build()).build(),
-						prepareHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+						prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
 				String.class);
 
 		assertThat(response.getStatusCode(), is(CREATED));
@@ -104,7 +104,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 		final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
 				PUT,
 				new HttpEntity<>(updatedUser,
-						prepareHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+						prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
 				String.class);
 
 		assertThat(response.getStatusCode(), is(OK));
@@ -118,7 +118,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 
 		final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
 				DELETE,
-				new HttpEntity<>(prepareHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+				new HttpEntity<>(prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
 				String.class);
 
 		assertThat(response.getStatusCode(), is(NO_CONTENT));
@@ -128,7 +128,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 	public void shouldReturnBadRequestIfInvalidIdOnGet() throws Exception {
 		final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
 				GET,
-				new HttpEntity<>(prepareHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+				new HttpEntity<>(prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
 				String.class);
 
 		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
@@ -146,7 +146,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 		final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
 				PUT,
 				new HttpEntity<>(updatedUser,
-						prepareHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+						prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
 				String.class);
 
 		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
@@ -160,7 +160,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 	public void shouldReturnBadRequestIfInvalidIdOnDelete() throws Exception {
 		final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
 				DELETE,
-				new HttpEntity<>(prepareHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+				new HttpEntity<>(prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
 				String.class);
 
 		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
