@@ -13,29 +13,29 @@ import java.util.Optional;
 @Service
 public class PasswordService {
 
-    private UserService userService;
+	private UserService userService;
 
-    private Validator validator;
+	private Validator validator;
 
-    @Autowired
-    public PasswordService(UserService userService, Validator validator) {
-        this.userService = userService;
-        this.validator = validator;
-    }
+	@Autowired
+	public PasswordService(UserService userService, Validator validator) {
+		this.userService = userService;
+		this.validator = validator;
+	}
 
-    public User update(final Long userId, final String password) {
-        final Optional<User> userToUpdate;
+	public User update(String userId, final String password) {
+		final Optional<User> userToUpdate;
 
-        if (userId == null || !(userToUpdate = userService.findOne(userId)).isPresent()) {
-            throw new NotFoundException("user not found");
-        }
+		if (userId == null || !(userToUpdate = userService.findOne(userId)).isPresent()) {
+			throw new NotFoundException("user not found");
+		}
 
-        Login login = userToUpdate.get().getLogin().toBuilder().password(password).build();
-        final User updatedUser = userToUpdate.get().toBuilder().login(login).build();
-        return userService.update(updatedUser);
-    }
+		Login login = userToUpdate.get().getLogin().toBuilder().password(password).build();
+		final User updatedUser = userToUpdate.get().toBuilder().login(login).build();
+		return userService.update(updatedUser);
+	}
 
-    public Boolean checkPassword(final String password) {
-        return (validator.validate(Password.builder().password(password).build())).isEmpty();
-    }
+	public Boolean checkPassword(final String password) {
+		return (validator.validate(Password.builder().password(password).build())).isEmpty();
+	}
 }

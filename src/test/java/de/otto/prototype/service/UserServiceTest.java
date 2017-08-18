@@ -28,14 +28,13 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class UserServiceTest {
 
-	private static final Long validUserId = 1234L;
+	private static final String validUserId = "someUserId";
 
-	private static final Long validLoginId = 4321L;
 
 	private static final Login validLogin =
 			Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
 	private static final Login validLoginWithId =
-			Login.builder().id(validLoginId).mail("max.mustermann@otto.de").password("somePassword").build();
+			Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
 	private static final User validMinimumUser =
 			User.builder().lastName("Mustermann").firstName("Max").age(30).login(validLogin).build();
 	private static final User validMinimumUserWithId =
@@ -80,7 +79,7 @@ public class UserServiceTest {
 
 	@Test
 	public void shouldReturnAUserIfFound() throws Exception {
-		Long userId = 1234L;
+		String userId = "someId";
 		String userLastName = "Mustermann";
 		final User userToReturn = User.builder().id(userId).lastName(userLastName).build();
 		when(userRepository.findOne(userId)).thenReturn(userToReturn);
@@ -96,7 +95,7 @@ public class UserServiceTest {
 
 	@Test
 	public void shouldReturnNoUserIfNotFound() throws Exception {
-		Long userId = 1234L;
+		String userId = "someId";
 		when(userRepository.findOne(userId)).thenReturn(null);
 
 		final Optional<User> foundUser = testee.findOne(userId);
@@ -108,7 +107,7 @@ public class UserServiceTest {
 
 	@Test
 	public void shouldReturnCreatedUser() throws Exception {
-		User persistedUser = validMinimumUser.toBuilder().id(1234L).build();
+		User persistedUser = validMinimumUser.toBuilder().id("someId").build();
 		when(userRepository.save(validMinimumUser)).thenReturn(persistedUser);
 
 		final User returendUser = testee.create(validMinimumUser);
@@ -205,7 +204,7 @@ public class UserServiceTest {
 
 	@Test
 	public void shouldDeleteUser() throws Exception {
-		final Long userId = 124L;
+		String userId = "someId";
 		when(userRepository.findOne(userId)).thenReturn(User.builder().build());
 
 		testee.delete(userId);
@@ -216,7 +215,7 @@ public class UserServiceTest {
 
 	@Test(expected = NotFoundException.class)
 	public void shouldThrowNotFoundExceptionForUnkownUserId() throws Exception {
-		final Long userId = 124L;
+		String userId = "someId";
 		when(userRepository.findOne(userId)).thenReturn(null);
 
 		try {

@@ -31,7 +31,7 @@ public class UserService {
 		return userRepository.streamAll();
 	}
 
-	public Optional<User> findOne(final Long userId) {
+	public Optional<User> findOne(String userId) {
 		return Optional.ofNullable(userRepository.findOne(userId));
 	}
 
@@ -48,7 +48,7 @@ public class UserService {
 		return userRepository.save(user);
 	}
 
-	public void delete(final Long userId) {
+	public void delete(String userId) {
 		if (userRepository.findOne(userId) == null) {
 			throw new NotFoundException("user id not found");
 		}

@@ -12,13 +12,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.constraints.Min;
+import javax.validation.constraints.Pattern;
 import java.net.URI;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import static de.otto.prototype.controller.UserController.URL_USER;
-import static java.lang.Long.parseLong;
 import static java.util.stream.Collectors.toList;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.ResponseEntity.*;
@@ -47,7 +46,7 @@ public class UserController {
 	}
 
 	@RequestMapping(value = "/{userId}", method = GET, produces = APPLICATION_JSON_VALUE)
-	public ResponseEntity<User> getOne(final @Min(value = 1, message = "error.id.invalid") @PathVariable("userId") Long userId) {
+	public ResponseEntity<User> getOne(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid") @PathVariable("userId") String userId) {
 		final Optional<User> foundUser = userService.findOne(userId);
 		return foundUser.map(ResponseEntity::ok)
 				.orElse(notFound().build());
@@ -60,16 +59,16 @@ public class UserController {
 	}
 
 	@RequestMapping(value = "/{userId}", method = PUT, consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-	public ResponseEntity<User> update(final @Min(value = 1, message = "error.id.invalid") @PathVariable("userId") String userId,
+	public ResponseEntity<User> update(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid") @PathVariable("userId") String userId,
 									   final @Validated(User.Existing.class) @RequestBody User user) {
-		if (!userId.equals(user.getId().toString()))
+		if (!userId.equals(user.getId()))
 			return notFound().build();
 		return ok(userService.update(user));
 	}
 
 	@RequestMapping(value = "/{userId}", method = DELETE)
-	public ResponseEntity delete(final @Min(value = 1, message = "error.id.invalid") @PathVariable("userId") String userId) {
-		userService.delete(parseLong(userId));
+	public ResponseEntity delete(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid") @PathVariable("userId") String userId) {
+		userService.delete(userId);
 		return noContent().build();
 	}
 

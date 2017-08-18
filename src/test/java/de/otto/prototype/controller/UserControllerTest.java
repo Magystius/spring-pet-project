@@ -54,14 +54,12 @@ public class UserControllerTest {
 
 	private static final Locale LOCALE = LocaleContextHolder.getLocale();
 
-	private static final Long validUserId = 1234L;
-
-	private static final Long validLoginId = 4321L;
+	private static final String validUserId = "someUserId";
 
 	private static final Login validLogin =
 			Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
 	private static final Login validLoginWithId =
-			Login.builder().id(validLoginId).mail("max.mustermann@otto.de").password("somePassword").build();
+			Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
 	private static final User validMinimumUser =
 			User.builder().lastName("Mustermann").firstName("Max").age(30).login(validLogin).build();
 	private static final User validMinimumUserWithId =

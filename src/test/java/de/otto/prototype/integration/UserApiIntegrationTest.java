@@ -98,7 +98,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 	@Test
 	public void shouldUpdateAUserOnPut() throws Exception {
 		final User userToUpdate = userRepository.save(user.login(login.build()).build());
-		final Long persistedId = userRepository.save(userToUpdate).getId();
+		final String persistedId = userToUpdate.getId();
 		final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
 
 		final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
@@ -113,8 +113,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 
 	@Test
 	public void shouldDeleteUserOnDelete() throws Exception {
-		final User userToPersist = userRepository.save(user.login(login.build()).build());
-		final User persistedUser = userRepository.save(userToPersist);
+		final User persistedUser = userRepository.save(user.login(login.build()).build());
 
 		final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
 				DELETE,
@@ -141,7 +140,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 	@Test
 	public void shouldReturnBadRequestIfInvalidIdOnPut() throws Exception {
 		final User userToUpdate = userRepository.save(user.login(login.build()).build());
-		final Long persistedId = userRepository.save(userToUpdate).getId();
+		final String persistedId = userToUpdate.getId();
 		final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
 		final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
 				PUT,
