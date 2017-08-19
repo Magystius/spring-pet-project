@@ -1,6 +1,7 @@
 package de.otto.prototype.controller;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -39,6 +40,7 @@ import java.util.stream.Stream;
 import static com.google.common.collect.ImmutableList.of;
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.*;
@@ -50,7 +52,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(DataProviderRunner.class)
 public class UserControllerTest {
 
-	private static final Gson GSON = new Gson();
+	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
 	private static final Locale LOCALE = LocaleContextHolder.getLocale();
 
@@ -173,7 +175,12 @@ public class UserControllerTest {
 				.accept(MediaType.APPLICATION_JSON))
 				.andDo(print())
 				.andExpect(status().isOk())
-				.andExpect(content().string(is(GSON.toJson(userToFind))));
+				.andExpect(jsonPath("$.content.id", is(validUserId)))
+				.andExpect(jsonPath("$.content.firstName", is("Max")))
+				.andExpect(jsonPath("$.content.lastName", is("Mustermann")))
+				.andExpect(jsonPath("$.content.age", is(0)))
+				.andExpect(jsonPath("$.content.vip", is(false)))
+				.andExpect(jsonPath("$.links[0].href", containsString("/user/" + validUserId)));
 
 		verify(userService, times(1)).findOne(validUserId);
 		verifyNoMoreInteractions(userService);

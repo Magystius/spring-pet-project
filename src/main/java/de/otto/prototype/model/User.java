@@ -1,6 +1,5 @@
 package de.otto.prototype.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Value;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -12,13 +11,11 @@ import javax.validation.Valid;
 import javax.validation.constraints.*;
 import javax.validation.groups.Default;
 
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static org.hibernate.validator.constraints.SafeHtml.WhiteListType.NONE;
 
 @Document
 @Value
 @Builder(toBuilder = true)
-@JsonInclude(NON_NULL)
 public class User {
 
 	@Id

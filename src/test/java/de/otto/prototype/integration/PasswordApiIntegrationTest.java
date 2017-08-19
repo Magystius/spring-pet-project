@@ -1,6 +1,7 @@
 package de.otto.prototype.integration;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import de.otto.prototype.controller.representation.UserValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.UserValidationRepresentation;
 import de.otto.prototype.model.Login;
@@ -29,7 +30,7 @@ import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 
 public class PasswordApiIntegrationTest extends AbstractIntegrationTest {
 
-	private static final Gson GSON = new Gson();
+	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
 	private static final Locale LOCALE = LocaleContextHolder.getLocale();
 

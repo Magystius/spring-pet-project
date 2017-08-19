@@ -1,5 +1,6 @@
 package de.otto.prototype.controller;
 
+import de.otto.prototype.controller.representation.UserRepresentation;
 import de.otto.prototype.model.User;
 import de.otto.prototype.model.UserList;
 import de.otto.prototype.service.UserService;
@@ -19,6 +20,8 @@ import java.util.stream.Stream;
 
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.util.stream.Collectors.toList;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.ResponseEntity.*;
 import static org.springframework.web.bind.annotation.RequestMethod.*;
@@ -46,14 +49,17 @@ public class UserController {
 	}
 
 	@RequestMapping(value = "/{userId}", method = GET, produces = APPLICATION_JSON_VALUE)
-	public ResponseEntity<User> getOne(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid") @PathVariable("userId") String userId) {
+	public ResponseEntity<UserRepresentation> getOne(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid") @PathVariable("userId") String userId) {
 		final Optional<User> foundUser = userService.findOne(userId);
-		return foundUser.map(ResponseEntity::ok)
+		return foundUser.map(user -> ResponseEntity.ok(UserRepresentation.builder()
+				.user(user)
+				.link(linkTo(methodOn(UserController.class).getOne(userId)).withSelfRel())
+				.build()))
 				.orElse(notFound().build());
 	}
 
 	@RequestMapping(method = POST, consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-	public ResponseEntity<User> create(final @Validated(User.New.class) @RequestBody User user) {
+	public ResponseEntity create(final @Validated(User.New.class) @RequestBody User user) {
 		final User persistedUser = userService.create(user);
 		return created(URI.create(URL_USER + "/" + persistedUser.getId())).build();
 	}

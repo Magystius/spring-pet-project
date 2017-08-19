@@ -2,6 +2,9 @@ package de.otto.prototype.integration;
 
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
 import de.otto.prototype.controller.representation.UserValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.UserValidationRepresentation;
 import de.otto.prototype.model.Login;
@@ -21,6 +24,7 @@ import java.net.URL;
 import java.util.Locale;
 
 import static de.otto.prototype.controller.UserController.URL_USER;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.springframework.http.HttpMethod.*;
@@ -29,7 +33,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 public class UserApiIntegrationTest extends AbstractIntegrationTest {
 
-	private static final Gson GSON = new Gson();
+	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
 	private static final Locale LOCALE = LocaleContextHolder.getLocale();
 
@@ -80,7 +84,17 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 				String.class);
 
 		assertThat(response.getStatusCode(), is(OK));
-		assertThat(response.getBody(), is(GSON.toJson(persistedUser)));
+		DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+		assertThat(parsedResponse.read("$.content.id"), is(persistedUser.getId()));
+		assertThat(parsedResponse.read("$.content.firstName"), is(persistedUser.getFirstName()));
+		assertThat(parsedResponse.read("$.content.secondName"), is(persistedUser.getSecondName()));
+		assertThat(parsedResponse.read("$.content.lastName"), is(persistedUser.getLastName()));
+		assertThat(parsedResponse.read("$.content.age"), is(persistedUser.getAge()));
+		assertThat(parsedResponse.read("$.content.vip"), is(persistedUser.isVip()));
+		assertThat(parsedResponse.read("$.content.login.mail"), is(persistedUser.getLogin().getMail()));
+		assertThat(parsedResponse.read("$.content.login.password"), is(persistedUser.getLogin().getPassword()));
+		assertThat(parsedResponse.read("$.content.bio"), is(persistedUser.getBio()));
+		assertThat(parsedResponse.read("$._links.self.href"), containsString("/user/" + persistedUser.getId()));
 	}
 
 	@Test
@@ -168,4 +182,5 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 		assertThat(response.getStatusCode(), is(BAD_REQUEST));
 		assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
 	}
+
 }

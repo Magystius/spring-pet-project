@@ -1,6 +1,7 @@
 package de.otto.prototype.controller;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
@@ -28,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(MockitoJUnitRunner.class)
 public class PasswordControllerTest {
 
-	private static final Gson GSON = new Gson();
+	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
 	private MockMvc mvc;
 
