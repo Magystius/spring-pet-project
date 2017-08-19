@@ -14,6 +14,7 @@ class AbstractControllerTest {
 
 	static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
+	//TODO: hey, heres something the same??
 	void assertUserRepresentation(String responseBody, User expectedUser) {
 		DocumentContext parsedResponse = JsonPath.parse(responseBody);
 		assertThat(parsedResponse.read("$.content.id"), is(expectedUser.getId()));
