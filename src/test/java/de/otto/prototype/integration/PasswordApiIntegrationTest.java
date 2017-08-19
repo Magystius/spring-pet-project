@@ -54,7 +54,6 @@ public class PasswordApiIntegrationTest extends AbstractIntegrationTest {
 		final Login login = Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
 		final User persistedUser = userRepository.save(User.builder().lastName("Mustermann").firstName("Max").age(30).login(login).build());
 		final String newPassword = "anotherPassword";
-		final User updatedUser = persistedUser.toBuilder().login(login.toBuilder().password(newPassword).build()).build();
 
 		final ResponseEntity<String> response = template.exchange(base.toString() + "?userId=" + persistedUser.getId(),
 				POST,
@@ -63,7 +62,8 @@ public class PasswordApiIntegrationTest extends AbstractIntegrationTest {
 				String.class);
 
 		assertThat(response.getStatusCode(), is(OK));
-		assertThat(response.getBody(), is(GSON.toJson(updatedUser)));
+		User expectedUser = persistedUser.toBuilder().login(persistedUser.getLogin().toBuilder().password(newPassword).build()).build();
+		assertUserRepresentation(response.getBody(), expectedUser);
 	}
 
 	@Test

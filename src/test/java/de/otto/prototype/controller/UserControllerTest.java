@@ -1,7 +1,5 @@
 package de.otto.prototype.controller;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -50,9 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @RunWith(DataProviderRunner.class)
-public class UserControllerTest {
-
-	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
+public class UserControllerTest extends AbstractControllerTest {
 
 	private static final Locale LOCALE = LocaleContextHolder.getLocale();
 
@@ -167,20 +163,15 @@ public class UserControllerTest {
 
 	@Test
 	public void shouldReturnAUserIfFoundOnGetOne() throws Exception {
-		final User userToFind = User.builder().id(validUserId).lastName("Mustermann").firstName("Max").build();
+		when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
 
-		when(userService.findOne(validUserId)).thenReturn(Optional.of(userToFind));
-
-		mvc.perform(get(URL_USER + "/" + validUserId)
+		MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
 				.accept(MediaType.APPLICATION_JSON))
 				.andDo(print())
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.content.id", is(validUserId)))
-				.andExpect(jsonPath("$.content.firstName", is("Max")))
-				.andExpect(jsonPath("$.content.lastName", is("Mustermann")))
-				.andExpect(jsonPath("$.content.age", is(0)))
-				.andExpect(jsonPath("$.content.vip", is(false)))
-				.andExpect(jsonPath("$.links[0].href", containsString("/user/" + validUserId)));
+				.andReturn();
+
+		assertUserRepresentation(result.getResponse().getContentAsString(), validMinimumUserWithId);
 
 		verify(userService, times(1)).findOne(validUserId);
 		verifyNoMoreInteractions(userService);

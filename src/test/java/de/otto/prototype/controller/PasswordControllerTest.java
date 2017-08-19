@@ -1,24 +1,21 @@
 package de.otto.prototype.controller;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.service.PasswordService;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static de.otto.prototype.controller.PasswordController.URL_CHECK_PASSWORD;
 import static de.otto.prototype.controller.PasswordController.URL_RESET_PASSWORD;
-import static org.hamcrest.CoreMatchers.is;
 import static org.mockito.Mockito.*;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -26,10 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@RunWith(MockitoJUnitRunner.class)
-public class PasswordControllerTest {
-
-	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
+public class PasswordControllerTest extends AbstractControllerTest {
 
 	private MockMvc mvc;
 
@@ -41,6 +35,7 @@ public class PasswordControllerTest {
 
 	@Before
 	public void init() {
+		initMocks(this);
 		mvc = MockMvcBuilders
 				.standaloneSetup(testee)
 				.build();
@@ -53,13 +48,15 @@ public class PasswordControllerTest {
 		final User updatedUser = User.builder().id(id).firstName("Max").lastName("Mustermann").login(Login.builder().password(password).build()).build();
 		when(passwordService.update(id, password)).thenReturn(updatedUser);
 
-		mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
+		MvcResult result = mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
 				.contentType(TEXT_PLAIN_VALUE)
 				.accept(APPLICATION_JSON_VALUE)
 				.content(password))
 				.andDo(print())
 				.andExpect(status().isOk())
-				.andExpect(content().string(is(GSON.toJson(updatedUser))));
+				.andReturn();
+
+		assertUserRepresentation(result.getResponse().getContentAsString(), updatedUser);
 
 		verify(passwordService, times(1)).update(id, password);
 		verifyNoMoreInteractions(passwordService);

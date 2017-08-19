@@ -50,7 +50,7 @@ public class UserController {
 	@RequestMapping(value = "/{userId}", method = GET, produces = APPLICATION_JSON_VALUE)
 	public ResponseEntity<UserRepresentation> getOne(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid") @PathVariable("userId") String userId) {
 		final Optional<User> foundUser = userService.findOne(userId);
-		return foundUser.map(user -> ResponseEntity.ok(UserRepresentation.builder()
+		return foundUser.map(user -> ok(UserRepresentation.builder()
 				.user(user)
 				.link(linkTo(methodOn(UserController.class).getOne(userId)).withSelfRel())
 				.build()))
