@@ -209,7 +209,7 @@ public class UserControllerTest {
 				.content(GSON.toJson(userToPersist)))
 				.andDo(print())
 				.andExpect(status().isCreated())
-				.andExpect(header().string("location", URL_USER + "/" + validUserId));
+				.andExpect(header().string("location", containsString(URL_USER + "/" + validUserId)));
 
 		verify(userService, times(1)).create(userToPersist);
 		verifyNoMoreInteractions(userService);

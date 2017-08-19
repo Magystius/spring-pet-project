@@ -6,6 +6,7 @@ import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.SafeHtml;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.hateoas.Identifiable;
 
 import javax.validation.Valid;
 import javax.validation.constraints.*;
@@ -16,7 +17,7 @@ import static org.hibernate.validator.constraints.SafeHtml.WhiteListType.NONE;
 @Document
 @Value
 @Builder(toBuilder = true)
-public class User {
+public class User implements Identifiable<String> {
 
 	@Id
 	@NotNull(groups = Existing.class, message = "error.id.existing")

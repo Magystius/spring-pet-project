@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.constraints.Pattern;
-import java.net.URI;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -61,7 +60,7 @@ public class UserController {
 	@RequestMapping(method = POST, consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
 	public ResponseEntity create(final @Validated(User.New.class) @RequestBody User user) {
 		final User persistedUser = userService.create(user);
-		return created(URI.create(URL_USER + "/" + persistedUser.getId())).build();
+		return created(linkTo(UserController.class).slash(persistedUser).toUri()).build();
 	}
 
 	@RequestMapping(value = "/{userId}", method = PUT, consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
