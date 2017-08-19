@@ -11,9 +11,8 @@ import java.util.List;
 @Builder(toBuilder = true)
 public class UserValidationRepresentation {
 
-	User user;
+	private final User user;
 
 	@Singular
-	List<UserValidationEntryRepresentation> errors;
-
+	private final List<UserValidationEntryRepresentation> errors;
 }

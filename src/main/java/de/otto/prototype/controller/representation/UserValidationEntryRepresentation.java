@@ -7,7 +7,7 @@ import lombok.Value;
 @Builder(toBuilder = true)
 public class UserValidationEntryRepresentation {
 
-	String attribute;
+	private final String attribute;
 
-	String errorMessage;
+	private final String errorMessage;
 }

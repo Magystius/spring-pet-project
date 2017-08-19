@@ -12,9 +12,9 @@ public class Login {
 
 	@NotEmpty(message = "error.mail.empty")
 	@Email(message = "error.mail.invalid")
-	private String mail;
+	private final String mail;
 
 	@NotEmpty(message = "error.password.empty")
 	@SecurePassword(pattern = ".*")
-	private String password;
+	private final String password;
 }

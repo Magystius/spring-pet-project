@@ -14,7 +14,7 @@ public class InvalidUserException extends RuntimeException {
     private String errorCause;
     private String errorMsg;
 
-    public InvalidUserException(User user, String errorCause, String errorMsg) {
+    public InvalidUserException(final User user, final String errorCause, final String errorMsg) {
         super(errorMsg);
         this.user = user;
         this.errorCause = errorCause;

@@ -18,12 +18,12 @@ public class PasswordService {
 	private Validator validator;
 
 	@Autowired
-	public PasswordService(UserService userService, Validator validator) {
+	public PasswordService(final UserService userService, final Validator validator) {
 		this.userService = userService;
 		this.validator = validator;
 	}
 
-	public User update(String userId, final String password) {
+	public User update(final String userId, final String password) {
 		final Optional<User> userToUpdate;
 
 		if (userId == null || !(userToUpdate = userService.findOne(userId)).isPresent()) {

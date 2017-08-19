@@ -1,6 +1,8 @@
 package de.otto.prototype.model;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Singular;
+import lombok.Value;
 
 import java.util.List;
 
@@ -9,5 +11,5 @@ import java.util.List;
 public class UserList {
 
     @Singular
-    List<User> users;
+	private final List<User> users;
 }

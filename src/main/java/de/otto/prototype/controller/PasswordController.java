@@ -26,12 +26,12 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 public class PasswordController {
 
 	public static final String URL_RESET_PASSWORD = "/resetpassword";
-	static final String URL_CHECK_PASSWORD = "/checkpassword";
+	public static final String URL_CHECK_PASSWORD = "/checkpassword";
 
 	private PasswordService passwordService;
 
 	@Autowired
-	public PasswordController(PasswordService passwordService) {
+	public PasswordController(final PasswordService passwordService) {
 		this.passwordService = passwordService;
 	}
 

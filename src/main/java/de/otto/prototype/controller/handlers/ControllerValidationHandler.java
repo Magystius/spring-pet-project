@@ -32,14 +32,14 @@ public class ControllerValidationHandler {
 	private final MessageSource msgSource;
 
 	@Autowired
-	public ControllerValidationHandler(MessageSource msgSource) {
+	public ControllerValidationHandler(final MessageSource msgSource) {
 		this.msgSource = msgSource;
 	}
 
 	@ExceptionHandler(ConstraintViolationException.class)
 	@ResponseStatus(BAD_REQUEST)
 	@ResponseBody
-	public UserValidationRepresentation processValidationError(ConstraintViolationException exception) {
+	public UserValidationRepresentation processValidationError(final ConstraintViolationException exception) {
 		ImmutableList<UserValidationEntryRepresentation> errors = exception.getConstraintViolations().stream()
 				.map(constraintViolation -> getUserValidationEntryRepresentation(constraintViolation.getMessage(), constraintViolation.getPropertyPath().toString()))
 				.collect(collectingAndThen(toList(), ImmutableList::copyOf));
@@ -50,7 +50,7 @@ public class ControllerValidationHandler {
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	@ResponseStatus(BAD_REQUEST)
 	@ResponseBody
-	public UserValidationRepresentation processValidationError(MethodArgumentNotValidException exception) {
+	public UserValidationRepresentation processValidationError(final MethodArgumentNotValidException exception) {
 		ImmutableList<UserValidationEntryRepresentation> errors = exception.getBindingResult().getAllErrors().stream()
 				.map(objectError -> getUserValidationEntryRepresentation(objectError.getDefaultMessage(), objectError.getObjectName()))
 				.collect(collectingAndThen(toList(), ImmutableList::copyOf));
@@ -58,7 +58,7 @@ public class ControllerValidationHandler {
 		return UserValidationRepresentation.builder().errors(errors).build();
 	}
 
-	private UserValidationEntryRepresentation getUserValidationEntryRepresentation(String msgCode, String errObj) {
+	private UserValidationEntryRepresentation getUserValidationEntryRepresentation(final String msgCode, final String errObj) {
 		String msg = msgCode;
 		try {
 			msg = msgSource.getMessage(msgCode, null, LOCALE);
@@ -70,7 +70,7 @@ public class ControllerValidationHandler {
 	@ExceptionHandler(InvalidUserException.class)
 	@ResponseStatus(BAD_REQUEST)
 	@ResponseBody
-	public UserValidationRepresentation processValidationError(InvalidUserException exception) {
+	public UserValidationRepresentation processValidationError(final InvalidUserException exception) {
 		UserValidationEntryRepresentation error = UserValidationEntryRepresentation.builder().attribute(exception.getErrorCause()).errorMessage(exception.getErrorMsg()).build();
 		return UserValidationRepresentation.builder().error(error).build();
 	}
@@ -78,7 +78,6 @@ public class ControllerValidationHandler {
 	//TODO: remove this -> only here because unit test is broken...
 	@ExceptionHandler(NotFoundException.class)
 	@ResponseStatus(NOT_FOUND)
-	@ResponseBody
 	public void processValidationError() {
 	}
 }

@@ -21,17 +21,17 @@ public class App {
 
     private static final Logger log = LoggerFactory.getLogger(App.class);
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         SpringApplication.run(App.class, args);
     }
 
     @Bean
-    public CommandLineRunner init(UserRepository userRepository) {
+    public CommandLineRunner init(final UserRepository userRepository) {
         return args -> {
             log.info("-------------------------------");
             log.info("Save some users");
             Login login = Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
-            userRepository.save(User.builder().lastName("AWS").firstName("AWS").age(30).login(login.toBuilder().build()).build());
+            userRepository.save(User.builder().lastName("AWS").firstName("AWS1").age(30).login(login.toBuilder().build()).build());
             userRepository.save(User.builder().lastName("AWS2").firstName("AWS4").age(30).login(login.toBuilder().build()).build());
             userRepository.save(User.builder().lastName("Lavendel").firstName("Lara").age(30).login(login.toBuilder().build()).build());
             log.info("successfully saved some users");
@@ -45,7 +45,7 @@ public class App {
     }
 
     @Bean
-    public CommandLineRunner checkApp(ApplicationContext ctx) {
+    public CommandLineRunner checkApp(final ApplicationContext ctx) {
         return args -> {
             log.info("Let's inspect the beans provided by Spring Boot:");
 

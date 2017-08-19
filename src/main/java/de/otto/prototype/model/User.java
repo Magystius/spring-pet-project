@@ -22,31 +22,31 @@ public class User implements Identifiable<String> {
 	@Id
 	@NotNull(groups = Existing.class, message = "error.id.existing")
 	@Null(groups = New.class, message = "error.id.new")
-	private String id;
+	private final String id;
 
 	@NotEmpty(message = "error.name.empty")
 	@Size(min = 3, max = 30, message = "error.name.range")
-	private String firstName;
+	private final String firstName;
 
 	@Size(min = 3, max = 30, message = "error.name.range")
-	private String secondName;
+	private final String secondName;
 
 	@NotEmpty(message = "error.name.empty")
 	@Size(min = 3, max = 30, message = "error.name.range")
-	private String lastName;
+	private final String lastName;
 
 	@NotNull(message = "error.age.empty")
 	@Min(value = 18, message = "error.age.young")
 	@Max(value = 150, message = "error.age.old")
-	private int age;
+	private final int age;
 
-	private boolean vip;
+	private final boolean vip;
 
 	@Valid
-	private Login login;
+	private final Login login;
 
 	@SafeHtml(whitelistType = NONE, message = "error.bio.invalid")
-	private String bio;
+	private final String bio;
 
 	public interface Existing extends Default {
 	}

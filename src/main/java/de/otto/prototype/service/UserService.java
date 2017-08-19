@@ -22,7 +22,7 @@ public class UserService {
 	private Validator validator;
 
 	@Autowired
-	public UserService(UserRepository userRepository, Validator validator) {
+	public UserService(final UserRepository userRepository, final Validator validator) {
 		this.userRepository = userRepository;
 		this.validator = validator;
 	}
@@ -31,7 +31,7 @@ public class UserService {
 		return userRepository.streamAll();
 	}
 
-	public Optional<User> findOne(String userId) {
+	public Optional<User> findOne(final String userId) {
 		return Optional.ofNullable(userRepository.findOne(userId));
 	}
 
@@ -48,14 +48,14 @@ public class UserService {
 		return userRepository.save(user);
 	}
 
-	public void delete(String userId) {
+	public void delete(final String userId) {
 		if (userRepository.findOne(userId) == null) {
 			throw new NotFoundException("user id not found");
 		}
 		userRepository.delete(userId);
 	}
 
-	private void validateUser(User user, Class group) {
+	private void validateUser(final User user, final Class group) {
 		Set<ConstraintViolation<User>> errors = validator.validate(user, group);
 		if (!errors.isEmpty())
 			throw new ConstraintViolationException(errors);
