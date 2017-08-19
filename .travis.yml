@@ -3,21 +3,9 @@ notifications:
   email:
     on_success: never
     on_failure: always
+before_install:
+  - sudo apt-get install jq
+  - wget -O ~/codacy-coverage-reporter-assembly-latest.jar $(curl https://api.github.com/repos/codacy/codacy-coverage-reporter/releases/latest | jq -r .assets[0].browser_download_url)
 after_success:
 - bash <(curl -s https://codecov.io/bash)
-#before_deploy:
-#- mvn jar:jar
-#deploy:
-#  skip_cleanup: true
-#  zip_file: target/spring-val-demo-0.0.0.jar
-#  provider: elasticbeanstalk
-#  access_key_id: AKIAJVLUHTOJOC3YX3IA
-#  secret_access_key:
-#    secure: J+A2OY0Yyc1nhzGdMeZDFijMjQhH6g9Ll2sTxpiAKv2IdkjLbpxj46zFwNSb6vlIG3EWKUKXadnxJrQQQyYm6aSJXsFcIqYxQkGTDpdL2RiMl5WpgI/FCcTbr0zdv0706I8ngbrzckhZ5eaMBaT1JThiGVAuk8tAdfw64CJGSBuvbjXHMxCaylvw6eGyBUfmZsF02HjLurjK9cvi4i/WNFehIj4b0TxKiu9QIFK04qMBVIhpquGzvT9mmSFVSmOTHhCTPvEJlQ1fWnsDLurNAO4+ZB/RkcALKoIK/O/W5BOh2s2tpLVLip6gBv11RqYB8UYTzmEDWAX+G/b7gk5TjDM73RS7Y9iY81gNJg/2ZpsPDXaL7cT929R9bKcUJCW6rqslkPlTlOIFhc4NWllEytd4N1teFwn1Cynl6bVZTDnYt+xVkotc/sk0ipaybPK/vC1VcEGDkwimk8TXfcYDujnS08e/F82Kh20UsVDv0P2qgNVi/DGkgbaAE8kg0LlWC+fS9Yot8F44vVuueW1BpQ+pDSLsuySXiIdQ5xFX9TIvPG7AC5q9nGF7cSC5MDJ2ZcpkZzNIhTJrlwQbWiYyX20icZu1Fg/5X8mtDmDxh+CZmtIY4QqPtSU6BzASrUjTJcm3yQ4EoUnzGP6E4xREtCodFlYKDczToGPkzHbCk2I=
-#  region: eu-central-1
-#  app: spring-val-demo
-#  env: SpringValDemo-env
-#  bucket_name: spring-val-demo-bucket
-#  on:
-#    repo: Magystius/spring-val-demo
-#    branch: master
+- java -cp ~/codacy-coverage-reporter-assembly-latest.jar com.codacy.CodacyCoverageReporter -l Java -r target/site/jacoco/jacoco.xml
