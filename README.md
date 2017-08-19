@@ -1,7 +1,6 @@
 [![Build Status](https://travis-ci.org/Magystius/spring-val-demo.svg?branch=master)](https://travis-ci.org/Magystius/spring-val-demo)
-[![Coverage Status](https://coveralls.io/repos/github/Magystius/spring-val-demo/badge.svg?branch=master)](https://coveralls.io/github/Magystius/spring-val-demo?branch=master)
 [![codecov](https://codecov.io/gh/Magystius/spring-val-demo/branch/master/graph/badge.svg)](https://codecov.io/gh/Magystius/spring-val-demo)
-[![codebeat badge](https://codebeat.co/badges/95aead95-65be-4bc4-874c-3faf22c04fbb)](https://codebeat.co/projects/github-com-magystius-spring-val-demo-master)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/fde1f58e00ff4068b5c9b7976ad305a0)](https://www.codacy.com/app/Magystius/spring-val-demo?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Magystius/spring-val-demo&amp;utm_campaign=Badge_Grade)
 [![License](https://img.shields.io/github/license/magystius/spring-val-demo.svg)](https://github.com/magystius/spring-val-demo/blob/master/LICENSE.md)
 
 # Spring Validation Demo
