@@ -36,8 +36,12 @@ public class PasswordController {
 	}
 
 	@RequestMapping(value = URL_RESET_PASSWORD, method = POST, consumes = TEXT_PLAIN_VALUE, produces = APPLICATION_JSON_VALUE)
-	public ResponseEntity<UserRepresentation> updateUserPassword(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid") @RequestParam("userId") String id,
-																 final @SecurePassword(pattern = ".*") @RequestBody String password) {
+	public ResponseEntity<UserRepresentation> updateUserPassword(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid")
+																 @RequestParam("userId")
+																		 String id,
+																 final @SecurePassword(pattern = ".*")
+																 @RequestBody
+																		 String password) {
 		final User updatedUser = passwordService.update(id, password);
 		return ok(UserRepresentation.builder()
 				.user(updatedUser)

@@ -109,7 +109,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 				String.class);
 
 		assertThat(response.getStatusCode(), is(OK));
-		assertThat(response.getBody(), is(GSON.toJson(updatedUser)));
+		assertUserRepresentation(response.getBody(), updatedUser);
 	}
 
 	@Test

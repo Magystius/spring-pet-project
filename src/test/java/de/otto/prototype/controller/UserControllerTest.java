@@ -211,12 +211,15 @@ public class UserControllerTest extends AbstractControllerTest {
 		final User updatedUser = validMinimumUserWithId.toBuilder().build();
 		when(userService.update(updatedUser)).thenReturn(updatedUser);
 
-		mvc.perform(put(URL_USER + "/" + validUserId)
+		MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
 				.contentType(APPLICATION_JSON_VALUE)
 				.accept(APPLICATION_JSON_VALUE)
 				.content(GSON.toJson(updatedUser)))
 				.andDo(print())
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				.andReturn();
+
+		assertUserRepresentation(result.getResponse().getContentAsString(), updatedUser);
 
 		verify(userService, times(1)).update(updatedUser);
 		verifyNoMoreInteractions(userService);

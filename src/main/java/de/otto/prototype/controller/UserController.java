@@ -64,11 +64,14 @@ public class UserController {
 	}
 
 	@RequestMapping(value = "/{userId}", method = PUT, consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-	public ResponseEntity<User> update(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid") @PathVariable("userId") String userId,
-									   final @Validated(User.Existing.class) @RequestBody User user) {
+	public ResponseEntity<UserRepresentation> update(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid") @PathVariable("userId") String userId,
+													 final @Validated(User.Existing.class) @RequestBody User user) {
 		if (!userId.equals(user.getId()))
 			return notFound().build();
-		return ok(userService.update(user));
+		return ok(UserRepresentation.builder()
+				.user(userService.update(user))
+				.link(linkTo(methodOn(UserController.class).getOne(userId)).withSelfRel())
+				.build());
 	}
 
 	@RequestMapping(value = "/{userId}", method = DELETE)
