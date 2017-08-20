@@ -55,4 +55,11 @@ public class SecurePasswordValidatorTest {
 		assertThat(constraintViolations.iterator().next().getMessage(), is("error.password"));
 	}
 
+	@Test
+	public void shouldValidateNullPassword() {
+		Password passwordToValidate = Password.builder().build();
+		Set<ConstraintViolation<Password>> constraintViolations = localValidatorFactory.validate(passwordToValidate);
+		assertThat(constraintViolations.size(), is(1));
+		assertThat(constraintViolations.iterator().next().getMessage(), is("error.password"));
+	}
 }
