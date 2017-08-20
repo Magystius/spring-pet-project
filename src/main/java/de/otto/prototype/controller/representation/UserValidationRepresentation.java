@@ -8,7 +8,7 @@ import lombok.Value;
 import java.util.List;
 
 @Value
-@Builder(toBuilder = true)
+@Builder
 public class UserValidationRepresentation {
 
 	private final User user;

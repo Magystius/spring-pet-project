@@ -13,7 +13,7 @@ import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
-@Builder(toBuilder = true)
+@Builder
 public class UserRepresentation extends ResourceSupport {
 
 	@JsonProperty("content")
