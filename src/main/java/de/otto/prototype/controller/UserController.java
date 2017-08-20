@@ -1,8 +1,8 @@
 package de.otto.prototype.controller;
 
+import de.otto.prototype.controller.representation.UserListRepresentation;
 import de.otto.prototype.controller.representation.UserRepresentation;
 import de.otto.prototype.model.User;
-import de.otto.prototype.model.UserList;
 import de.otto.prototype.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.constraints.Pattern;
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.util.stream.Collectors.toList;
@@ -40,9 +40,13 @@ public class UserController {
 
 	@Transactional(readOnly = true)
 	@RequestMapping(method = GET, produces = APPLICATION_JSON_VALUE)
-	public ResponseEntity<UserList> getAll() {
-		final Stream<User> allUsers = userService.findAll();
-		final UserList listOfUser = UserList.builder().users(allUsers.collect(toList())).build();
+	public ResponseEntity<UserListRepresentation> getAll() {
+		final List<User> allUsers = userService.findAll().collect(toList());
+		final UserListRepresentation listOfUser = UserListRepresentation.builder()
+				.users(allUsers)
+				.link(linkTo(UserController.class).withSelfRel())
+				.total(allUsers.size())
+				.build();
 		return ok().body(listOfUser);
 	}
 

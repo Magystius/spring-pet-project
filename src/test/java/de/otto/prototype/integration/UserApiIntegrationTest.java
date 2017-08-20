@@ -3,12 +3,12 @@ package de.otto.prototype.integration;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import de.otto.prototype.controller.representation.UserValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.UserValidationRepresentation;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
-import de.otto.prototype.model.UserList;
 import de.otto.prototype.repository.UserRepository;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,8 +23,7 @@ import java.net.URL;
 import java.util.Locale;
 
 import static de.otto.prototype.controller.UserController.URL_USER;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertThat;
 import static org.springframework.http.HttpMethod.*;
 import static org.springframework.http.HttpStatus.*;
@@ -61,16 +60,21 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 	@Test
 	public void shouldReturnListOfUsersOnGetAll() throws Exception {
 		User persistedUser1 = userRepository.save(user.login(login.build()).build());
-		User persistedUser2 = userRepository.save(user.login(login.build()).build());
+		User persistedUser2 = userRepository.save(user.firstName("Heiko").login(login.build()).build());
 
-		final UserList listOfUsers = UserList.builder().user(persistedUser1).user(persistedUser2).build();
 		final ResponseEntity<String> response = template.exchange(base.toString(),
 				GET,
 				new HttpEntity<>(prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
 				String.class);
 
 		assertThat(response.getStatusCode(), is(OK));
-		assertThat(response.getBody(), is(GSON.toJson(listOfUsers)));
+		DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+		assertThat(parsedResponse.read("$._links.self.href"), containsString("/user"));
+		assertThat(parsedResponse.read("$.total"), is(2));
+		assertThat(parsedResponse.read("$.content[0].firstName"), is("Max"));
+		assertThat(parsedResponse.read("$.content[0].id"), is(persistedUser1.getId()));
+		assertThat(parsedResponse.read("$.content[1].id"), is(persistedUser2.getId()));
+		assertThat(parsedResponse.read("$.content[1].firstName"), is("Heiko"));
 	}
 
 	@Test

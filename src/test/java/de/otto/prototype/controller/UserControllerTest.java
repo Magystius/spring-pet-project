@@ -1,5 +1,7 @@
 package de.otto.prototype.controller;
 
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -10,8 +12,8 @@ import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
-import de.otto.prototype.model.UserList;
 import de.otto.prototype.service.UserService;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,14 +40,14 @@ import java.util.stream.Stream;
 import static com.google.common.collect.ImmutableList.of;
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(DataProviderRunner.class)
 public class UserControllerTest extends AbstractControllerTest {
@@ -136,10 +138,15 @@ public class UserControllerTest extends AbstractControllerTest {
 	public void shouldReturnEmptyListIfNoUsersOnGetAll() throws Exception {
 		when(userService.findAll()).thenReturn(Stream.of());
 
-		mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
+		MvcResult result = mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
 				.andDo(print())
 				.andExpect(status().isOk())
-				.andExpect(content().string(is(GSON.toJson(UserList.builder().build()))));
+				.andReturn();
+
+		DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
+		Assert.assertThat(parsedResponse.read("$.content"), is(notNullValue()));
+		Assert.assertThat(parsedResponse.read("$.links[0].href"), containsString("/user"));
+		Assert.assertThat(parsedResponse.read("$.total"), is(0));
 
 		verify(userService, times(1)).findAll();
 		verifyNoMoreInteractions(userService);
@@ -148,14 +155,19 @@ public class UserControllerTest extends AbstractControllerTest {
 	@Test
 	public void shouldReturnListOfUsersOnGetAll() throws Exception {
 		final Supplier<Stream<User>> sup = () -> Stream.of(User.builder().lastName("Mustermann").build());
-		final UserList listOfUsers = UserList.builder().users(sup.get().collect(toList())).build();
 		when(userService.findAll()).thenReturn(sup.get());
 
-		mvc.perform(get(URL_USER)
+		MvcResult result = mvc.perform(get(URL_USER)
 				.accept(MediaType.APPLICATION_JSON))
 				.andDo(print())
 				.andExpect(status().isOk())
-				.andExpect(content().string(is(GSON.toJson(listOfUsers))));
+				.andReturn();
+
+		DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
+		Assert.assertThat(parsedResponse.read("$.content"), is(notNullValue()));
+		Assert.assertThat(parsedResponse.read("$.content[0].lastName"), is("Mustermann"));
+		Assert.assertThat(parsedResponse.read("$.links[0].href"), containsString("/user"));
+		Assert.assertThat(parsedResponse.read("$.total"), is(1));
 
 		verify(userService, times(1)).findAll();
 		verifyNoMoreInteractions(userService);
