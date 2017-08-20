@@ -3,6 +3,7 @@ package de.otto.prototype.integration;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.jayway.jsonpath.JsonPath;
 import de.otto.prototype.controller.representation.UserValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.UserValidationRepresentation;
 import de.otto.prototype.model.Login;
@@ -23,6 +24,7 @@ import java.util.Locale;
 
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.springframework.http.HttpMethod.*;
 import static org.springframework.http.HttpStatus.*;
@@ -94,6 +96,9 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 
 		assertThat(response.getStatusCode(), is(CREATED));
 		assertThat(response.getHeaders().get("Location").get(0).contains("/user/"), is(true));
+		final User createdUser = userRepository.findOne((String) JsonPath.read(response.getBody(), "$.content.id"));
+		assertThat(createdUser, is(notNullValue()));
+		assertUserRepresentation(response.getBody(), createdUser);
 	}
 
 	@Test

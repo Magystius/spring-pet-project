@@ -20,7 +20,6 @@ import java.util.stream.Stream;
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.util.stream.Collectors.toList;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
-import static org.springframework.hateoas.mvc.ControllerLinkBuilder.methodOn;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.ResponseEntity.*;
 import static org.springframework.web.bind.annotation.RequestMethod.*;
@@ -52,15 +51,19 @@ public class UserController {
 		final Optional<User> foundUser = userService.findOne(userId);
 		return foundUser.map(user -> ok(UserRepresentation.builder()
 				.user(user)
-				.link(linkTo(methodOn(UserController.class).getOne(userId)).withSelfRel())
+				.link(linkTo(UserController.class).slash(foundUser.get()).withSelfRel())
 				.build()))
 				.orElse(notFound().build());
 	}
 
 	@RequestMapping(method = POST, consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
-	public ResponseEntity create(final @Validated(User.New.class) @RequestBody User user) {
+	public ResponseEntity<UserRepresentation> create(final @Validated(User.New.class) @RequestBody User user) {
 		final User persistedUser = userService.create(user);
-		return created(linkTo(UserController.class).slash(persistedUser).toUri()).build();
+		return created(linkTo(UserController.class).slash(persistedUser).toUri())
+				.body(UserRepresentation.builder()
+						.user(persistedUser)
+						.link(linkTo(UserController.class).slash(persistedUser).withSelfRel())
+						.build());
 	}
 
 	@RequestMapping(value = "/{userId}", method = PUT, consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
@@ -68,9 +71,10 @@ public class UserController {
 													 final @Validated(User.Existing.class) @RequestBody User user) {
 		if (!userId.equals(user.getId()))
 			return notFound().build();
+		final User updatedUser = userService.update(user);
 		return ok(UserRepresentation.builder()
-				.user(userService.update(user))
-				.link(linkTo(methodOn(UserController.class).getOne(userId)).withSelfRel())
+				.user(updatedUser)
+				.link(linkTo(UserController.class).slash(updatedUser).withSelfRel())
 				.build());
 	}
 

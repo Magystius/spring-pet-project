@@ -193,14 +193,18 @@ public class UserControllerTest extends AbstractControllerTest {
 	@Test
 	public void shouldCreateUserAndReturnItsLocationOnPost() throws Exception {
 		final User userToPersist = validMinimumUser;
-		when(userService.create(userToPersist)).thenReturn(userToPersist.toBuilder().id(validUserId).build());
+		final User persistedUser = userToPersist.toBuilder().id(validUserId).build();
+		when(userService.create(userToPersist)).thenReturn(persistedUser);
 
-		mvc.perform(post(URL_USER)
+		MvcResult result = mvc.perform(post(URL_USER)
 				.contentType(APPLICATION_JSON_VALUE)
 				.content(GSON.toJson(userToPersist)))
 				.andDo(print())
 				.andExpect(status().isCreated())
-				.andExpect(header().string("location", containsString(URL_USER + "/" + validUserId)));
+				.andExpect(header().string("location", containsString(URL_USER + "/" + validUserId)))
+				.andReturn();
+
+		assertUserRepresentation(result.getResponse().getContentAsString(), persistedUser);
 
 		verify(userService, times(1)).create(userToPersist);
 		verifyNoMoreInteractions(userService);
