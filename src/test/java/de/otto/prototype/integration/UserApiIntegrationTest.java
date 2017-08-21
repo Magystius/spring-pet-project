@@ -70,6 +70,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 		assertThat(response.getStatusCode(), is(OK));
 		DocumentContext parsedResponse = JsonPath.parse(response.getBody());
 		assertThat(parsedResponse.read("$._links.self.href"), containsString("/user"));
+		assertThat(parsedResponse.read("$._links.start.href"), containsString("/user/" + persistedUser1.getId()));
 		assertThat(parsedResponse.read("$.total"), is(2));
 		assertThat(parsedResponse.read("$.content[0].firstName"), is("Max"));
 		assertThat(parsedResponse.read("$.content[0].id"), is(persistedUser1.getId()));

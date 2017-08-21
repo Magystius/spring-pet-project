@@ -148,7 +148,7 @@ public class UserControllerTest extends AbstractControllerTest {
 
 	@Test
 	public void shouldReturnListOfUsersOnGetAll() throws Exception {
-		final Supplier<Stream<User>> sup = () -> Stream.of(User.builder().lastName("Mustermann").build());
+		final Supplier<Stream<User>> sup = () -> Stream.of(User.builder().id("someId").lastName("Mustermann").build());
 		when(userService.findAll()).thenReturn(sup.get());
 
 		MvcResult result = mvc.perform(get(URL_USER)
@@ -161,6 +161,7 @@ public class UserControllerTest extends AbstractControllerTest {
 		Assert.assertThat(parsedResponse.read("$.content"), is(notNullValue()));
 		Assert.assertThat(parsedResponse.read("$.content[0].lastName"), is("Mustermann"));
 		Assert.assertThat(parsedResponse.read("$.links[0].href"), containsString("/user"));
+		Assert.assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someId"));
 		Assert.assertThat(parsedResponse.read("$.total"), is(1));
 
 		verify(userService, times(1)).findAll();

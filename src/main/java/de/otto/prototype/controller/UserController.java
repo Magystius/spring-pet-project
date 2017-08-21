@@ -41,16 +41,17 @@ public class UserController {
 	@Transactional(readOnly = true)
 	@RequestMapping(method = GET, produces = APPLICATION_JSON_VALUE)
 	public ResponseEntity<UserListRepresentation> getAll() {
-		final List<User> allUsers = userService.findAll().collect(toList());
+        final List<User> allUsers = userService.findAll().collect(toList());
         if (allUsers.isEmpty())
             return noContent().build();
         final UserListRepresentation listOfUser = UserListRepresentation.builder()
-				.users(allUsers)
-				.link(linkTo(UserController.class).withSelfRel())
-				.total(allUsers.size())
-				.build();
-		return ok().body(listOfUser);
-	}
+                .users(allUsers)
+                .link(linkTo(UserController.class).withSelfRel())
+                .link(linkTo(UserController.class).slash(allUsers.get(0)).withRel("start"))
+                .total(allUsers.size())
+                .build();
+        return ok().body(listOfUser);
+    }
 
 	@RequestMapping(value = "/{userId}", method = GET, produces = APPLICATION_JSON_VALUE)
 	public ResponseEntity<UserRepresentation> getOne(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid") @PathVariable("userId") String userId) {
