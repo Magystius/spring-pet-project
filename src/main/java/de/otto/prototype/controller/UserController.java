@@ -42,7 +42,9 @@ public class UserController {
 	@RequestMapping(method = GET, produces = APPLICATION_JSON_VALUE)
 	public ResponseEntity<UserListRepresentation> getAll() {
 		final List<User> allUsers = userService.findAll().collect(toList());
-		final UserListRepresentation listOfUser = UserListRepresentation.builder()
+        if (allUsers.isEmpty())
+            return noContent().build();
+        final UserListRepresentation listOfUser = UserListRepresentation.builder()
 				.users(allUsers)
 				.link(linkTo(UserController.class).withSelfRel())
 				.total(allUsers.size())

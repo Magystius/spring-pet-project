@@ -46,8 +46,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @RunWith(DataProviderRunner.class)
 public class UserControllerTest extends AbstractControllerTest {
@@ -138,15 +137,10 @@ public class UserControllerTest extends AbstractControllerTest {
 	public void shouldReturnEmptyListIfNoUsersOnGetAll() throws Exception {
 		when(userService.findAll()).thenReturn(Stream.of());
 
-		MvcResult result = mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
+		mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
 				.andDo(print())
-				.andExpect(status().isOk())
-				.andReturn();
-
-		DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
-		Assert.assertThat(parsedResponse.read("$.content"), is(notNullValue()));
-		Assert.assertThat(parsedResponse.read("$.links[0].href"), containsString("/user"));
-		Assert.assertThat(parsedResponse.read("$.total"), is(0));
+				.andExpect(status().isNoContent())
+				.andExpect(content().string(""));
 
 		verify(userService, times(1)).findAll();
 		verifyNoMoreInteractions(userService);
