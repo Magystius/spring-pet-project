@@ -14,6 +14,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static de.otto.prototype.controller.PasswordController.URL_CHECK_PASSWORD;
 import static de.otto.prototype.controller.PasswordController.URL_RESET_PASSWORD;
+import static de.otto.prototype.controller.UserController.URL_USER;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -23,94 +26,94 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class PasswordControllerTest extends AbstractControllerTest {
+public class PasswordControllerTest {
 
-	private MockMvc mvc;
+    private MockMvc mvc;
 
-	@Mock
-	private PasswordService passwordService;
+    @Mock
+    private PasswordService passwordService;
 
-	@InjectMocks
-	private PasswordController testee;
+    @InjectMocks
+    private PasswordController testee;
 
-	@Before
-	public void init() {
-		initMocks(this);
-		mvc = MockMvcBuilders
-				.standaloneSetup(testee)
-				.build();
-	}
+    @Before
+    public void init() {
+        initMocks(this);
+        mvc = MockMvcBuilders
+                .standaloneSetup(testee)
+                .build();
+    }
 
-	@Test
-	public void shouldUpdatePasswordOnPost() throws Exception {
-		final String id = "someId";
-		final String password = "somePassword";
-		final User updatedUser = User.builder().id(id).firstName("Max").lastName("Mustermann").login(Login.builder().password(password).build()).build();
-		when(passwordService.update(id, password)).thenReturn(updatedUser);
+    @Test
+    public void shouldUpdatePasswordOnPost() throws Exception {
+        final String id = "someId";
+        final String password = "somePassword";
+        final User updatedUser = User.builder().id(id).firstName("Max").lastName("Mustermann").login(Login.builder().password(password).build()).build();
+        when(passwordService.update(id, password)).thenReturn(updatedUser);
 
-		MvcResult result = mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
-				.contentType(TEXT_PLAIN_VALUE)
-				.accept(APPLICATION_JSON_VALUE)
-				.content(password))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andReturn();
+        final MvcResult result = mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
+                .contentType(TEXT_PLAIN_VALUE)
+                .accept(APPLICATION_JSON_VALUE)
+                .content(password))
+                .andDo(print())
+                .andExpect(status().isNoContent())
+                .andReturn();
 
-		assertUserRepresentation(result.getResponse().getContentAsString(), updatedUser);
+        assertThat(result.getResponse().getHeader("Location"), containsString(URL_USER + "/" + id));
 
-		verify(passwordService, times(1)).update(id, password);
-		verifyNoMoreInteractions(passwordService);
-	}
+        verify(passwordService, times(1)).update(id, password);
+        verifyNoMoreInteractions(passwordService);
+    }
 
-	@Test
-	public void shouldReturnNotFoundIfUnknownId() throws Exception {
-		final String id = "someId";
-		final String password = "somePassword";
-		when(passwordService.update(id, password)).thenThrow(new NotFoundException("id not found"));
+    @Test
+    public void shouldReturnNotFoundIfUnknownId() throws Exception {
+        final String id = "someId";
+        final String password = "somePassword";
+        when(passwordService.update(id, password)).thenThrow(new NotFoundException("id not found"));
 
-		mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
-				.contentType(TEXT_PLAIN_VALUE)
-				.accept(APPLICATION_JSON_VALUE)
-				.content(password))
-				.andDo(print())
-				.andExpect(status().isNotFound());
+        mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
+                .contentType(TEXT_PLAIN_VALUE)
+                .accept(APPLICATION_JSON_VALUE)
+                .content(password))
+                .andDo(print())
+                .andExpect(status().isNotFound());
 
-		verify(passwordService, times(1)).update(id, password);
-		verifyNoMoreInteractions(passwordService);
-	}
+        verify(passwordService, times(1)).update(id, password);
+        verifyNoMoreInteractions(passwordService);
+    }
 
-	@Test
-	public void shouldReturnTrueIfSecurePassword() throws Exception {
-		final String password = "somePassword";
-		when(passwordService.checkPassword(password)).thenReturn(true);
+    @Test
+    public void shouldReturnTrueIfSecurePassword() throws Exception {
+        final String password = "somePassword";
+        when(passwordService.checkPassword(password)).thenReturn(true);
 
-		mvc.perform(post(URL_CHECK_PASSWORD)
-				.contentType(TEXT_PLAIN_VALUE)
-				.accept(TEXT_PLAIN_VALUE)
-				.content(password))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andExpect(content().string("true"));
+        mvc.perform(post(URL_CHECK_PASSWORD)
+                .contentType(TEXT_PLAIN_VALUE)
+                .accept(TEXT_PLAIN_VALUE)
+                .content(password))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().string("true"));
 
-		verify(passwordService, times(1)).checkPassword(password);
-		verifyNoMoreInteractions(passwordService);
-	}
+        verify(passwordService, times(1)).checkPassword(password);
+        verifyNoMoreInteractions(passwordService);
+    }
 
-	@Test
-	public void shouldReturnFalseIfInsecurePassword() throws Exception {
-		final String password = "unsec";
-		when(passwordService.checkPassword(password)).thenReturn(false);
+    @Test
+    public void shouldReturnFalseIfInsecurePassword() throws Exception {
+        final String password = "unsec";
+        when(passwordService.checkPassword(password)).thenReturn(false);
 
-		mvc.perform(post(URL_CHECK_PASSWORD)
-				.contentType(TEXT_PLAIN_VALUE)
-				.accept(TEXT_PLAIN_VALUE)
-				.content(password))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andExpect(content().string("false"));
+        mvc.perform(post(URL_CHECK_PASSWORD)
+                .contentType(TEXT_PLAIN_VALUE)
+                .accept(TEXT_PLAIN_VALUE)
+                .content(password))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().string("false"));
 
-		verify(passwordService, times(1)).checkPassword(password);
-		verifyNoMoreInteractions(passwordService);
-	}
+        verify(passwordService, times(1)).checkPassword(password);
+        verifyNoMoreInteractions(passwordService);
+    }
 
 }

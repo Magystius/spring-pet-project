@@ -50,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @RunWith(DataProviderRunner.class)
-public class UserControllerTest extends AbstractControllerTest {
+public class UserControllerTest {
 
     private static final Gson GSON = new GsonBuilder().serializeNulls().create();
     private static final Locale LOCALE = LocaleContextHolder.getLocale();
@@ -123,6 +123,20 @@ public class UserControllerTest extends AbstractControllerTest {
             messageBundle.setDefaultEncoding("UTF-8");
             messageSource = messageBundle;
         }
+    }
+
+    private void assertUserRepresentation(String responseBody, User expectedUser) {
+        DocumentContext parsedResponse = JsonPath.parse(responseBody);
+        assertThat(parsedResponse.read("$.content.id"), is(expectedUser.getId()));
+        assertThat(parsedResponse.read("$.content.firstName"), is(expectedUser.getFirstName()));
+        assertThat(parsedResponse.read("$.content.secondName"), is(expectedUser.getSecondName()));
+        assertThat(parsedResponse.read("$.content.lastName"), is(expectedUser.getLastName()));
+        assertThat(parsedResponse.read("$.content.age"), is(expectedUser.getAge()));
+        assertThat(parsedResponse.read("$.content.vip"), is(expectedUser.isVip()));
+        assertThat(parsedResponse.read("$.content.login.mail"), is(expectedUser.getLogin().getMail()));
+        assertThat(parsedResponse.read("$.content.login.password"), is(expectedUser.getLogin().getPassword()));
+        assertThat(parsedResponse.read("$.content.bio"), is(expectedUser.getBio()));
+        assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/" + expectedUser.getId()));
     }
 
     @Before

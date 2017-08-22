@@ -20,11 +20,12 @@ import java.net.URL;
 import java.util.Locale;
 
 import static de.otto.prototype.controller.PasswordController.URL_RESET_PASSWORD;
+import static de.otto.prototype.controller.UserController.URL_USER;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.springframework.http.HttpMethod.POST;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 
@@ -61,9 +62,8 @@ public class PasswordApiIntegrationTest extends AbstractIntegrationTest {
 						prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE)),
 				String.class);
 
-		assertThat(response.getStatusCode(), is(OK));
-		User expectedUser = persistedUser.toBuilder().login(persistedUser.getLogin().toBuilder().password(newPassword).build()).build();
-		assertUserRepresentation(response.getBody(), expectedUser, false);
+		assertThat(response.getStatusCode(), is(NO_CONTENT));
+		assertThat(response.getHeaders().get("Location").get(0), containsString(URL_USER + "/" + persistedUser.getId()));
 	}
 
 	@Test
