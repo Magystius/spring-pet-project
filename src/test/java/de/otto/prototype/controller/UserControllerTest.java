@@ -1,5 +1,7 @@
 package de.otto.prototype.controller;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import com.tngtech.java.junit.dataprovider.DataProvider;
@@ -13,7 +15,6 @@ import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.service.UserService;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,7 +42,7 @@ import static com.google.common.collect.ImmutableList.of;
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -51,338 +52,433 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(DataProviderRunner.class)
 public class UserControllerTest extends AbstractControllerTest {
 
-	private static final Locale LOCALE = LocaleContextHolder.getLocale();
+    private static final Gson GSON = new GsonBuilder().serializeNulls().create();
+    private static final Locale LOCALE = LocaleContextHolder.getLocale();
 
-	private static final String validUserId = "someUserId";
+    private static final String validUserId = "someUserId";
 
-	private static final Login validLogin =
-			Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
-	private static final Login validLoginWithId =
-			Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
-	private static final User validMinimumUser =
-			User.builder().lastName("Mustermann").firstName("Max").age(30).login(validLogin).build();
-	private static final User validMinimumUserWithId =
-			User.builder().id(validUserId).lastName("Mustermann").firstName("Max").age(30).login(validLoginWithId).build();
+    private static final Login validLogin =
+            Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
+    private static final Login validLoginWithId =
+            Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
+    private static final User validMinimumUser =
+            User.builder().lastName("Mustermann").firstName("Max").age(30).login(validLogin).build();
+    private static final User validMinimumUserWithId =
+            User.builder().id(validUserId).lastName("Mustermann").firstName("Max").age(30).login(validLoginWithId).build();
 
-	private static MessageSource messageSource;
+    private static MessageSource messageSource;
 
-	private MockMvc mvc;
+    private MockMvc mvc;
 
-	private UserService userService;
+    private UserService userService;
 
-	@DataProvider
-	public static Object[][] invalidNewUserProvider() {
-		return new Object[][]{
-				{validMinimumUser.toBuilder().id(validUserId).build(), buildUVRep(of(buildUVERep("error.id.new")))},
-				{validMinimumUser.toBuilder().firstName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUser.toBuilder().firstName("").build(), buildUVRep(of(buildUVERep("error.name.empty"), buildUVERep("error.name.range")))},
-				{validMinimumUser.toBuilder().secondName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUser.toBuilder().lastName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUser.toBuilder().lastName("").build(), buildUVRep(of(buildUVERep("error.name.empty"), buildUVERep("error.name.range")))},
-				{validMinimumUser.toBuilder().age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))},
-				{validMinimumUser.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))},
-				{validMinimumUser.toBuilder().login(validLogin.toBuilder().mail("keineMail").build()).build(), buildUVRep(of(buildUVERep("error.mail.invalid")))},
-				{validMinimumUser.toBuilder().login(validLogin.toBuilder().password("").build()).build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))},
-				{validMinimumUser.toBuilder().bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))}
-		};
-	}
+    @DataProvider
+    public static Object[][] invalidNewUserProvider() {
+        return new Object[][]{
+                {validMinimumUser.toBuilder().id(validUserId).build(), buildUVRep(of(buildUVERep("error.id.new")))},
+                {validMinimumUser.toBuilder().firstName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
+                {validMinimumUser.toBuilder().firstName("").build(), buildUVRep(of(buildUVERep("error.name.empty"), buildUVERep("error.name.range")))},
+                {validMinimumUser.toBuilder().secondName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
+                {validMinimumUser.toBuilder().lastName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
+                {validMinimumUser.toBuilder().lastName("").build(), buildUVRep(of(buildUVERep("error.name.empty"), buildUVERep("error.name.range")))},
+                {validMinimumUser.toBuilder().age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))},
+                {validMinimumUser.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))},
+                {validMinimumUser.toBuilder().login(validLogin.toBuilder().mail("keineMail").build()).build(), buildUVRep(of(buildUVERep("error.mail.invalid")))},
+                {validMinimumUser.toBuilder().login(validLogin.toBuilder().password("").build()).build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))},
+                {validMinimumUser.toBuilder().bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))}
+        };
+    }
 
-	@DataProvider
-	public static Object[][] invalidExistingUserProvider() {
-		return new Object[][]{
-				{validMinimumUserWithId.toBuilder().id(null).build(), buildUVRep(of((buildUVERep("error.id.existing"))))},
-				{validMinimumUserWithId.toBuilder().firstName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUserWithId.toBuilder().firstName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))},
-				{validMinimumUserWithId.toBuilder().secondName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUserWithId.toBuilder().lastName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUserWithId.toBuilder().lastName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))},
-				{validMinimumUserWithId.toBuilder().age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))},
-				{validMinimumUserWithId.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))},
-				{validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().mail("keineMail").build()).build(), buildUVRep(of(buildUVERep("error.mail.invalid")))},
-				{validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().password("").build()).build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))},
-				{validMinimumUserWithId.toBuilder().bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))}
-		};
-	}
+    @DataProvider
+    public static Object[][] invalidExistingUserProvider() {
+        return new Object[][]{
+                {validMinimumUserWithId.toBuilder().id(null).build(), buildUVRep(of((buildUVERep("error.id.existing"))))},
+                {validMinimumUserWithId.toBuilder().firstName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
+                {validMinimumUserWithId.toBuilder().firstName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))},
+                {validMinimumUserWithId.toBuilder().secondName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
+                {validMinimumUserWithId.toBuilder().lastName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
+                {validMinimumUserWithId.toBuilder().lastName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))},
+                {validMinimumUserWithId.toBuilder().age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))},
+                {validMinimumUserWithId.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))},
+                {validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().mail("keineMail").build()).build(), buildUVRep(of(buildUVERep("error.mail.invalid")))},
+                {validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().password("").build()).build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))},
+                {validMinimumUserWithId.toBuilder().bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))}
+        };
+    }
 
-	private static UserValidationEntryRepresentation buildUVERep(String msgCode) {
-		initMessageSource();
-		String msg = messageSource.getMessage(msgCode, null, LOCALE);
-		return UserValidationEntryRepresentation.builder().attribute("user").errorMessage(msg).build();
-	}
+    private static UserValidationEntryRepresentation buildUVERep(String msgCode) {
+        initMessageSource();
+        String msg = messageSource.getMessage(msgCode, null, LOCALE);
+        return UserValidationEntryRepresentation.builder().attribute("user").errorMessage(msg).build();
+    }
 
-	private static UserValidationRepresentation buildUVRep(List<UserValidationEntryRepresentation> errors) {
-		return UserValidationRepresentation.builder().errors(errors).build();
-	}
+    private static UserValidationRepresentation buildUVRep(List<UserValidationEntryRepresentation> errors) {
+        return UserValidationRepresentation.builder().errors(errors).build();
+    }
 
-	private static void initMessageSource() {
-		if (messageSource == null) {
-			ReloadableResourceBundleMessageSource messageBundle = new ReloadableResourceBundleMessageSource();
-			messageBundle.setBasename("classpath:messages/messages");
-			messageBundle.setDefaultEncoding("UTF-8");
-			messageSource = messageBundle;
-		}
-	}
+    private static void initMessageSource() {
+        if (messageSource == null) {
+            ReloadableResourceBundleMessageSource messageBundle = new ReloadableResourceBundleMessageSource();
+            messageBundle.setBasename("classpath:messages/messages");
+            messageBundle.setDefaultEncoding("UTF-8");
+            messageSource = messageBundle;
+        }
+    }
 
-	@Before
-	public void init() {
-		initMessageSource();
-		userService = mock(UserService.class);
-		mvc = MockMvcBuilders
-				.standaloneSetup(new UserController(userService))
-				.setHandlerExceptionResolvers(createExceptionResolver())
-				.build();
-	}
+    @Before
+    public void init() {
+        initMessageSource();
+        userService = mock(UserService.class);
+        mvc = MockMvcBuilders
+                .standaloneSetup(new UserController(userService))
+                .setHandlerExceptionResolvers(createExceptionResolver())
+                .build();
+    }
 
-	@Test
-	public void shouldReturnEmptyListIfNoUsersOnGetAll() throws Exception {
-		when(userService.findAll()).thenReturn(Stream.of());
+    @Test
+    public void shouldReturnEmptyListIfNoUsersOnGetAll() throws Exception {
+        when(userService.findAll()).thenReturn(Stream.of());
 
-		mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
-				.andDo(print())
-				.andExpect(status().isNoContent())
-				.andExpect(content().string(""));
+        mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
 
-		verify(userService, times(1)).findAll();
-		verifyNoMoreInteractions(userService);
-	}
+        verify(userService, times(1)).findAll();
+        verifyNoMoreInteractions(userService);
+    }
 
-	@Test
-	public void shouldReturnListOfUsersOnGetAll() throws Exception {
-		final Supplier<Stream<User>> sup = () -> Stream.of(User.builder().id("someId").lastName("Mustermann").build());
-		when(userService.findAll()).thenReturn(sup.get());
+    @Test
+    public void shouldReturnListOfUsersOnGetAll() throws Exception {
+        final Supplier<Stream<User>> sup = () -> Stream.of(User.builder().id("someId").lastName("Mustermann").build());
+        when(userService.findAll()).thenReturn(sup.get());
 
-		MvcResult result = mvc.perform(get(URL_USER)
-				.accept(MediaType.APPLICATION_JSON))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andReturn();
+        MvcResult result = mvc.perform(get(URL_USER)
+                .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
 
-		DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
-		Assert.assertThat(parsedResponse.read("$.content"), is(notNullValue()));
-		Assert.assertThat(parsedResponse.read("$.content[0].lastName"), is("Mustermann"));
-		Assert.assertThat(parsedResponse.read("$.links[0].href"), containsString("/user"));
-		Assert.assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someId"));
-		Assert.assertThat(parsedResponse.read("$.total"), is(1));
+        DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
+        assertThat(parsedResponse.read("$.content"), is(notNullValue()));
+        assertThat(parsedResponse.read("$.content[0].lastName"), is("Mustermann"));
+        assertThat(parsedResponse.read("$.links[0].href"), containsString("/user"));
+        assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someId"));
+        assertThat(parsedResponse.read("$.total"), is(1));
 
-		verify(userService, times(1)).findAll();
-		verifyNoMoreInteractions(userService);
-	}
+        verify(userService, times(1)).findAll();
+        verifyNoMoreInteractions(userService);
+    }
 
-	@Test
-	public void shouldReturnAUserIfFoundOnGetOne() throws Exception {
-		when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+    @Test
+    public void shouldReturnAllLinksIfGetUserFromMiddlePosition() throws Exception {
+        when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+        when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("first").build(),
+                validMinimumUserWithId.toBuilder().id("someUserId").build(),
+                validMinimumUserWithId.toBuilder().id("last").build()));
 
-		MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
-				.accept(MediaType.APPLICATION_JSON))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andReturn();
+        MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
+                .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
 
-		assertUserRepresentation(result.getResponse().getContentAsString(), validMinimumUserWithId);
+        DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
+        assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId"));
+        assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/first"));
+        assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/first"));
+        assertThat(parsedResponse.read("$.links[3].href"), containsString("/user/last"));
 
-		verify(userService, times(1)).findOne(validUserId);
-		verifyNoMoreInteractions(userService);
-	}
+        verify(userService, times(1)).findAll();
+        verify(userService, times(1)).findOne(validUserId);
+        verifyNoMoreInteractions(userService);
+    }
 
-	@Test
-	public void shouldReturn404IfUserNotFoundOnGetOne() throws Exception {
-		when(userService.findOne(validUserId)).thenReturn(Optional.empty());
+    @Test
+    public void shouldReturnSelfAndStartIfOnlyOne() throws Exception {
+        when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+        when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("someUserId").build()));
 
-		mvc.perform(get(URL_USER + "/" + validUserId)
-				.accept(MediaType.APPLICATION_JSON))
-				.andDo(print())
-				.andExpect(status().isNotFound());
+        MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
+                .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
 
-		verify(userService, times(1)).findOne(validUserId);
-		verifyNoMoreInteractions(userService);
-	}
+        DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
+        assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId"));
+        assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someUserId"));
 
-	@Test
-	public void shouldCreateUserAndReturnItsLocationOnPost() throws Exception {
-		final User userToPersist = validMinimumUser;
-		final User persistedUser = userToPersist.toBuilder().id(validUserId).build();
-		when(userService.create(userToPersist)).thenReturn(persistedUser);
+        verify(userService, times(1)).findAll();
+        verify(userService, times(1)).findOne(validUserId);
+        verifyNoMoreInteractions(userService);
+    }
 
-		MvcResult result = mvc.perform(post(URL_USER)
-				.contentType(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(userToPersist)))
-				.andDo(print())
-				.andExpect(status().isCreated())
-				.andExpect(header().string("location", containsString(URL_USER + "/" + validUserId)))
-				.andReturn();
+    @Test
+    public void shouldReturnPrevIfLastUser() throws Exception {
+        when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+        when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("first").build(),
+                validMinimumUserWithId.toBuilder().id("someUserId").build()));
 
-		assertUserRepresentation(result.getResponse().getContentAsString(), persistedUser);
+        MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
+                .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
 
-		verify(userService, times(1)).create(userToPersist);
-		verifyNoMoreInteractions(userService);
-	}
+        DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
+        assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId"));
+        assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/first"));
+        assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/first"));
 
-	@Test
-	public void shouldUpdateUserOnPut() throws Exception {
-		final User updatedUser = validMinimumUserWithId.toBuilder().build();
-		when(userService.update(updatedUser)).thenReturn(updatedUser);
+        verify(userService, times(1)).findAll();
+        verify(userService, times(1)).findOne(validUserId);
+        verifyNoMoreInteractions(userService);
+    }
 
-		MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
-				.contentType(APPLICATION_JSON_VALUE)
-				.accept(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(updatedUser)))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andReturn();
+    @Test
+    public void shouldReturnNextIfFirstUser() throws Exception {
+        when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+        when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("someUserId").build(),
+                validMinimumUserWithId.toBuilder().id("last").build()));
 
-		assertUserRepresentation(result.getResponse().getContentAsString(), updatedUser);
+        MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
+                .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
 
-		verify(userService, times(1)).update(updatedUser);
-		verifyNoMoreInteractions(userService);
-	}
+        DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
+        assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId"));
+        assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someUserId"));
+        assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/last"));
 
-	@Test
-	public void shouldReturnNotFoundIfIDsDifferOnPut() throws Exception {
-		final User updatedUser = validMinimumUserWithId.toBuilder().build();
+        verify(userService, times(1)).findAll();
+        verify(userService, times(1)).findOne(validUserId);
+        verifyNoMoreInteractions(userService);
+    }
 
-		Long differentId = 9999L;
-		mvc.perform(put(URL_USER + "/" + differentId)
-				.contentType(APPLICATION_JSON_VALUE)
-				.accept(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(updatedUser)))
-				.andDo(print())
-				.andExpect(status().isNotFound());
+    @Test
+    public void shouldReturnAUserIfFoundOnGetOne() throws Exception {
+        when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+        when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("someUserId").build()));
 
-		verifyNoMoreInteractions(userService);
-	}
+        MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
+                .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
 
-	@Test
-	public void shouldReturNotFoundIfIdNotFoundOnPut() throws Exception {
-		final User updatedUser = validMinimumUserWithId.toBuilder().build();
-		when(userService.update(updatedUser)).thenThrow(new NotFoundException("id not found"));
+        assertUserRepresentation(result.getResponse().getContentAsString(), validMinimumUserWithId);
 
-		mvc.perform(put(URL_USER + "/" + validUserId)
-				.contentType(APPLICATION_JSON_VALUE)
-				.accept(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(updatedUser)))
-				.andDo(print())
-				.andExpect(status().isNotFound());
+        verify(userService, times(1)).findOne(validUserId);
+        verify(userService, times(1)).findAll();
+        verifyNoMoreInteractions(userService);
+    }
 
-		verify(userService, times(1)).update(updatedUser);
-		verifyNoMoreInteractions(userService);
-	}
+    @Test
+    public void shouldReturn404IfUserNotFoundOnGetOne() throws Exception {
+        when(userService.findOne(validUserId)).thenReturn(Optional.empty());
 
-	@Test
-	public void shouldReturnBadRequestIfInvalidMailOnPut() throws Exception {
-		final User userToPersist = validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().mail("max.mustermann@web.de").build()).build();
-		String errorMsg = "only mails by otto allowed";
-		String errorCause = "buasiness";
-		UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
-		when(userService.update(userToPersist)).thenThrow(new InvalidUserException(userToPersist, errorCause, errorMsg));
+        mvc.perform(get(URL_USER + "/" + validUserId)
+                .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isNotFound());
 
-		final MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
-				.contentType(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(userToPersist)))
-				.andDo(print())
-				.andExpect(status().isBadRequest())
-				.andReturn();
+        verify(userService, times(1)).findOne(validUserId);
+        verifyNoMoreInteractions(userService);
+    }
 
-		verify(userService, times(1)).update(userToPersist);
-		UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
-		assertThat(returnedErrors.getErrors().get(0), is(returnedError));
-		verifyNoMoreInteractions(userService);
-	}
+    @Test
+    public void shouldCreateUserAndReturnItsLocationOnPost() throws Exception {
+        final User userToPersist = validMinimumUser;
+        final User persistedUser = userToPersist.toBuilder().id(validUserId).build();
+        when(userService.create(userToPersist)).thenReturn(persistedUser);
+        when(userService.findAll()).thenReturn(Stream.of(persistedUser));
 
-	@Test
-	public void shouldReturnBadRequestIfIdIsAlreadySetOnPost() throws Exception {
-		final User userToPersist = validMinimumUser.toBuilder().id(validUserId).build();
+        MvcResult result = mvc.perform(post(URL_USER)
+                .contentType(APPLICATION_JSON_VALUE)
+                .content(GSON.toJson(userToPersist)))
+                .andDo(print())
+                .andExpect(status().isCreated())
+                .andExpect(header().string("location", containsString(URL_USER + "/" + validUserId)))
+                .andReturn();
 
-		mvc.perform(post(URL_USER)
-				.contentType(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(userToPersist)))
-				.andDo(print())
-				.andExpect(status().isBadRequest());
+        assertUserRepresentation(result.getResponse().getContentAsString(), persistedUser);
 
-		verifyNoMoreInteractions(userService);
-	}
+        verify(userService, times(1)).create(userToPersist);
+        verify(userService, times(1)).findAll();
+        verifyNoMoreInteractions(userService);
+    }
 
-	@Test
-	public void shouldReturnBadRequestIfInvalidMailOnPost() throws Exception {
-		final User userToPersist = validMinimumUser.toBuilder().login(validLogin.toBuilder().mail("max.mustermann@web.de").build()).build();
-		String errorMsg = "only mails by otto allowed";
-		String errorCause = "buasiness";
-		UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
-		when(userService.create(userToPersist)).thenThrow(new InvalidUserException(userToPersist, errorCause, errorMsg));
+    @Test
+    public void shouldUpdateUserOnPut() throws Exception {
+        final User updatedUser = validMinimumUserWithId.toBuilder().build();
+        when(userService.update(updatedUser)).thenReturn(updatedUser);
+        when(userService.findAll()).thenReturn(Stream.of(updatedUser));
 
-		final MvcResult result = mvc.perform(post(URL_USER)
-				.contentType(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(userToPersist)))
-				.andDo(print())
-				.andExpect(status().isBadRequest())
-				.andReturn();
+        MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
+                .contentType(APPLICATION_JSON_VALUE)
+                .accept(APPLICATION_JSON_VALUE)
+                .content(GSON.toJson(updatedUser)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn();
 
-		verify(userService, times(1)).create(userToPersist);
-		UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
-		assertThat(returnedErrors.getErrors().get(0), is(returnedError));
-		verifyNoMoreInteractions(userService);
-	}
+        assertUserRepresentation(result.getResponse().getContentAsString(), updatedUser);
 
-	@Test
-	public void shouldDeleteUserOnDelete() throws Exception {
-		mvc.perform(delete(URL_USER + "/" + validUserId))
-				.andDo(print())
-				.andExpect(status().isNoContent());
+        verify(userService, times(1)).update(updatedUser);
+        verify(userService, times(1)).findAll();
+        verifyNoMoreInteractions(userService);
+    }
 
-		verify(userService, times(1)).delete(validUserId);
-		verifyNoMoreInteractions(userService);
-	}
+    @Test
+    public void shouldReturnNotFoundIfIDsDifferOnPut() throws Exception {
+        final User updatedUser = validMinimumUserWithId.toBuilder().build();
 
-	@Test
-	public void shouldReturnNotFoundIfUserIdNotFoundOnDelete() throws Exception {
-		doThrow(new NotFoundException("id not found")).when(userService).delete(validUserId);
+        Long differentId = 9999L;
+        mvc.perform(put(URL_USER + "/" + differentId)
+                .contentType(APPLICATION_JSON_VALUE)
+                .accept(APPLICATION_JSON_VALUE)
+                .content(GSON.toJson(updatedUser)))
+                .andDo(print())
+                .andExpect(status().isNotFound());
 
-		mvc.perform(delete(URL_USER + "/" + validUserId))
-				.andDo(print())
-				.andExpect(status().isNotFound());
+        verifyNoMoreInteractions(userService);
+    }
 
-		verify(userService, times(1)).delete(validUserId);
-		verifyNoMoreInteractions(userService);
-	}
+    @Test
+    public void shouldReturNotFoundIfIdNotFoundOnPut() throws Exception {
+        final User updatedUser = validMinimumUserWithId.toBuilder().build();
+        when(userService.update(updatedUser)).thenThrow(new NotFoundException("id not found"));
 
-	@Test
-	@UseDataProvider("invalidNewUserProvider")
-	public void shouldReturnBadRequestForInvalidNewUserOnPost(User invalidUser, UserValidationRepresentation errors) throws Exception {
-		final MvcResult result = mvc.perform(post(URL_USER)
-				.contentType(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(invalidUser)))
-				.andDo(print())
-				.andExpect(status().isBadRequest())
-				.andReturn();
+        mvc.perform(put(URL_USER + "/" + validUserId)
+                .contentType(APPLICATION_JSON_VALUE)
+                .accept(APPLICATION_JSON_VALUE)
+                .content(GSON.toJson(updatedUser)))
+                .andDo(print())
+                .andExpect(status().isNotFound());
 
-		UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
-		assertThat(returnedErrors.getErrors().stream().filter(error -> !errors.getErrors().contains(error)).collect(toList()).size(), is(0));
-		verifyNoMoreInteractions(userService);
-	}
+        verify(userService, times(1)).update(updatedUser);
+        verifyNoMoreInteractions(userService);
+    }
 
-	@Test
-	@UseDataProvider("invalidExistingUserProvider")
-	public void shouldReturnBadRequestForInvalidExistingUserOnPost(User invalidUser, UserValidationRepresentation errors) throws Exception {
-		final MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
-				.contentType(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(invalidUser)))
-				.andDo(print())
-				.andExpect(status().isBadRequest())
-				.andReturn();
+    @Test
+    public void shouldReturnBadRequestIfInvalidMailOnPut() throws Exception {
+        final User userToPersist = validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().mail("max.mustermann@web.de").build()).build();
+        String errorMsg = "only mails by otto allowed";
+        String errorCause = "buasiness";
+        UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
+        when(userService.update(userToPersist)).thenThrow(new InvalidUserException(userToPersist, errorCause, errorMsg));
 
-		UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
-		assertThat(returnedErrors.getErrors().stream().filter(error -> !errors.getErrors().contains(error)).collect(toList()).size(), is(0));
-		verifyNoMoreInteractions(userService);
-	}
+        final MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
+                .contentType(APPLICATION_JSON_VALUE)
+                .content(GSON.toJson(userToPersist)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andReturn();
 
-	private ExceptionHandlerExceptionResolver createExceptionResolver() {
-		ExceptionHandlerExceptionResolver exceptionResolver = new ExceptionHandlerExceptionResolver() {
-			protected ServletInvocableHandlerMethod getExceptionHandlerMethod(HandlerMethod handlerMethod, Exception exception) {
-				Method method = new ExceptionHandlerMethodResolver(ControllerValidationHandler.class).resolveMethod(exception);
-				return new ServletInvocableHandlerMethod(new ControllerValidationHandler(messageSource), method);
-			}
-		};
-		exceptionResolver.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
-		exceptionResolver.afterPropertiesSet();
-		return exceptionResolver;
-	}
+        verify(userService, times(1)).update(userToPersist);
+        UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
+        assertThat(returnedErrors.getErrors().get(0), is(returnedError));
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void shouldReturnBadRequestIfIdIsAlreadySetOnPost() throws Exception {
+        final User userToPersist = validMinimumUser.toBuilder().id(validUserId).build();
+
+        mvc.perform(post(URL_USER)
+                .contentType(APPLICATION_JSON_VALUE)
+                .content(GSON.toJson(userToPersist)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
+
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void shouldReturnBadRequestIfInvalidMailOnPost() throws Exception {
+        final User userToPersist = validMinimumUser.toBuilder().login(validLogin.toBuilder().mail("max.mustermann@web.de").build()).build();
+        String errorMsg = "only mails by otto allowed";
+        String errorCause = "buasiness";
+        UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
+        when(userService.create(userToPersist)).thenThrow(new InvalidUserException(userToPersist, errorCause, errorMsg));
+
+        final MvcResult result = mvc.perform(post(URL_USER)
+                .contentType(APPLICATION_JSON_VALUE)
+                .content(GSON.toJson(userToPersist)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        verify(userService, times(1)).create(userToPersist);
+        UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
+        assertThat(returnedErrors.getErrors().get(0), is(returnedError));
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void shouldDeleteUserOnDelete() throws Exception {
+        mvc.perform(delete(URL_USER + "/" + validUserId))
+                .andDo(print())
+                .andExpect(status().isNoContent());
+
+        verify(userService, times(1)).delete(validUserId);
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void shouldReturnNotFoundIfUserIdNotFoundOnDelete() throws Exception {
+        doThrow(new NotFoundException("id not found")).when(userService).delete(validUserId);
+
+        mvc.perform(delete(URL_USER + "/" + validUserId))
+                .andDo(print())
+                .andExpect(status().isNotFound());
+
+        verify(userService, times(1)).delete(validUserId);
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    @UseDataProvider("invalidNewUserProvider")
+    public void shouldReturnBadRequestForInvalidNewUserOnPost(User invalidUser, UserValidationRepresentation errors) throws Exception {
+        final MvcResult result = mvc.perform(post(URL_USER)
+                .contentType(APPLICATION_JSON_VALUE)
+                .content(GSON.toJson(invalidUser)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
+        assertThat(returnedErrors.getErrors().stream().filter(error -> !errors.getErrors().contains(error)).collect(toList()).size(), is(0));
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    @UseDataProvider("invalidExistingUserProvider")
+    public void shouldReturnBadRequestForInvalidExistingUserOnPost(User invalidUser, UserValidationRepresentation errors) throws Exception {
+        final MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
+                .contentType(APPLICATION_JSON_VALUE)
+                .content(GSON.toJson(invalidUser)))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andReturn();
+
+        UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
+        assertThat(returnedErrors.getErrors().stream().filter(error -> !errors.getErrors().contains(error)).collect(toList()).size(), is(0));
+        verifyNoMoreInteractions(userService);
+    }
+
+    private ExceptionHandlerExceptionResolver createExceptionResolver() {
+        ExceptionHandlerExceptionResolver exceptionResolver = new ExceptionHandlerExceptionResolver() {
+            protected ServletInvocableHandlerMethod getExceptionHandlerMethod(HandlerMethod handlerMethod, Exception exception) {
+                Method method = new ExceptionHandlerMethodResolver(ControllerValidationHandler.class).resolveMethod(exception);
+                return new ServletInvocableHandlerMethod(new ControllerValidationHandler(messageSource), method);
+            }
+        };
+        exceptionResolver.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
+        exceptionResolver.afterPropertiesSet();
+        return exceptionResolver;
+    }
 }

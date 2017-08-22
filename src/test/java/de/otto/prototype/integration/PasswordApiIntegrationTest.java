@@ -63,7 +63,7 @@ public class PasswordApiIntegrationTest extends AbstractIntegrationTest {
 
 		assertThat(response.getStatusCode(), is(OK));
 		User expectedUser = persistedUser.toBuilder().login(persistedUser.getLogin().toBuilder().password(newPassword).build()).build();
-		assertUserRepresentation(response.getBody(), expectedUser);
+		assertUserRepresentation(response.getBody(), expectedUser, false);
 	}
 
 	@Test

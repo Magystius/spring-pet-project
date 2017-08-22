@@ -88,7 +88,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 				String.class);
 
 		assertThat(response.getStatusCode(), is(OK));
-		assertUserRepresentation(response.getBody(), persistedUser);
+		assertUserRepresentation(response.getBody(), persistedUser, true);
 	}
 
 	@Test
@@ -103,7 +103,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 		assertThat(response.getHeaders().get("Location").get(0).contains("/user/"), is(true));
 		final User createdUser = userRepository.findOne((String) JsonPath.read(response.getBody(), "$.content.id"));
 		assertThat(createdUser, is(notNullValue()));
-		assertUserRepresentation(response.getBody(), createdUser);
+		assertUserRepresentation(response.getBody(), createdUser, true);
 	}
 
 	@Test
@@ -119,7 +119,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 				String.class);
 
 		assertThat(response.getStatusCode(), is(OK));
-		assertUserRepresentation(response.getBody(), updatedUser);
+		assertUserRepresentation(response.getBody(), updatedUser, true);
 	}
 
 	@Test
