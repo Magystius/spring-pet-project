@@ -94,7 +94,7 @@ public class UserController {
         return noContent().build();
     }
 
-    public List<Link> determineLinksForUser(User user) {
+    public List<Link> determineLinksForUser(final User user) {
         final List<User> listOfUsers = userService.findAll().collect(toList());
         final List<Link> links = new ArrayList<>();
         links.add(linkTo(UserController.class).slash(user).withSelfRel());

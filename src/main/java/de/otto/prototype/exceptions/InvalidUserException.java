@@ -10,9 +10,9 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 @ResponseStatus(value = BAD_REQUEST)
 public class InvalidUserException extends RuntimeException {
 
-    private User user;
-    private String errorCause;
-    private String errorMsg;
+    private final User user;
+    private final String errorCause;
+    private final String errorMsg;
 
     public InvalidUserException(final User user, final String errorCause, final String errorMsg) {
         super(errorMsg);

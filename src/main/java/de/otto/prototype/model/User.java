@@ -19,6 +19,9 @@ import static org.hibernate.validator.constraints.SafeHtml.WhiteListType.NONE;
 @Builder(toBuilder = true)
 public class User implements Identifiable<String> {
 
+	public static final int AGE_YOUNGEST = 18;
+	public static final int AGE_OLDEST = 150;
+
 	@Id
 	@NotNull(groups = Existing.class, message = "error.id.existing")
 	@Null(groups = New.class, message = "error.id.new")
@@ -36,8 +39,8 @@ public class User implements Identifiable<String> {
 	private final String lastName;
 
 	@NotNull(message = "error.age.empty")
-	@Min(value = 18, message = "error.age.young")
-	@Max(value = 150, message = "error.age.old")
+	@Min(value = AGE_YOUNGEST, message = "error.age.young")
+	@Max(value = AGE_OLDEST, message = "error.age.old")
 	private final int age;
 
 	private final boolean vip;

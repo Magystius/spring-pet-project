@@ -8,7 +8,7 @@ public class SecurePasswordValidator implements ConstraintValidator<SecurePasswo
 	private String pattern;
 
 	@Override
-	public void initialize(SecurePassword constraintAnnotation) {
+	public void initialize(final SecurePassword constraintAnnotation) {
 		this.pattern = constraintAnnotation.pattern();
 	}
 

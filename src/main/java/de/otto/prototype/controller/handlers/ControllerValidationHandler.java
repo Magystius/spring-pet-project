@@ -58,15 +58,6 @@ public class ControllerValidationHandler {
 		return UserValidationRepresentation.builder().errors(errors).build();
 	}
 
-	private UserValidationEntryRepresentation getUserValidationEntryRepresentation(final String msgCode, final String errObj) {
-		String msg = msgCode;
-		try {
-			msg = msgSource.getMessage(msgCode, null, LOCALE);
-		} catch (NoSuchMessageException ignored) {
-		}
-		return UserValidationEntryRepresentation.builder().attribute(errObj).errorMessage(msg).build();
-	}
-
 	@ExceptionHandler(InvalidUserException.class)
 	@ResponseStatus(BAD_REQUEST)
 	@ResponseBody
@@ -76,8 +67,18 @@ public class ControllerValidationHandler {
 	}
 
 	//TODO: remove this -> only here because unit test is broken...
+
 	@ExceptionHandler(NotFoundException.class)
 	@ResponseStatus(NOT_FOUND)
 	public void processValidationError() {
+	}
+
+	private UserValidationEntryRepresentation getUserValidationEntryRepresentation(final String msgCode, final String errObj) {
+		String msg = msgCode;
+		try {
+			msg = msgSource.getMessage(msgCode, null, LOCALE);
+		} catch (NoSuchMessageException ignored) {
+		}
+		return UserValidationEntryRepresentation.builder().attribute(errObj).errorMessage(msg).build();
 	}
 }

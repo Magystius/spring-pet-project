@@ -25,6 +25,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 public class PasswordController {
 
     public static final String URL_RESET_PASSWORD = "/resetpassword";
+    
     public static final String URL_CHECK_PASSWORD = "/checkpassword";
 
     private PasswordService passwordService;
