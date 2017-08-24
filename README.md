@@ -5,7 +5,7 @@
 
 # Spring Validation Demo
 
-Demo App für Spring Boot
+Demo App für Spring Boot 
 
 ### Usage:
 
@@ -16,42 +16,54 @@ curl -i -H "Accept: application/json"  -X GET /user
 _Response_ - `200`
 ````json
 {
-  "users": [
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/user"
+    },
+    "start": {
+      "href": "http://localhost:8080/user/599f2e1c70f9864e881e27b9"
+    }
+  },
+  "total": 3,
+  "content": [
     {
-      "id": 1,
-      "firstName": "AWS",
+      "id": "599f2e1c70f9864e881e27b9",
+      "firstName": "AWS1",
+      "secondName": null,
       "lastName": "AWS",
       "age": 30,
       "vip": false,
       "login": {
-        "id": 1,
         "mail": "max.mustermann@otto.de",
         "password": "somePassword"
-      }
+      },
+      "bio": null
     },
     {
-      "id": 2,
+      "id": "599f2e1d70f9864e881e27ba",
       "firstName": "AWS4",
+      "secondName": null,
       "lastName": "AWS2",
       "age": 30,
       "vip": false,
       "login": {
-        "id": 2,
         "mail": "max.mustermann@otto.de",
         "password": "somePassword"
-      }
+      },
+      "bio": null
     },
     {
-      "id": 3,
+      "id": "599f2e1d70f9864e881e27bb",
       "firstName": "Lara",
+      "secondName": null,
       "lastName": "Lavendel",
       "age": 30,
       "vip": false,
       "login": {
-        "id": 3,
         "mail": "max.mustermann@otto.de",
         "password": "somePassword"
-      }
+      },
+      "bio": null
     }
   ]
 }
@@ -64,15 +76,32 @@ curl -i -H "Accept: application/json"  -X GET /user/{userId}
 _Response_ - `200`
 ````json
 {
-  "id": 1,
-  "firstName": "AWS",
-  "lastName": "AWS",
-  "age": 30,
-  "vip": false,
-  "login": {
-    "id": 1,
-    "mail": "max.mustermann@otto.de",
-    "password": "somePassword"
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58fe"
+    },
+    "start": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58fd"
+    },
+    "prev": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58fd"
+    },
+    "next": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58ff"
+    }
+  },
+  "content": {
+    "id": "599f2e6170f9864ae00c58fe",
+    "firstName": "AWS4",
+    "secondName": null,
+    "lastName": "AWS2",
+    "age": 30,
+    "vip": false,
+    "login": {
+      "mail": "max.mustermann@otto.de",
+      "password": "somePassword"
+    },
+    "bio": null
   }
 }
 ````
@@ -90,13 +119,41 @@ _Body_
   "age": 30,
   "vip": false,
   "login": {
-  "mail": "max.mustermann@otto.de",
-  "password": "somePassword"
+      "mail": "max.mustermann@otto.de",
+      "password": "somePassword"
   },
   "bio": "some text"
 }
 ````
-_Response_ `201 Location: /user/4`
+_Response_ `201 Location: http://localhost:8080/user/599f2ec570f9864ae00c5900`
+`````json
+{
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/user/599f2ec570f9864ae00c5900"
+    },
+    "start": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58fd"
+    },
+    "prev": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58ff"
+    }
+  },
+  "content": {
+    "id": "599f2ec570f9864ae00c5900",
+    "firstName": "AWS1",
+    "secondName": null,
+    "lastName": "AWS",
+    "age": 30,
+    "vip": false,
+    "login": {
+      "mail": "max.mustermann@otto.de",
+      "password": "somePassword"
+    },
+    "bio": null
+  }
+}
+`````
 
 **UPDATE**
 ````
@@ -105,31 +162,46 @@ curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X PUT
 _Body_
 ````json
 {
-  "firstName": "NEU",
-  "secondName": "Joachim",
-  "lastName": "AWS",
-  "age": 30,
-  "vip": false,
-  "login": {
-  "mail": "max.mustermann@otto.de",
-  "password": "somePassword"
-  },
-  "bio": "some text"
+     "id": "599f2ec570f9864ae00c5900",
+    "firstName": "AWS10",
+    "secondName": null,
+    "lastName": "AWS",
+    "age": 30,
+    "vip": false,
+    "login": {
+        "mail": "max.mustermann@otto.de",
+        "password": "somePassword"
+    },
+    "bio": null
 }
 ````
 _Response_ `200`
 ````json
 {
-  "firstName": "NEU",
-  "secondName": "Joachim",
-  "lastName": "AWS",
-  "age": 30,
-  "vip": false,
-  "login": {
-  "mail": "max.mustermann@otto.de",
-  "password": "somePassword"
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/user/599f2ec570f9864ae00c5900"
+    },
+    "start": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58fd"
+    },
+    "prev": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58ff"
+    }
   },
-  "bio": "some text"
+  "content": {
+    "id": "599f2ec570f9864ae00c5900",
+    "firstName": "AWS10",
+    "secondName": null,
+    "lastName": "AWS",
+    "age": 30,
+    "vip": false,
+    "login": {
+      "mail": "max.mustermann@otto.de",
+      "password": "somePassword"
+    },
+    "bio": null
+  }
 }
 ````
 **DELETE**

@@ -16,9 +16,9 @@ import java.util.List;
 @Builder
 public class UserRepresentation extends ResourceSupport {
 
-	@JsonProperty("content")
-	private final User user;
-
 	@Singular
 	private final List<Link> links;
+
+	@JsonProperty("content")
+	private final User user;
 }

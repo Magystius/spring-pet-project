@@ -17,11 +17,11 @@ import java.util.List;
 public class UserListRepresentation extends ResourceSupport {
 
 	@Singular
-	@JsonProperty("content")
-	private final List<User> users;
-
-	@Singular
 	private final List<Link> links;
 
 	private final Integer total;
+
+	@Singular
+	@JsonProperty("content")
+	private final List<User> users;
 }
