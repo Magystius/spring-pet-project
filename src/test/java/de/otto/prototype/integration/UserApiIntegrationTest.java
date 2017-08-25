@@ -25,6 +25,7 @@ import java.util.Locale;
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertThat;
+import static org.springframework.http.HttpHeaders.ETAG;
 import static org.springframework.http.HttpMethod.*;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -88,6 +89,8 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 				String.class);
 
 		assertThat(response.getStatusCode(), is(OK));
+		final String eTagHeader = response.getHeaders().get(ETAG).get(0);
+		assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(persistedUser.getETag()));
 		assertUserRepresentation(response.getBody(), persistedUser, true);
 	}
 

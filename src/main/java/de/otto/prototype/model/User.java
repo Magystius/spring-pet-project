@@ -1,5 +1,7 @@
 package de.otto.prototype.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.hash.HashFunction;
 import lombok.Builder;
 import lombok.Value;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -12,6 +14,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.*;
 import javax.validation.groups.Default;
 
+import static com.google.common.hash.Hashing.sha256;
 import static org.hibernate.validator.constraints.SafeHtml.WhiteListType.NONE;
 
 @Document
@@ -19,41 +22,50 @@ import static org.hibernate.validator.constraints.SafeHtml.WhiteListType.NONE;
 @Builder(toBuilder = true)
 public class User implements Identifiable<String> {
 
-	public static final int AGE_YOUNGEST = 18;
-	public static final int AGE_OLDEST = 150;
+    public static final int AGE_YOUNGEST = 18;
+    public static final int AGE_OLDEST = 150;
 
-	@Id
-	@NotNull(groups = Existing.class, message = "error.id.existing")
-	@Null(groups = New.class, message = "error.id.new")
-	private final String id;
+    @Id
+    @NotNull(groups = Existing.class, message = "error.id.existing")
+    @Null(groups = New.class, message = "error.id.new")
+    private final String id;
 
-	@NotEmpty(message = "error.name.empty")
-	@Size(min = 3, max = 30, message = "error.name.range")
-	private final String firstName;
+    @NotEmpty(message = "error.name.empty")
+    @Size(min = 3, max = 30, message = "error.name.range")
+    private final String firstName;
 
-	@Size(min = 3, max = 30, message = "error.name.range")
-	private final String secondName;
+    @Size(min = 3, max = 30, message = "error.name.range")
+    private final String secondName;
 
-	@NotEmpty(message = "error.name.empty")
-	@Size(min = 3, max = 30, message = "error.name.range")
-	private final String lastName;
+    @NotEmpty(message = "error.name.empty")
+    @Size(min = 3, max = 30, message = "error.name.range")
+    private final String lastName;
 
-	@NotNull(message = "error.age.empty")
-	@Min(value = AGE_YOUNGEST, message = "error.age.young")
-	@Max(value = AGE_OLDEST, message = "error.age.old")
-	private final int age;
+    @NotNull(message = "error.age.empty")
+    @Min(value = AGE_YOUNGEST, message = "error.age.young")
+    @Max(value = AGE_OLDEST, message = "error.age.old")
+    private final int age;
 
-	private final boolean vip;
+    private final boolean vip;
 
-	@Valid
-	private final Login login;
+    @Valid
+    private final Login login;
 
-	@SafeHtml(whitelistType = NONE, message = "error.bio.invalid")
-	private final String bio;
+    @SafeHtml(whitelistType = NONE, message = "error.bio.invalid")
+    private final String bio;
 
-	public interface Existing extends Default {
-	}
+    @JsonIgnore
+    public String getETag() {
+        HashFunction hashFunction = sha256();
+        return hashFunction.newHasher()
+                .putObject(this, UserFunnel.INSTANCE)
+                .hash().toString();
 
-	public interface New extends Default {
-	}
+    }
+
+    public interface Existing extends Default {
+    }
+
+    public interface New extends Default {
+    }
 }

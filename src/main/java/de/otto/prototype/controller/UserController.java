@@ -8,20 +8,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.Link;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.Pattern;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.util.stream.Collectors.toList;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
+import static org.springframework.http.HttpHeaders.ETAG;
+import static org.springframework.http.HttpStatus.NOT_MODIFIED;
+import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.ResponseEntity.*;
 import static org.springframework.web.bind.annotation.RequestMethod.*;
@@ -52,18 +55,25 @@ public class UserController {
                 .link(linkTo(UserController.class).slash(allUsers.get(0)).withRel("start"))
                 .total(allUsers.size())
                 .build();
-        return ok().body(listOfUser);
+        return ok(listOfUser);
     }
 
     @RequestMapping(value = "/{userId}", method = GET, produces = APPLICATION_JSON_VALUE)
     public ResponseEntity<UserRepresentation> getOne(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid")
-                                                     @PathVariable("userId") String userId) {
+                                                     @PathVariable("userId") String userId,
+                                                     final @RequestHeader(value = "If-None-Match", required = false) String ETagHeader) {
         final Optional<User> foundUser = userService.findOne(userId);
-        return foundUser.map(user -> ok(UserRepresentation.builder()
+        if (!foundUser.isPresent())
+            return notFound().build();
+        final User user = foundUser.get();
+        final String userETag = user.getETag();
+        if (!isNullOrEmpty(ETagHeader) && userETag.equals(ETagHeader))
+            return ResponseEntity.status(NOT_MODIFIED).header(ETAG, userETag).build();
+
+        return new ResponseEntity<>(UserRepresentation.builder()
                 .user(user)
                 .links(determineLinksForUser(user))
-                .build()))
-                .orElse(notFound().build());
+                .build(), getETagHeader(user), OK);
     }
 
     @RequestMapping(method = POST, consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
@@ -94,7 +104,7 @@ public class UserController {
         return noContent().build();
     }
 
-    public List<Link> determineLinksForUser(final User user) {
+    private List<Link> determineLinksForUser(final User user) {
         final List<User> listOfUsers = userService.findAll().collect(toList());
         final List<Link> links = new ArrayList<>();
         links.add(linkTo(UserController.class).slash(user).withSelfRel());
@@ -106,6 +116,12 @@ public class UserController {
             links.add(linkTo(UserController.class).slash(listOfUsers.get(indexOfUser + 1)).withRel("next"));
 
         return links;
+    }
+
+    private MultiValueMap<String, String> getETagHeader(final User user) {
+        MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+        headers.add(ETAG, user.getETag());
+        return headers;
     }
 
 }

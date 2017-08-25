@@ -44,6 +44,8 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
+import static org.springframework.http.HttpHeaders.ETAG;
+import static org.springframework.http.HttpHeaders.IF_NONE_MATCH;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -273,20 +275,42 @@ public class UserControllerTest {
     }
 
     @Test
-    public void shouldReturnAUserIfFoundOnGetOne() throws Exception {
+    public void shouldReturnAUserAndETagHeaderIfDifferentETagGetOne() throws Exception {
         when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
-        when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("someUserId").build()));
+        final User user = validMinimumUserWithId.toBuilder().id("someUserId").build();
+        when(userService.findAll()).thenReturn(Stream.of(user));
 
         MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
-                .accept(MediaType.APPLICATION_JSON))
+                .accept(MediaType.APPLICATION_JSON)
+                .header(IF_NONE_MATCH, "someDifferentETag"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andReturn();
 
         assertUserRepresentation(result.getResponse().getContentAsString(), validMinimumUserWithId);
+        final String eTagHeader = result.getResponse().getHeader(ETAG);
+        assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(user.getETag()));
 
         verify(userService, times(1)).findOne(validUserId);
         verify(userService, times(1)).findAll();
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void shouldReturnNoUserIfETagMatches() throws Exception {
+        when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+        final User user = validMinimumUserWithId.toBuilder().id("someUserId").build();
+        when(userService.findAll()).thenReturn(Stream.of(user));
+
+        mvc.perform(get(URL_USER + "/" + validUserId)
+                .accept(MediaType.APPLICATION_JSON)
+                .header(IF_NONE_MATCH, user.getETag()))
+                .andDo(print())
+                .andExpect(status().isNotModified())
+                .andExpect(header().string(ETAG, user.getETag()))
+                .andExpect(content().string(""));
+
+        verify(userService, times(1)).findOne(validUserId);
         verifyNoMoreInteractions(userService);
     }
 
