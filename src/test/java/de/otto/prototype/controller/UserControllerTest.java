@@ -1,6 +1,5 @@
 package de.otto.prototype.controller;
 
-import com.google.common.base.Joiner;
 import com.google.common.hash.HashCode;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -173,8 +172,8 @@ public class UserControllerTest {
         final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
         when(userService.findAll()).thenReturn(sup.get());
 
-        final String joinedUsersAsString = Joiner.on(",").join(sup.get().map(User::getETag).collect(toList()));
-        final HashCode hashCode = sha256().newHasher().putString(joinedUsersAsString, UTF_8).hash();
+        final String combinedETags = sup.get().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
+        final HashCode hashCode = sha256().newHasher().putString(combinedETags, UTF_8).hash();
 
         MvcResult result = mvc.perform(get(URL_USER)
                 .accept(MediaType.APPLICATION_JSON)
@@ -201,8 +200,8 @@ public class UserControllerTest {
         final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
         when(userService.findAll()).thenReturn(sup.get());
 
-        final String joinedUsersAsString = Joiner.on(",").join(sup.get().map(User::getETag).collect(toList()));
-        final String eTag = sha256().newHasher().putString(joinedUsersAsString, UTF_8).hash().toString();
+        final String combinedETags = sup.get().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
+        final String eTag = sha256().newHasher().putString(combinedETags, UTF_8).hash().toString();
 
         mvc.perform(get(URL_USER)
                 .accept(MediaType.APPLICATION_JSON)

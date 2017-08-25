@@ -1,7 +1,6 @@
 package de.otto.prototype.integration;
 
 
-import com.google.common.base.Joiner;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.jayway.jsonpath.DocumentContext;
@@ -21,14 +20,12 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 
 import java.net.URL;
-import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.hash.Hashing.sha256;
 import static de.otto.prototype.controller.UserController.URL_USER;
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertThat;
 import static org.springframework.http.HttpHeaders.ETAG;
@@ -69,9 +66,10 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
         User persistedUser1 = userRepository.save(user.login(login.build()).build());
         User persistedUser2 = userRepository.save(user.firstName("Heiko").login(login.build()).build());
 
-        final List<String> userETags = Stream.of(persistedUser1, persistedUser2).map(User::getETag).collect(toList());
-        final String joinedUsersAsString = Joiner.on(",").join(userETags);
-        final String eTag = sha256().newHasher().putString(joinedUsersAsString, UTF_8).hash().toString();
+        final String combinedETags = Stream.of(persistedUser1, persistedUser2)
+                .map(User::getETag)
+                .reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
+        final String eTag = sha256().newHasher().putString(combinedETags, UTF_8).hash().toString();
 
         final ResponseEntity<String> response = template.exchange(base.toString(),
                 GET,

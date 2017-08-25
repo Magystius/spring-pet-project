@@ -1,6 +1,5 @@
 package de.otto.prototype.controller;
 
-import com.google.common.base.Joiner;
 import com.google.common.hash.HashCode;
 import de.otto.prototype.controller.representation.UserListRepresentation;
 import de.otto.prototype.controller.representation.UserRepresentation;
@@ -141,8 +140,8 @@ public class UserController {
 
     private MultiValueMap<String, String> getETagHeader(final List<User> users) {
         MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-        final String joinedUsersAsString = Joiner.on(",").join(users.stream().map(User::getETag).collect(toList()));
-        final HashCode hashCode = sha256().newHasher().putString(joinedUsersAsString, UTF_8).hash();
+        final String combinedETags = users.stream().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
+        final HashCode hashCode = sha256().newHasher().putString(combinedETags, UTF_8).hash();
         headers.add(ETAG, hashCode.toString());
         return headers;
     }
