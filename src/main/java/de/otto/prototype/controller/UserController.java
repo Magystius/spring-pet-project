@@ -1,5 +1,7 @@
 package de.otto.prototype.controller;
 
+import com.google.common.base.Joiner;
+import com.google.common.hash.HashCode;
 import de.otto.prototype.controller.representation.UserListRepresentation;
 import de.otto.prototype.controller.representation.UserRepresentation;
 import de.otto.prototype.model.User;
@@ -18,11 +20,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.hash.Hashing.sha256;
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.util.stream.Collectors.toList;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.http.HttpHeaders.ETAG;
+import static org.springframework.http.HttpHeaders.IF_NONE_MATCH;
 import static org.springframework.http.HttpStatus.NOT_MODIFIED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -45,26 +50,36 @@ public class UserController {
 
     @Transactional(readOnly = true)
     @RequestMapping(method = GET, produces = APPLICATION_JSON_VALUE)
-    public ResponseEntity<UserListRepresentation> getAll() {
+    public ResponseEntity<UserListRepresentation> getAll(final @RequestHeader(value = IF_NONE_MATCH, required = false) String ETagHeader) {
         final List<User> allUsers = userService.findAll().collect(toList());
+
         if (allUsers.isEmpty())
             return noContent().build();
+
+        final MultiValueMap<String, String> header = getETagHeader(allUsers);
+        final String userListETag = header.getFirst(ETAG);
+        if (!isNullOrEmpty(ETagHeader) && userListETag.equals(ETagHeader))
+            return ResponseEntity.status(NOT_MODIFIED).header(ETAG, userListETag).build();
+
         final UserListRepresentation listOfUser = UserListRepresentation.builder()
                 .users(allUsers)
                 .link(linkTo(UserController.class).withSelfRel())
                 .link(linkTo(UserController.class).slash(allUsers.get(0)).withRel("start"))
                 .total(allUsers.size())
                 .build();
-        return ok(listOfUser);
+
+        return new ResponseEntity<>(listOfUser, header, OK);
     }
 
     @RequestMapping(value = "/{userId}", method = GET, produces = APPLICATION_JSON_VALUE)
     public ResponseEntity<UserRepresentation> getOne(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid")
                                                      @PathVariable("userId") String userId,
-                                                     final @RequestHeader(value = "If-None-Match", required = false) String ETagHeader) {
+                                                     final @RequestHeader(value = IF_NONE_MATCH, required = false) String ETagHeader) {
         final Optional<User> foundUser = userService.findOne(userId);
+
         if (!foundUser.isPresent())
             return notFound().build();
+
         final User user = foundUser.get();
         final String userETag = user.getETag();
         if (!isNullOrEmpty(ETagHeader) && userETag.equals(ETagHeader))
@@ -124,4 +139,11 @@ public class UserController {
         return headers;
     }
 
+    private MultiValueMap<String, String> getETagHeader(final List<User> users) {
+        MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+        final String joinedUsersAsString = Joiner.on(",").join(users.stream().map(User::getETag).collect(toList()));
+        final HashCode hashCode = sha256().newHasher().putString(joinedUsersAsString, UTF_8).hash();
+        headers.add(ETAG, hashCode.toString());
+        return headers;
+    }
 }

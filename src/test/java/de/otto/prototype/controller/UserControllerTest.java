@@ -1,5 +1,7 @@
 package de.otto.prototype.controller;
 
+import com.google.common.base.Joiner;
+import com.google.common.hash.HashCode;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.jayway.jsonpath.DocumentContext;
@@ -38,7 +40,9 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.ImmutableList.of;
+import static com.google.common.hash.Hashing.sha256;
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.*;
@@ -152,7 +156,7 @@ public class UserControllerTest {
     }
 
     @Test
-    public void shouldReturnEmptyListIfNoUsersOnGetAll() throws Exception {
+    public void shouldReturnNotContentNoUsersOnGetAll() throws Exception {
         when(userService.findAll()).thenReturn(Stream.of());
 
         mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
@@ -165,12 +169,16 @@ public class UserControllerTest {
     }
 
     @Test
-    public void shouldReturnListOfUsersOnGetAll() throws Exception {
-        final Supplier<Stream<User>> sup = () -> Stream.of(User.builder().id("someId").lastName("Mustermann").build());
+    public void shouldReturnListOfUsersAndETagHeaderOnGetAll() throws Exception {
+        final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
         when(userService.findAll()).thenReturn(sup.get());
 
+        final String joinedUsersAsString = Joiner.on(",").join(sup.get().map(User::getETag).collect(toList()));
+        final HashCode hashCode = sha256().newHasher().putString(joinedUsersAsString, UTF_8).hash();
+
         MvcResult result = mvc.perform(get(URL_USER)
-                .accept(MediaType.APPLICATION_JSON))
+                .accept(MediaType.APPLICATION_JSON)
+                .header(IF_NONE_MATCH, "someDifferentETag"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andReturn();
@@ -179,8 +187,30 @@ public class UserControllerTest {
         assertThat(parsedResponse.read("$.content"), is(notNullValue()));
         assertThat(parsedResponse.read("$.content[0].lastName"), is("Mustermann"));
         assertThat(parsedResponse.read("$.links[0].href"), containsString("/user"));
-        assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someId"));
+        assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someUserId"));
         assertThat(parsedResponse.read("$.total"), is(1));
+        final String eTagHeader = result.getResponse().getHeader(ETAG);
+        assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(hashCode.toString()));
+
+        verify(userService, times(1)).findAll();
+        verifyNoMoreInteractions(userService);
+    }
+
+    @Test
+    public void shouldReturnNoUserListIfETagMatchesOnGetAll() throws Exception {
+        final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
+        when(userService.findAll()).thenReturn(sup.get());
+
+        final String joinedUsersAsString = Joiner.on(",").join(sup.get().map(User::getETag).collect(toList()));
+        final String eTag = sha256().newHasher().putString(joinedUsersAsString, UTF_8).hash().toString();
+
+        mvc.perform(get(URL_USER)
+                .accept(MediaType.APPLICATION_JSON)
+                .header(IF_NONE_MATCH, eTag))
+                .andDo(print())
+                .andExpect(status().isNotModified())
+                .andExpect(header().string(ETAG, eTag))
+                .andExpect(content().string(""));
 
         verify(userService, times(1)).findAll();
         verifyNoMoreInteractions(userService);
