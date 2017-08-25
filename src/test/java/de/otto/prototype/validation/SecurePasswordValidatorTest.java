@@ -1,65 +1,54 @@
 package de.otto.prototype.validation;
 
-import de.otto.prototype.model.Password;
-import org.hibernate.validator.HibernateValidator;
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
+import org.hibernate.validator.internal.util.annotationfactory.AnnotationDescriptor;
+import org.hibernate.validator.internal.util.annotationfactory.AnnotationFactory;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
-
-import javax.validation.ConstraintViolation;
-import java.util.Set;
+import org.junit.runner.RunWith;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+@RunWith(DataProviderRunner.class)
 public class SecurePasswordValidatorTest {
 
-	private LocalValidatorFactoryBean localValidatorFactory;
+    private SecurePasswordValidator testee;
 
-	@Before
-	public void setup() {
-		//TODO: could we use autowired here?
-		localValidatorFactory = new LocalValidatorFactoryBean();
-		localValidatorFactory.setProviderClass(HibernateValidator.class);
-		localValidatorFactory.afterPropertiesSet();
-	}
+    @DataProvider
+    public static Object[][] invalidPasswordProvider() {
+        return new Object[][]{
+                {"111"},
+                {"11111111111111111111111111111111"},
+                {"invalid"},
+                {""},
+                {null},
+        };
+    }
 
-	@Test
-	public void shouldValidateSecurePassword() {
-		Password passwordToValidate = Password.builder().password("securePassword").build();
-		Set<ConstraintViolation<Password>> constraintViolations = localValidatorFactory.validate(passwordToValidate);
-		assertThat(constraintViolations.size(), is(0));
-	}
+    @Before
+    public void setup() {
+        testee = new SecurePasswordValidator();
+        testee.initialize(implementAnnotationInterface("[0-9]+"));
+    }
 
-	@Test
-	public void shouldValidateTooShortPassword() {
-		Password passwordToValidate = Password.builder().password("short").build();
-		Set<ConstraintViolation<Password>> constraintViolations = localValidatorFactory.validate(passwordToValidate);
-		assertThat(constraintViolations.size(), is(1));
-		assertThat(constraintViolations.iterator().next().getMessage(), is("error.password"));
-	}
+    private SecurePassword implementAnnotationInterface(String pattern) {
+        AnnotationDescriptor<SecurePassword> descriptor = new AnnotationDescriptor<>(SecurePassword.class);
+        descriptor.setValue("pattern", pattern);
+        return AnnotationFactory.create(descriptor);
+    }
 
-	@Test
-	public void shouldValidateTooLongPassword() {
-		Password passwordToValidate = Password.builder().password("loooooooooooooooong").build();
-		Set<ConstraintViolation<Password>> constraintViolations = localValidatorFactory.validate(passwordToValidate);
-		assertThat(constraintViolations.size(), is(1));
-		assertThat(constraintViolations.iterator().next().getMessage(), is("error.password"));
-	}
+    @Test
+    @UseDataProvider("invalidPasswordProvider")
+    public void shouldValidateUnsecurePasswords(String unsecurePassword) {
+        assertThat(testee.isValid(unsecurePassword, null), is(false));
+    }
 
-	@Test
-	public void shouldValidateEmptyPassword() {
-		Password passwordToValidate = Password.builder().password("").build();
-		Set<ConstraintViolation<Password>> constraintViolations = localValidatorFactory.validate(passwordToValidate);
-		assertThat(constraintViolations.size(), is(1));
-		assertThat(constraintViolations.iterator().next().getMessage(), is("error.password"));
-	}
-
-	@Test
-	public void shouldValidateNullPassword() {
-		Password passwordToValidate = Password.builder().build();
-		Set<ConstraintViolation<Password>> constraintViolations = localValidatorFactory.validate(passwordToValidate);
-		assertThat(constraintViolations.size(), is(1));
-		assertThat(constraintViolations.iterator().next().getMessage(), is("error.password"));
-	}
+    @Test
+    public void shouldValidateSecurePassword() {
+        testee.initialize(implementAnnotationInterface(".*"));
+        assertThat(testee.isValid("securePassword", null), is(true));
+    }
 }

@@ -13,11 +13,11 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Target({FIELD, PARAMETER})
 @Retention(RUNTIME)
 public @interface SecurePassword {
-	String message() default "error.password";
+    String message() default "error.password";
 
-	Class<?>[] groups() default {};
+    Class<?>[] groups() default {};
 
-	Class<? extends Payload>[] payload() default {};
+    Class<? extends Payload>[] payload() default {};
 
-	String pattern() default "[0-9]+";
+    String pattern() default ".*";
 }
