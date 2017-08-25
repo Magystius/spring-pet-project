@@ -117,6 +117,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
         final User createdUser = userRepository.findOne((String) JsonPath.read(response.getBody(), "$.content.id"));
         assertThat(createdUser, is(notNullValue()));
         assertUserRepresentation(response.getBody(), createdUser, true);
+        assertThat(response.getHeaders().get(ETAG).get(0), is(createdUser.getETag()));
     }
 
     @Test
@@ -133,6 +134,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(response.getStatusCode(), is(OK));
         assertUserRepresentation(response.getBody(), updatedUser, true);
+        assertThat(response.getHeaders().get(ETAG).get(0), is(updatedUser.getETag()));
     }
 
     @Test
