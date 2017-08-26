@@ -1,23 +1,18 @@
 package de.otto.prototype.integration;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import de.otto.prototype.controller.representation.UserValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.UserValidationRepresentation;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 
 import java.net.URL;
-import java.util.Locale;
 
 import static de.otto.prototype.controller.PasswordController.URL_RESET_PASSWORD;
 import static de.otto.prototype.controller.UserController.URL_USER;
@@ -31,22 +26,17 @@ import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 
 public class PasswordApiIntegrationTest extends AbstractIntegrationTest {
 
-	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
-
-	private static final Locale LOCALE = LocaleContextHolder.getLocale();
-
-	private MessageSource messageSource;
-
 	@Autowired
 	private UserRepository userRepository;
 
 	@Before
 	public void setUp() throws Exception {
-		ReloadableResourceBundleMessageSource messageBundle = new ReloadableResourceBundleMessageSource();
-		messageBundle.setBasename("classpath:messages/messages");
-		messageBundle.setDefaultEncoding("UTF-8");
-		messageSource = messageBundle;
+		messageSource = initMessageSource();
 		this.base = new URL("http://localhost:" + port + URL_RESET_PASSWORD);
+	}
+
+	@After
+	public void tearDown() throws Exception {
 		userRepository.deleteAll();
 	}
 
