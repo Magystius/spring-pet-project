@@ -110,11 +110,13 @@ public class UserServiceTest {
 	public void shouldReturnCreatedUser() throws Exception {
 		User persistedUser = validMinimumUser.toBuilder().id("someId").build();
 		when(userRepository.save(validMinimumUser)).thenReturn(persistedUser);
+		when(userRepository.streamAll()).thenReturn(Stream.of());
 
 		final User returendUser = testee.create(validMinimumUser);
 
 		assertThat(returendUser, is(persistedUser));
 		verify(userRepository, times(1)).save(validMinimumUser);
+		verify(userRepository, times(1)).streamAll();
 		verifyNoMoreInteractions(userRepository);
 	}
 
@@ -145,11 +147,28 @@ public class UserServiceTest {
 		}
 	}
 
+	@Test(expected = InvalidUserException.class)
+	public void shouldThrowInvalidUserExceptionOnNewUserIfUserAlreadyExists() {
+		when(userRepository.streamAll()).thenReturn(Stream.of(validMinimumUser));
+
+		try {
+			testee.create(validMinimumUser);
+		} catch (InvalidUserException e) {
+			assertThat(e.getUser(), is(validMinimumUser));
+			assertThat(e.getErrorMsg(), is("this user does already exist"));
+			assertThat(e.getErrorCause(), is("business"));
+			verify(userRepository, times(1)).streamAll();
+			verifyNoMoreInteractions(userRepository);
+			throw e;
+		}
+	}
+
 	@Test
 	public void shouldReturnUpdatedUser() throws Exception {
 		final User updatedUser = validMinimumUserWithId.toBuilder().lastName("Neumann").build();
 		when(userRepository.findOne(validUserId)).thenReturn(validMinimumUserWithId);
 		when(userRepository.save(updatedUser)).thenReturn(updatedUser);
+		when(userRepository.streamAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().firstName("Heinz").build()));
 
 		final User persistedUser = testee.update(updatedUser, null);
 
@@ -157,6 +176,7 @@ public class UserServiceTest {
 		assertThat(persistedUser.getId(), is(validUserId));
 		verify(userRepository, times(1)).findOne(validUserId);
 		verify(userRepository, times(1)).save(updatedUser);
+		verify(userRepository, times(1)).streamAll();
 		verifyNoMoreInteractions(userRepository);
 	}
 
@@ -165,6 +185,7 @@ public class UserServiceTest {
 		final User updatedUser = validMinimumUserWithId.toBuilder().lastName("Neumann").build();
 		when(userRepository.findOne(validUserId)).thenReturn(validMinimumUserWithId);
 		when(userRepository.save(updatedUser)).thenReturn(updatedUser);
+		when(userRepository.streamAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().firstName("Heinz").build()));
 
 		final User persistedUser = testee.update(updatedUser, validMinimumUserWithId.getETag());
 
@@ -172,6 +193,7 @@ public class UserServiceTest {
 		assertThat(persistedUser.getId(), is(validUserId));
 		verify(userRepository, times(1)).findOne(validUserId);
 		verify(userRepository, times(1)).save(updatedUser);
+		verify(userRepository, times(1)).streamAll();
 		verifyNoMoreInteractions(userRepository);
 	}
 
@@ -198,6 +220,8 @@ public class UserServiceTest {
 		} catch (ConstraintViolationException e) {
 			String msgCode = e.getConstraintViolations().stream().map(ConstraintViolation::getMessage).findFirst().orElse("");
 			assertThat(msgCode, is("error.name.range"));
+			verify(userRepository, times(1)).findOne(validUserId);
+			verifyNoMoreInteractions(userRepository);
 			throw e;
 		}
 	}
@@ -213,6 +237,26 @@ public class UserServiceTest {
 			assertThat(e.getUser(), is(invalidUserToUpdate));
 			assertThat(e.getErrorMsg(), is("only mails by otto allowed"));
 			assertThat(e.getErrorCause(), is("business"));
+			verify(userRepository, times(1)).findOne(validUserId);
+			verifyNoMoreInteractions(userRepository);
+			throw e;
+		}
+	}
+
+	@Test(expected = InvalidUserException.class)
+	public void shouldThrowInvalidUserExceptionOnExistingUserIfUserAlreadyExists() {
+		when(userRepository.findOne(validUserId)).thenReturn(validMinimumUserWithId);
+		when(userRepository.streamAll()).thenReturn(Stream.of(validMinimumUserWithId));
+
+		try {
+			testee.update(validMinimumUserWithId, null);
+		} catch (InvalidUserException e) {
+			assertThat(e.getUser(), is(validMinimumUserWithId));
+			assertThat(e.getErrorMsg(), is("this user does already exist"));
+			assertThat(e.getErrorCause(), is("business"));
+			verify(userRepository, times(1)).findOne(validUserId);
+			verify(userRepository, times(1)).streamAll();
+			verifyNoMoreInteractions(userRepository);
 			throw e;
 		}
 	}

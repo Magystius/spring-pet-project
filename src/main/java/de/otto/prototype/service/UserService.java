@@ -43,7 +43,7 @@ public class UserService {
 		return userRepository.save(user);
 	}
 
-	public User update(final User user, String eTag) {
+	public User update(final User user, final String eTag) {
 		User foundUser = userRepository.findOne(user.getId());
 		if (foundUser == null)
 			throw new NotFoundException("user not found");
@@ -60,12 +60,17 @@ public class UserService {
 		userRepository.delete(userId);
 	}
 
-	private void validateUser(final User user, final Class group) {
-		Set<ConstraintViolation<User>> errors = validator.validate(user, group);
+	private void validateUser(final User userToValidate, final Class group) {
+		Set<ConstraintViolation<User>> errors = validator.validate(userToValidate, group);
 		if (!errors.isEmpty())
 			throw new ConstraintViolationException(errors);
+		if (!userToValidate.getLogin().getMail().endsWith("@otto.de"))
+			throw new InvalidUserException(userToValidate, "business", "only mails by otto allowed");
+		if (findAll().map(this::getUserWithoutId).anyMatch(user -> user.getETag().equals(getUserWithoutId(userToValidate).getETag())))
+			throw new InvalidUserException(userToValidate, "business", "this user does already exist");
+	}
 
-		if (!user.getLogin().getMail().endsWith("@otto.de"))
-			throw new InvalidUserException(user, "business", "only mails by otto allowed");
+	private User getUserWithoutId(User user) {
+		return user.toBuilder().id("").build();
 	}
 }

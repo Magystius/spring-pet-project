@@ -473,7 +473,7 @@ public class UserControllerTest {
 	}
 
 	@Test
-	public void shouldReturnBadRequestIfInvalidMailOnPut() throws Exception {
+	public void shouldReturnBadRequestIfBusinessValidationFailsOnPut() throws Exception {
 		final User userToPersist = validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().mail("max.mustermann@web.de").build()).build();
 		String errorMsg = "only mails by otto allowed";
 		String errorCause = "buasiness";
@@ -507,7 +507,7 @@ public class UserControllerTest {
 	}
 
 	@Test
-	public void shouldReturnBadRequestIfInvalidMailOnPost() throws Exception {
+	public void shouldReturnBadRequestIfBusinessValidationFailsOnPost() throws Exception {
 		final User userToPersist = validMinimumUser.toBuilder().login(validLogin.toBuilder().mail("max.mustermann@web.de").build()).build();
 		String errorMsg = "only mails by otto allowed";
 		String errorCause = "buasiness";
