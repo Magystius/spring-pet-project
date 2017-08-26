@@ -3,6 +3,7 @@ package de.otto.prototype.controller.handlers;
 import com.google.common.collect.ImmutableList;
 import de.otto.prototype.controller.representation.UserValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.UserValidationRepresentation;
+import de.otto.prototype.exceptions.ConcurrentModificationException;
 import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +21,7 @@ import java.util.Locale;
 
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toList;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.*;
 
 //TODO: add user object to response
 @ControllerAdvice
@@ -71,6 +71,13 @@ public class ControllerValidationHandler {
 	@ExceptionHandler(NotFoundException.class)
 	@ResponseStatus(NOT_FOUND)
 	public void processValidationError() {
+		//do nothing
+	}
+
+	@ExceptionHandler(ConcurrentModificationException.class)
+	@ResponseStatus(PRECONDITION_FAILED)
+	public void proccessConcurrentModificationError() {
+		//do nothing
 	}
 
 	private UserValidationEntryRepresentation getUserValidationEntryRepresentation(final String msgCode, final String errObj) {

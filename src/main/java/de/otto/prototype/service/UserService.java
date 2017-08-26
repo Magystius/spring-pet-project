@@ -1,5 +1,6 @@
 package de.otto.prototype.service;
 
+import de.otto.prototype.exceptions.ConcurrentModificationException;
 import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.User;
@@ -13,6 +14,8 @@ import javax.validation.Validator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
+
+import static com.google.common.base.Strings.isNullOrEmpty;
 
 @Service
 public class UserService {
@@ -40,10 +43,12 @@ public class UserService {
 		return userRepository.save(user);
 	}
 
-	public User update(final User user) {
-		if (userRepository.findOne(user.getId()) == null) {
+	public User update(final User user, String eTag) {
+		User foundUser = userRepository.findOne(user.getId());
+		if (foundUser == null)
 			throw new NotFoundException("user not found");
-		}
+		if (!isNullOrEmpty(eTag) && !foundUser.getETag().equals(eTag))
+			throw new ConcurrentModificationException("etags aren´t equal");
 		validateUser(user, User.Existing.class);
 		return userRepository.save(user);
 	}

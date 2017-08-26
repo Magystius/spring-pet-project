@@ -59,7 +59,7 @@ public class PasswordApiIntegrationTest extends AbstractIntegrationTest {
 		final ResponseEntity<String> response = template.exchange(base.toString() + "?userId=" + persistedUser.getId(),
 				POST,
 				new HttpEntity<>(newPassword,
-						prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE)),
+						prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE)),
 				String.class);
 
 		assertThat(response.getStatusCode(), is(NO_CONTENT));
@@ -72,7 +72,7 @@ public class PasswordApiIntegrationTest extends AbstractIntegrationTest {
 		final ResponseEntity<String> response = template.exchange(base.toString() + "?userId=012346789101112131415161",
 				POST,
 				new HttpEntity<>("unsec",
-						prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE)),
+						prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE)),
 				String.class);
 
 		String errorMessage = messageSource.getMessage("error.password", null, LOCALE);
@@ -87,7 +87,7 @@ public class PasswordApiIntegrationTest extends AbstractIntegrationTest {
 		final ResponseEntity<String> response = template.exchange(base.toString() + "?userId=0",
 				POST,
 				new HttpEntity<>("securePassword",
-						prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE)),
+						prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE)),
 				String.class);
 
 		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
@@ -102,7 +102,7 @@ public class PasswordApiIntegrationTest extends AbstractIntegrationTest {
 		final ResponseEntity<String> response = template.exchange(base.toString() + "?userId=",
 				POST,
 				new HttpEntity<>("securePassword",
-						prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE)),
+						prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE)),
 				String.class);
 
 		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
@@ -116,7 +116,7 @@ public class PasswordApiIntegrationTest extends AbstractIntegrationTest {
 	public void shouldReturnTrueForSecurePasswordOnPost() throws Exception {
 		final ResponseEntity<String> response = template.exchange("http://localhost:" + port + "/checkpassword",
 				POST,
-				new HttpEntity<>("securePassword", prepareSimpleHeaders(TEXT_PLAIN_VALUE, TEXT_PLAIN_VALUE)),
+				new HttpEntity<>("securePassword", prepareMediaTypeHeaders(TEXT_PLAIN_VALUE, TEXT_PLAIN_VALUE)),
 				String.class);
 
 		assertThat(response.getStatusCode(), is(OK));

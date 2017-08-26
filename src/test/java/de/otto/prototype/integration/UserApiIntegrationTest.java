@@ -73,7 +73,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 
         final ResponseEntity<String> response = template.exchange(base.toString(),
                 GET,
-                new HttpEntity<>(prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                 String.class);
 
         assertThat(response.getStatusCode(), is(OK));
@@ -95,7 +95,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 
         final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
                 GET,
-                new HttpEntity<>(prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                 String.class);
 
         assertThat(response.getStatusCode(), is(OK));
@@ -109,7 +109,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
         final ResponseEntity<String> response = template.exchange(base.toString(),
                 POST,
                 new HttpEntity<>(user.login(login.build()).build(),
-                        prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                        prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                 String.class);
 
         assertThat(response.getStatusCode(), is(CREATED));
@@ -129,7 +129,24 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
         final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
                 PUT,
                 new HttpEntity<>(updatedUser,
-                        prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                        prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                String.class);
+
+        assertThat(response.getStatusCode(), is(OK));
+        assertUserRepresentation(response.getBody(), updatedUser, true);
+        assertThat(response.getHeaders().get(ETAG).get(0), is(updatedUser.getETag()));
+    }
+
+    @Test
+    public void shouldUpdateAUserWithETagOnPut() throws Exception {
+        final User userToUpdate = userRepository.save(user.login(login.build()).build());
+        final String persistedId = userToUpdate.getId();
+        final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
+
+        final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
+                PUT,
+                new HttpEntity<>(updatedUser,
+                        prepareAuthAndMediaTypeAndIfMatchHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE, userToUpdate.getETag())),
                 String.class);
 
         assertThat(response.getStatusCode(), is(OK));
@@ -143,7 +160,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 
         final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
                 DELETE,
-                new HttpEntity<>(prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                 String.class);
 
         assertThat(response.getStatusCode(), is(NO_CONTENT));
@@ -153,7 +170,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
     public void shouldReturnBadRequestIfInvalidIdOnGet() throws Exception {
         final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
                 GET,
-                new HttpEntity<>(prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                 String.class);
 
         String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
@@ -171,7 +188,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
         final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
                 PUT,
                 new HttpEntity<>(updatedUser,
-                        prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                        prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                 String.class);
 
         String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
@@ -185,7 +202,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
     public void shouldReturnBadRequestIfInvalidIdOnDelete() throws Exception {
         final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
                 DELETE,
-                new HttpEntity<>(prepareCompleteHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                 String.class);
 
         String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);

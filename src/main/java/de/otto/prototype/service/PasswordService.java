@@ -32,7 +32,7 @@ public class PasswordService {
 
 		Login login = userToUpdate.get().getLogin().toBuilder().password(password).build();
 		final User updatedUser = userToUpdate.get().toBuilder().login(login).build();
-		return userService.update(updatedUser);
+		return userService.update(updatedUser, null);
 	}
 
 	public Boolean checkPassword(final String password) {

@@ -1,6 +1,5 @@
 package de.otto.prototype.integration;
 
-
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import de.otto.prototype.model.User;
@@ -16,6 +15,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.net.URL;
 import java.nio.charset.Charset;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -30,28 +30,44 @@ public abstract class AbstractIntegrationTest {
     protected TestRestTemplate template;
     URL base;
 
-    HttpHeaders prepareCompleteHeaders(String user, String password, String accept, String contentType) {
-        return new HttpHeaders() {{
-            String auth = user + ":" + password;
+	HttpHeaders prepareAuthAndMediaTypeAndIfMatchHeaders(String user, String password, String accept, String contentType, String etag) {
+		return new HttpHeaders() {{
+			String auth = user + ":" + password;
             byte[] encodedAuth = Base64.encodeBase64(
                     auth.getBytes(Charset.forName("US-ASCII")));
             String authHeader = "Basic " + new String(encodedAuth);
-            set("Authorization", authHeader);
-            if (accept != null && !accept.isEmpty())
-                set("Accept", accept);
-            if (contentType != null && !contentType.isEmpty())
-                set("Content-Type", contentType);
-        }};
-    }
+			set(AUTHORIZATION, authHeader);
+			if (!isNullOrEmpty(accept))
+				set(ACCEPT, accept);
+			if (!isNullOrEmpty(contentType))
+				set(CONTENT_TYPE, contentType);
+			if (!isNullOrEmpty(etag))
+				set(IF_MATCH, etag);
+		}};
+	}
 
-    HttpHeaders prepareSimpleHeaders(String accept, String contentType) {
-        return new HttpHeaders() {{
-            if (accept != null && !accept.isEmpty())
-                set("Accept", accept);
-            if (contentType != null && !contentType.isEmpty())
-                set("Content-Type", contentType);
-        }};
-    }
+	HttpHeaders prepareAuthAndMediaTypeHeaders(String user, String password, String accept, String contentType) {
+		return new HttpHeaders() {{
+			String auth = user + ":" + password;
+			byte[] encodedAuth = Base64.encodeBase64(
+					auth.getBytes(Charset.forName("US-ASCII")));
+			String authHeader = "Basic " + new String(encodedAuth);
+			set(AUTHORIZATION, authHeader);
+			if (!isNullOrEmpty(accept))
+				set(ACCEPT, accept);
+			if (!isNullOrEmpty(contentType))
+				set(CONTENT_TYPE, contentType);
+		}};
+	}
+
+	HttpHeaders prepareMediaTypeHeaders(String accept, String contentType) {
+		return new HttpHeaders() {{
+			if (!isNullOrEmpty(accept))
+				set(ACCEPT, accept);
+			if (!isNullOrEmpty(contentType))
+				set(CONTENT_TYPE, contentType);
+		}};
+	}
 
     void assertUserRepresentation(String responseBody, User expectedUser, Boolean testLinks) {
         DocumentContext parsedResponse = JsonPath.parse(responseBody);

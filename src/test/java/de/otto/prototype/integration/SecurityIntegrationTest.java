@@ -24,7 +24,7 @@ public class SecurityIntegrationTest extends AbstractIntegrationTest {
 	public void shouldForbidAccessIfWrongUser() throws Exception {
 		final ResponseEntity<String> response = template.exchange(base.toString(),
 				GET,
-				new HttpEntity<>(prepareCompleteHeaders("unknown", "unknown", null, null)),
+				new HttpEntity<>(prepareAuthAndMediaTypeHeaders("unknown", "unknown", null, null)),
 				String.class);
 
 		assertThat(response.getStatusCode(), is(UNAUTHORIZED));

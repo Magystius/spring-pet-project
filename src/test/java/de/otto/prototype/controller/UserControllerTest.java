@@ -11,6 +11,7 @@ import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import de.otto.prototype.controller.handlers.ControllerValidationHandler;
 import de.otto.prototype.controller.representation.UserValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.UserValidationRepresentation;
+import de.otto.prototype.exceptions.ConcurrentModificationException;
 import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.Login;
@@ -47,8 +48,7 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
-import static org.springframework.http.HttpHeaders.ETAG;
-import static org.springframework.http.HttpHeaders.IF_NONE_MATCH;
+import static org.springframework.http.HttpHeaders.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -382,7 +382,7 @@ public class UserControllerTest {
 	@Test
 	public void shouldUpdateUserAndReturnHimAndHisETagOnPut() throws Exception {
 		final User updatedUser = validMinimumUserWithId.toBuilder().build();
-		when(userService.update(updatedUser)).thenReturn(updatedUser);
+		when(userService.update(updatedUser, null)).thenReturn(updatedUser);
 		when(userService.findAll()).thenReturn(Stream.of(updatedUser));
 
 		MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
@@ -396,8 +396,48 @@ public class UserControllerTest {
 
 		assertUserRepresentation(result.getResponse().getContentAsString(), updatedUser);
 
-		verify(userService, times(1)).update(updatedUser);
+		verify(userService, times(1)).update(updatedUser, null);
 		verify(userService, times(1)).findAll();
+		verifyNoMoreInteractions(userService);
+	}
+
+	@Test
+	public void shouldUpdateUserWithETagHeaderAndReturnHimAndHisETagOnPut() throws Exception {
+		final String eTag = validMinimumUserWithId.getETag();
+		when(userService.update(validMinimumUserWithId, eTag)).thenReturn(validMinimumUserWithId);
+		when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId));
+
+		MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
+				.contentType(APPLICATION_JSON_VALUE)
+				.accept(APPLICATION_JSON_VALUE)
+				.header(IF_MATCH, eTag)
+				.content(GSON.toJson(validMinimumUserWithId)))
+				.andDo(print())
+				.andExpect(status().isOk())
+				.andExpect(header().string("eTag", is(eTag)))
+				.andReturn();
+
+		assertUserRepresentation(result.getResponse().getContentAsString(), validMinimumUserWithId);
+
+		verify(userService, times(1)).update(validMinimumUserWithId, eTag);
+		verify(userService, times(1)).findAll();
+		verifyNoMoreInteractions(userService);
+	}
+
+	@Test
+	public void shouldReturnPreconditionFailedIfETagsArentEqual() throws Exception {
+		when(userService.update(validMinimumUserWithId, "differentEtag")).thenThrow(new ConcurrentModificationException(""));
+
+		mvc.perform(put(URL_USER + "/" + validUserId)
+				.contentType(APPLICATION_JSON_VALUE)
+				.accept(APPLICATION_JSON_VALUE)
+				.header(IF_MATCH, "differentEtag")
+				.content(GSON.toJson(validMinimumUserWithId)))
+				.andDo(print())
+				.andExpect(status().isPreconditionFailed())
+				.andExpect(content().string(""));
+
+		verify(userService, times(1)).update(validMinimumUserWithId, "differentEtag");
 		verifyNoMoreInteractions(userService);
 	}
 
@@ -417,9 +457,9 @@ public class UserControllerTest {
 	}
 
 	@Test
-	public void shouldReturNotFoundIfIdNotFoundOnPut() throws Exception {
+	public void shouldReturnNotFoundIfIdNotFoundOnPut() throws Exception {
 		final User updatedUser = validMinimumUserWithId.toBuilder().build();
-		when(userService.update(updatedUser)).thenThrow(new NotFoundException("id not found"));
+		when(userService.update(updatedUser, null)).thenThrow(new NotFoundException("id not found"));
 
 		mvc.perform(put(URL_USER + "/" + validUserId)
 				.contentType(APPLICATION_JSON_VALUE)
@@ -428,7 +468,7 @@ public class UserControllerTest {
 				.andDo(print())
 				.andExpect(status().isNotFound());
 
-		verify(userService, times(1)).update(updatedUser);
+		verify(userService, times(1)).update(updatedUser, null);
 		verifyNoMoreInteractions(userService);
 	}
 
@@ -438,7 +478,7 @@ public class UserControllerTest {
 		String errorMsg = "only mails by otto allowed";
 		String errorCause = "buasiness";
 		UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
-		when(userService.update(userToPersist)).thenThrow(new InvalidUserException(userToPersist, errorCause, errorMsg));
+		when(userService.update(userToPersist, null)).thenThrow(new InvalidUserException(userToPersist, errorCause, errorMsg));
 
 		final MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
 				.contentType(APPLICATION_JSON_VALUE)
@@ -447,7 +487,7 @@ public class UserControllerTest {
 				.andExpect(status().isBadRequest())
 				.andReturn();
 
-		verify(userService, times(1)).update(userToPersist);
+		verify(userService, times(1)).update(userToPersist, null);
 		UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
 		assertThat(returnedErrors.getErrors().get(0), is(returnedError));
 		verifyNoMoreInteractions(userService);

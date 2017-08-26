@@ -25,8 +25,7 @@ import static com.google.common.hash.Hashing.sha256;
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.util.stream.Collectors.toList;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
-import static org.springframework.http.HttpHeaders.ETAG;
-import static org.springframework.http.HttpHeaders.IF_NONE_MATCH;
+import static org.springframework.http.HttpHeaders.*;
 import static org.springframework.http.HttpStatus.NOT_MODIFIED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -103,10 +102,11 @@ public class UserController {
 
 	@RequestMapping(value = "/{userId}", method = PUT, consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
 	public ResponseEntity<UserRepresentation> update(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid") @PathVariable("userId") String userId,
-													 final @Validated(User.Existing.class) @RequestBody User user) {
+													 final @Validated(User.Existing.class) @RequestBody User user,
+													 final @RequestHeader(value = IF_MATCH, required = false) String ETagHeader) {
 		if (!userId.equals(user.getId()))
 			return notFound().build();
-		final User updatedUser = userService.update(user);
+		final User updatedUser = userService.update(user, ETagHeader);
 		return new ResponseEntity<>(UserRepresentation.builder()
 				.user(updatedUser)
 				.links(determineLinksForUser(updatedUser))

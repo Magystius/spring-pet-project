@@ -44,13 +44,13 @@ public class PasswordServiceTest {
 		final User userToUpdate = User.builder().id(userId).lastName("Mustermann").login(Login.builder().build()).build();
 		final User updatedUser = User.builder().id(userId).lastName("Mustermann").login(Login.builder().password(password).build()).build();
 		when(userService.findOne(userId)).thenReturn(of(userToUpdate));
-		when(userService.update(updatedUser)).thenReturn(updatedUser);
+		when(userService.update(updatedUser, null)).thenReturn(updatedUser);
 
 		final User persistedUser = testee.update(userId, password);
 		assertThat(persistedUser.getLogin().getPassword(), is(password));
 		assertThat(persistedUser.getId(), is(userId));
 		verify(userService, times(1)).findOne(userId);
-		verify(userService, times(1)).update(updatedUser);
+		verify(userService, times(1)).update(updatedUser, null);
 		verifyNoMoreInteractions(userService);
 	}
 

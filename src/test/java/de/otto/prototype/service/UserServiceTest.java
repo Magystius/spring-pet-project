@@ -1,5 +1,6 @@
 package de.otto.prototype.service;
 
+import de.otto.prototype.exceptions.ConcurrentModificationException;
 import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.Login;
@@ -150,7 +151,7 @@ public class UserServiceTest {
 		when(userRepository.findOne(validUserId)).thenReturn(validMinimumUserWithId);
 		when(userRepository.save(updatedUser)).thenReturn(updatedUser);
 
-		final User persistedUser = testee.update(updatedUser);
+		final User persistedUser = testee.update(updatedUser, null);
 
 		assertThat(persistedUser.getLastName(), is("Neumann"));
 		assertThat(persistedUser.getId(), is(validUserId));
@@ -159,13 +160,41 @@ public class UserServiceTest {
 		verifyNoMoreInteractions(userRepository);
 	}
 
+	@Test
+	public void shouldReturnUpdatedUserIfETagsAreEqual() throws Exception {
+		final User updatedUser = validMinimumUserWithId.toBuilder().lastName("Neumann").build();
+		when(userRepository.findOne(validUserId)).thenReturn(validMinimumUserWithId);
+		when(userRepository.save(updatedUser)).thenReturn(updatedUser);
+
+		final User persistedUser = testee.update(updatedUser, validMinimumUserWithId.getETag());
+
+		assertThat(persistedUser.getLastName(), is("Neumann"));
+		assertThat(persistedUser.getId(), is(validUserId));
+		verify(userRepository, times(1)).findOne(validUserId);
+		verify(userRepository, times(1)).save(updatedUser);
+		verifyNoMoreInteractions(userRepository);
+	}
+
+	@Test(expected = ConcurrentModificationException.class)
+	public void shouldThrowConcurrentModificationExceptionIfETagsUnequal() {
+		when(userRepository.findOne(validUserId)).thenReturn(validMinimumUserWithId);
+		try {
+			testee.update(validMinimumUserWithId, "someDifferentEtag");
+		} catch (ConcurrentModificationException e) {
+			assertThat(e.getMessage(), is("etags aren´t equal"));
+			verify(userRepository, times(1)).findOne(validUserId);
+			verifyNoMoreInteractions(userRepository);
+			throw e;
+		}
+	}
+
 	@Test(expected = ConstraintViolationException.class)
 	public void shouldThrowConstraintViolationExceptionIfInvalidExistingUser() {
 		User invalidUserToUpdate = validMinimumUserWithId.toBuilder().firstName("a").build();
 		when(userRepository.findOne(validUserId)).thenReturn(invalidUserToUpdate);
 
 		try {
-			testee.update(invalidUserToUpdate);
+			testee.update(invalidUserToUpdate, null);
 		} catch (ConstraintViolationException e) {
 			String msgCode = e.getConstraintViolations().stream().map(ConstraintViolation::getMessage).findFirst().orElse("");
 			assertThat(msgCode, is("error.name.range"));
@@ -179,7 +208,7 @@ public class UserServiceTest {
 		when(userRepository.findOne(validUserId)).thenReturn(invalidUserToUpdate);
 
 		try {
-			testee.update(invalidUserToUpdate);
+			testee.update(invalidUserToUpdate, null);
 		} catch (InvalidUserException e) {
 			assertThat(e.getUser(), is(invalidUserToUpdate));
 			assertThat(e.getErrorMsg(), is("only mails by otto allowed"));
@@ -193,7 +222,7 @@ public class UserServiceTest {
 		when(userRepository.findOne(validUserId)).thenReturn(null);
 
 		try {
-			testee.update(validMinimumUser.toBuilder().id(validUserId).build());
+			testee.update(validMinimumUser.toBuilder().id(validUserId).build(), null);
 		} catch (InvalidUserException e) {
 			assertThat(e.getMessage(), is("id not found"));
 			verify(userRepository, times(1)).findOne(validUserId);
