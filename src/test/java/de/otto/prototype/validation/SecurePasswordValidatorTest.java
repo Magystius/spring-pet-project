@@ -27,9 +27,9 @@ class SecurePasswordValidatorTest {
 		return AnnotationFactory.create(descriptor);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "{index} -> {0}")
 	@ValueSource(strings = {"111", "11111111111111111111111111111111", "invalid", ""})
-	@DisplayName("should return false for every unsecure password")
+	@DisplayName("should return false when unsecure password is")
 	void shouldValidateInsecurePasswords(String insecurePassword) {
 		assertThat(testee.isValid(insecurePassword, null), is(false));
 	}
