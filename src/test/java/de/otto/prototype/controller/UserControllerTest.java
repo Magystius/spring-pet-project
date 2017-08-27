@@ -5,9 +5,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import de.otto.prototype.controller.handlers.ControllerValidationHandler;
 import de.otto.prototype.controller.representation.UserValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.UserValidationRepresentation;
@@ -17,9 +14,14 @@ import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.service.UserService;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
@@ -33,6 +35,7 @@ import org.springframework.web.method.annotation.ExceptionHandlerMethodResolver;
 import org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver;
 import org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Locale;
@@ -46,16 +49,17 @@ import static com.google.common.hash.Hashing.sha256;
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.Mockito.*;
+import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.http.HttpHeaders.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@RunWith(DataProviderRunner.class)
-public class UserControllerTest {
+class UserControllerTest {
 
 	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 	private static final Locale LOCALE = LocaleContextHolder.getLocale();
@@ -75,41 +79,39 @@ public class UserControllerTest {
 
 	private MockMvc mvc;
 
+	@Mock
 	private UserService userService;
 
-	@DataProvider
-	public static Object[][] invalidNewUserProvider() {
-		return new Object[][]{
-				{validMinimumUser.toBuilder().id(validUserId).build(), buildUVRep(of(buildUVERep("error.id.new")))},
-				{validMinimumUser.toBuilder().firstName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUser.toBuilder().firstName("").build(), buildUVRep(of(buildUVERep("error.name.empty"), buildUVERep("error.name.range")))},
-				{validMinimumUser.toBuilder().secondName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUser.toBuilder().lastName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUser.toBuilder().lastName("").build(), buildUVRep(of(buildUVERep("error.name.empty"), buildUVERep("error.name.range")))},
-				{validMinimumUser.toBuilder().age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))},
-				{validMinimumUser.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))},
-				{validMinimumUser.toBuilder().login(validLogin.toBuilder().mail("keineMail").build()).build(), buildUVRep(of(buildUVERep("error.mail.invalid")))},
-				{validMinimumUser.toBuilder().login(validLogin.toBuilder().password("").build()).build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))},
-				{validMinimumUser.toBuilder().bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))}
-		};
+	private static Stream<Arguments> invalidNewUserProvider() {
+		return Stream.of(
+				Arguments.of(validMinimumUser.toBuilder().id(validUserId).build(), buildUVRep(of(buildUVERep("error.id.new")))),
+				Arguments.of(validMinimumUser.toBuilder().firstName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))),
+				Arguments.of(validMinimumUser.toBuilder().firstName("").build(), buildUVRep(of(buildUVERep("error.name.empty"), buildUVERep("error.name.range")))),
+				Arguments.of(validMinimumUser.toBuilder().secondName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))),
+				Arguments.of(validMinimumUser.toBuilder().lastName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))),
+				Arguments.of(validMinimumUser.toBuilder().lastName("").build(), buildUVRep(of(buildUVERep("error.name.empty"), buildUVERep("error.name.range")))),
+				Arguments.of(validMinimumUser.toBuilder().age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))),
+				Arguments.of(validMinimumUser.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))),
+				Arguments.of(validMinimumUser.toBuilder().login(validLogin.toBuilder().mail("keineMail").build()).build(), buildUVRep(of(buildUVERep("error.mail.invalid")))),
+				Arguments.of(validMinimumUser.toBuilder().login(validLogin.toBuilder().password("").build()).build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))),
+				Arguments.of(validMinimumUser.toBuilder().bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))));
 	}
 
-	@DataProvider
-	public static Object[][] invalidExistingUserProvider() {
-		return new Object[][]{
-				{validMinimumUserWithId.toBuilder().id(null).build(), buildUVRep(of((buildUVERep("error.id.existing"))))},
-				{validMinimumUserWithId.toBuilder().firstName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUserWithId.toBuilder().firstName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))},
-				{validMinimumUserWithId.toBuilder().secondName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUserWithId.toBuilder().lastName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))},
-				{validMinimumUserWithId.toBuilder().lastName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))},
-				{validMinimumUserWithId.toBuilder().age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))},
-				{validMinimumUserWithId.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))},
-				{validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().mail("keineMail").build()).build(), buildUVRep(of(buildUVERep("error.mail.invalid")))},
-				{validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().password("").build()).build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))},
-				{validMinimumUserWithId.toBuilder().bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))}
-		};
+	private static Stream<Arguments> invalidExistingUserProvider() {
+		return Stream.of(
+				Arguments.of(validMinimumUserWithId.toBuilder().id(null).build(), buildUVRep(of((buildUVERep("error.id.existing"))))),
+				Arguments.of(validMinimumUserWithId.toBuilder().firstName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))),
+				Arguments.of(validMinimumUserWithId.toBuilder().firstName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))),
+				Arguments.of(validMinimumUserWithId.toBuilder().secondName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))),
+				Arguments.of(validMinimumUserWithId.toBuilder().lastName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))),
+				Arguments.of(validMinimumUserWithId.toBuilder().lastName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))),
+				Arguments.of(validMinimumUserWithId.toBuilder().age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))),
+				Arguments.of(validMinimumUserWithId.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))),
+				Arguments.of(validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().mail("keineMail").build()).build(), buildUVRep(of(buildUVERep("error.mail.invalid")))),
+				Arguments.of(validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().password("").build()).build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))),
+				Arguments.of(validMinimumUserWithId.toBuilder().bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))));
 	}
+
 
 	private static UserValidationEntryRepresentation buildUVERep(String msgCode) {
 		initMessageSource();
@@ -130,428 +132,21 @@ public class UserControllerTest {
 		}
 	}
 
-	private void assertUserRepresentation(String responseBody, User expectedUser) {
-		DocumentContext parsedResponse = JsonPath.parse(responseBody);
-		assertThat(parsedResponse.read("$.content.id"), is(expectedUser.getId()));
-		assertThat(parsedResponse.read("$.content.firstName"), is(expectedUser.getFirstName()));
-		assertThat(parsedResponse.read("$.content.secondName"), is(expectedUser.getSecondName()));
-		assertThat(parsedResponse.read("$.content.lastName"), is(expectedUser.getLastName()));
-		assertThat(parsedResponse.read("$.content.age"), is(expectedUser.getAge()));
-		assertThat(parsedResponse.read("$.content.vip"), is(expectedUser.isVip()));
-		assertThat(parsedResponse.read("$.content.login.mail"), is(expectedUser.getLogin().getMail()));
-		assertThat(parsedResponse.read("$.content.login.password"), is(expectedUser.getLogin().getPassword()));
-		assertThat(parsedResponse.read("$.content.bio"), is(expectedUser.getBio()));
-		assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/" + expectedUser.getId()));
-	}
-
-	@Before
-	public void init() {
+	@BeforeEach
+	void init() {
 		initMessageSource();
-		userService = mock(UserService.class);
+		initMocks(this);
 		mvc = MockMvcBuilders
 				.standaloneSetup(new UserController(userService))
 				.setHandlerExceptionResolvers(createExceptionResolver())
 				.build();
 	}
 
-	@Test
-	public void shouldReturnNotContentNoUsersOnGetAll() throws Exception {
-		when(userService.findAll()).thenReturn(Stream.of());
-
-		mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
-				.andDo(print())
-				.andExpect(status().isNoContent())
-				.andExpect(content().string(""));
-
-		verify(userService, times(1)).findAll();
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnListOfUsersAndETagHeaderOnGetAll() throws Exception {
-		final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
-		when(userService.findAll()).thenReturn(sup.get());
-
-		final String combinedETags = sup.get().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
-		final HashCode hashCode = sha256().newHasher().putString(combinedETags, UTF_8).hash();
-
-		MvcResult result = mvc.perform(get(URL_USER)
-				.accept(MediaType.APPLICATION_JSON)
-				.header(IF_NONE_MATCH, "someDifferentETag"))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andReturn();
-
-		DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
-		assertThat(parsedResponse.read("$.content"), is(notNullValue()));
-		assertThat(parsedResponse.read("$.content[0].lastName"), is("Mustermann"));
-		assertThat(parsedResponse.read("$.links[0].href"), containsString("/user"));
-		assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someUserId"));
-		assertThat(parsedResponse.read("$.total"), is(1));
-		final String eTagHeader = result.getResponse().getHeader(ETAG);
-		assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(hashCode.toString()));
-
-		verify(userService, times(1)).findAll();
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnNoUserListIfETagMatchesOnGetAll() throws Exception {
-		final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
-		when(userService.findAll()).thenReturn(sup.get());
-
-		final String combinedETags = sup.get().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
-		final String eTag = sha256().newHasher().putString(combinedETags, UTF_8).hash().toString();
-
-		mvc.perform(get(URL_USER)
-				.accept(MediaType.APPLICATION_JSON)
-				.header(IF_NONE_MATCH, eTag))
-				.andDo(print())
-				.andExpect(status().isNotModified())
-				.andExpect(header().string(ETAG, eTag))
-				.andExpect(content().string(""));
-
-		verify(userService, times(1)).findAll();
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnAllLinksIfGetUserFromMiddlePosition() throws Exception {
-		when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
-		when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("first").build(),
-				validMinimumUserWithId.toBuilder().id("someUserId").build(),
-				validMinimumUserWithId.toBuilder().id("last").build()));
-
-		MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
-				.accept(MediaType.APPLICATION_JSON))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andReturn();
-
-		DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
-		assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId"));
-		assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/first"));
-		assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/first"));
-		assertThat(parsedResponse.read("$.links[3].href"), containsString("/user/last"));
-
-		verify(userService, times(1)).findAll();
-		verify(userService, times(1)).findOne(validUserId);
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnSelfAndStartIfOnlyOne() throws Exception {
-		when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
-		when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("someUserId").build()));
-
-		MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
-				.accept(MediaType.APPLICATION_JSON))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andReturn();
-
-		DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
-		assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId"));
-		assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someUserId"));
-
-		verify(userService, times(1)).findAll();
-		verify(userService, times(1)).findOne(validUserId);
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnPrevIfLastUser() throws Exception {
-		when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
-		when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("first").build(),
-				validMinimumUserWithId.toBuilder().id("someUserId").build()));
-
-		MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
-				.accept(MediaType.APPLICATION_JSON))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andReturn();
-
-		DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
-		assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId"));
-		assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/first"));
-		assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/first"));
-
-		verify(userService, times(1)).findAll();
-		verify(userService, times(1)).findOne(validUserId);
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnNextIfFirstUser() throws Exception {
-		when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
-		when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("someUserId").build(),
-				validMinimumUserWithId.toBuilder().id("last").build()));
-
-		MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
-				.accept(MediaType.APPLICATION_JSON))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andReturn();
-
-		DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
-		assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId"));
-		assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someUserId"));
-		assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/last"));
-
-		verify(userService, times(1)).findAll();
-		verify(userService, times(1)).findOne(validUserId);
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnAUserAndETagHeaderIfDifferentETagGetOne() throws Exception {
-		when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
-		final User user = validMinimumUserWithId.toBuilder().id("someUserId").build();
-		when(userService.findAll()).thenReturn(Stream.of(user));
-
-		MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
-				.accept(MediaType.APPLICATION_JSON)
-				.header(IF_NONE_MATCH, "someDifferentETag"))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andReturn();
-
-		assertUserRepresentation(result.getResponse().getContentAsString(), validMinimumUserWithId);
-		final String eTagHeader = result.getResponse().getHeader(ETAG);
-		assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(user.getETag()));
-
-		verify(userService, times(1)).findOne(validUserId);
-		verify(userService, times(1)).findAll();
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnNoUserIfETagMatches() throws Exception {
-		when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
-		final User user = validMinimumUserWithId.toBuilder().id("someUserId").build();
-		when(userService.findAll()).thenReturn(Stream.of(user));
-
-		mvc.perform(get(URL_USER + "/" + validUserId)
-				.accept(MediaType.APPLICATION_JSON)
-				.header(IF_NONE_MATCH, user.getETag()))
-				.andDo(print())
-				.andExpect(status().isNotModified())
-				.andExpect(header().string(ETAG, user.getETag()))
-				.andExpect(content().string(""));
-
-		verify(userService, times(1)).findOne(validUserId);
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturn404IfUserNotFoundOnGetOne() throws Exception {
-		when(userService.findOne(validUserId)).thenReturn(Optional.empty());
-
-		mvc.perform(get(URL_USER + "/" + validUserId)
-				.accept(MediaType.APPLICATION_JSON))
-				.andDo(print())
-				.andExpect(status().isNotFound());
-
-		verify(userService, times(1)).findOne(validUserId);
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldCreateUserAndReturnItsLocationAndETagOnPost() throws Exception {
-		final User userToPersist = validMinimumUser;
-		final User persistedUser = userToPersist.toBuilder().id(validUserId).build();
-		when(userService.create(userToPersist)).thenReturn(persistedUser);
-		when(userService.findAll()).thenReturn(Stream.of(persistedUser));
-
-		MvcResult result = mvc.perform(post(URL_USER)
-				.contentType(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(userToPersist)))
-				.andDo(print())
-				.andExpect(status().isCreated())
-				.andExpect(header().string("location", containsString(URL_USER + "/" + validUserId)))
-				.andExpect(header().string("eTag", is(persistedUser.getETag())))
-				.andReturn();
-
-		assertUserRepresentation(result.getResponse().getContentAsString(), persistedUser);
-
-		verify(userService, times(1)).create(userToPersist);
-		verify(userService, times(1)).findAll();
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldUpdateUserAndReturnHimAndHisETagOnPut() throws Exception {
-		final User updatedUser = validMinimumUserWithId.toBuilder().build();
-		when(userService.update(updatedUser, null)).thenReturn(updatedUser);
-		when(userService.findAll()).thenReturn(Stream.of(updatedUser));
-
-		MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
-				.contentType(APPLICATION_JSON_VALUE)
-				.accept(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(updatedUser)))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andExpect(header().string("eTag", is(updatedUser.getETag())))
-				.andReturn();
-
-		assertUserRepresentation(result.getResponse().getContentAsString(), updatedUser);
-
-		verify(userService, times(1)).update(updatedUser, null);
-		verify(userService, times(1)).findAll();
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldUpdateUserWithETagHeaderAndReturnHimAndHisETagOnPut() throws Exception {
-		final String eTag = validMinimumUserWithId.getETag();
-		when(userService.update(validMinimumUserWithId, eTag)).thenReturn(validMinimumUserWithId);
-		when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId));
-
-		MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
-				.contentType(APPLICATION_JSON_VALUE)
-				.accept(APPLICATION_JSON_VALUE)
-				.header(IF_MATCH, eTag)
-				.content(GSON.toJson(validMinimumUserWithId)))
-				.andDo(print())
-				.andExpect(status().isOk())
-				.andExpect(header().string("eTag", is(eTag)))
-				.andReturn();
-
-		assertUserRepresentation(result.getResponse().getContentAsString(), validMinimumUserWithId);
-
-		verify(userService, times(1)).update(validMinimumUserWithId, eTag);
-		verify(userService, times(1)).findAll();
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnPreconditionFailedIfETagsArentEqual() throws Exception {
-		when(userService.update(validMinimumUserWithId, "differentEtag")).thenThrow(new ConcurrentModificationException(""));
-
-		mvc.perform(put(URL_USER + "/" + validUserId)
-				.contentType(APPLICATION_JSON_VALUE)
-				.accept(APPLICATION_JSON_VALUE)
-				.header(IF_MATCH, "differentEtag")
-				.content(GSON.toJson(validMinimumUserWithId)))
-				.andDo(print())
-				.andExpect(status().isPreconditionFailed())
-				.andExpect(content().string(""));
-
-		verify(userService, times(1)).update(validMinimumUserWithId, "differentEtag");
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnNotFoundIfIDsDifferOnPut() throws Exception {
-		final User updatedUser = validMinimumUserWithId.toBuilder().build();
-
-		Long differentId = 9999L;
-		mvc.perform(put(URL_USER + "/" + differentId)
-				.contentType(APPLICATION_JSON_VALUE)
-				.accept(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(updatedUser)))
-				.andDo(print())
-				.andExpect(status().isNotFound());
-
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnNotFoundIfIdNotFoundOnPut() throws Exception {
-		final User updatedUser = validMinimumUserWithId.toBuilder().build();
-		when(userService.update(updatedUser, null)).thenThrow(new NotFoundException("id not found"));
-
-		mvc.perform(put(URL_USER + "/" + validUserId)
-				.contentType(APPLICATION_JSON_VALUE)
-				.accept(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(updatedUser)))
-				.andDo(print())
-				.andExpect(status().isNotFound());
-
-		verify(userService, times(1)).update(updatedUser, null);
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnBadRequestIfBusinessValidationFailsOnPut() throws Exception {
-		final User userToPersist = validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().mail("max.mustermann@web.de").build()).build();
-		String errorMsg = "only mails by otto allowed";
-		String errorCause = "buasiness";
-		UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
-		when(userService.update(userToPersist, null)).thenThrow(new InvalidUserException(userToPersist, errorCause, errorMsg));
-
-		final MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
-				.contentType(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(userToPersist)))
-				.andDo(print())
-				.andExpect(status().isBadRequest())
-				.andReturn();
-
-		verify(userService, times(1)).update(userToPersist, null);
-		UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
-		assertThat(returnedErrors.getErrors().get(0), is(returnedError));
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnBadRequestIfIdIsAlreadySetOnPost() throws Exception {
-		final User userToPersist = validMinimumUser.toBuilder().id(validUserId).build();
-
-		mvc.perform(post(URL_USER)
-				.contentType(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(userToPersist)))
-				.andDo(print())
-				.andExpect(status().isBadRequest());
-
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnBadRequestIfBusinessValidationFailsOnPost() throws Exception {
-		final User userToPersist = validMinimumUser.toBuilder().login(validLogin.toBuilder().mail("max.mustermann@web.de").build()).build();
-		String errorMsg = "only mails by otto allowed";
-		String errorCause = "buasiness";
-		UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
-		when(userService.create(userToPersist)).thenThrow(new InvalidUserException(userToPersist, errorCause, errorMsg));
-
-		final MvcResult result = mvc.perform(post(URL_USER)
-				.contentType(APPLICATION_JSON_VALUE)
-				.content(GSON.toJson(userToPersist)))
-				.andDo(print())
-				.andExpect(status().isBadRequest())
-				.andReturn();
-
-		verify(userService, times(1)).create(userToPersist);
-		UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
-		assertThat(returnedErrors.getErrors().get(0), is(returnedError));
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldDeleteUserOnDelete() throws Exception {
-		mvc.perform(delete(URL_USER + "/" + validUserId))
-				.andDo(print())
-				.andExpect(status().isNoContent());
-
-		verify(userService, times(1)).delete(validUserId);
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	public void shouldReturnNotFoundIfUserIdNotFoundOnDelete() throws Exception {
-		doThrow(new NotFoundException("id not found")).when(userService).delete(validUserId);
-
-		mvc.perform(delete(URL_USER + "/" + validUserId))
-				.andDo(print())
-				.andExpect(status().isNotFound());
-
-		verify(userService, times(1)).delete(validUserId);
-		verifyNoMoreInteractions(userService);
-	}
-
-	@Test
-	@UseDataProvider("invalidNewUserProvider")
-	public void shouldReturnBadRequestForInvalidNewUserOnPost(User invalidUser, UserValidationRepresentation errors) throws Exception {
+	//TODO: can these two be nested?
+	@ParameterizedTest
+	@MethodSource("invalidNewUserProvider")
+	@DisplayName("should return a bad request response for invalid new user")
+	void shouldReturnBadRequestForInvalidNewUserOnPost(User invalidUser, UserValidationRepresentation errors) throws Exception {
 		final MvcResult result = mvc.perform(post(URL_USER)
 				.contentType(APPLICATION_JSON_VALUE)
 				.content(GSON.toJson(invalidUser)))
@@ -564,9 +159,10 @@ public class UserControllerTest {
 		verifyNoMoreInteractions(userService);
 	}
 
-	@Test
-	@UseDataProvider("invalidExistingUserProvider")
-	public void shouldReturnBadRequestForInvalidExistingUserOnPost(User invalidUser, UserValidationRepresentation errors) throws Exception {
+	@ParameterizedTest
+	@MethodSource("invalidExistingUserProvider")
+	@DisplayName("should return a bad request response for invalid existing user")
+	void shouldReturnBadRequestForInvalidExistingUserOnPut(User invalidUser, UserValidationRepresentation errors) throws Exception {
 		final MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
 				.contentType(APPLICATION_JSON_VALUE)
 				.content(GSON.toJson(invalidUser)))
@@ -577,6 +173,458 @@ public class UserControllerTest {
 		UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
 		assertThat(returnedErrors.getErrors().stream().filter(error -> !errors.getErrors().contains(error)).collect(toList()).size(), is(0));
 		verifyNoMoreInteractions(userService);
+	}
+
+	private void assertUserRepresentation(String responseBody, User expectedUser) {
+		DocumentContext parsedResponse = JsonPath.parse(responseBody);
+		assertAll("user representation",
+				() -> assertThat(parsedResponse.read("$.content.id"), is(expectedUser.getId())),
+				() -> assertThat(parsedResponse.read("$.content.firstName"), is(expectedUser.getFirstName())),
+				() -> assertThat(parsedResponse.read("$.content.secondName"), is(expectedUser.getSecondName())),
+				() -> assertThat(parsedResponse.read("$.content.lastName"), is(expectedUser.getLastName())),
+				() -> assertThat(parsedResponse.read("$.content.age"), is(expectedUser.getAge())),
+				() -> assertThat(parsedResponse.read("$.content.vip"), is(expectedUser.isVip())),
+				() -> assertThat(parsedResponse.read("$.content.login.mail"), is(expectedUser.getLogin().getMail())),
+				() -> assertThat(parsedResponse.read("$.content.login.password"), is(expectedUser.getLogin().getPassword())),
+				() -> assertThat(parsedResponse.read("$.content.bio"), is(expectedUser.getBio())),
+				() -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/" + expectedUser.getId())));
+	}
+
+	@Nested
+	@DisplayName("when try to retrieve all users")
+	class getAllUsers {
+		@Test
+		@DisplayName("should return a no content response if no users found")
+		void shouldReturnNotContentNoUsersOnGetAll() throws Exception {
+			when(userService.findAll()).thenReturn(Stream.of());
+
+			mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
+					.andDo(print())
+					.andExpect(status().isNoContent())
+					.andExpect(content().string(""));
+
+			verify(userService, times(1)).findAll();
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should return the list of all users")
+		void shouldReturnListOfUsersAndETagHeaderOnGetAll() throws Exception {
+			final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
+			when(userService.findAll()).thenReturn(sup.get());
+
+			final String combinedETags = sup.get().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
+			final HashCode hashCode = sha256().newHasher().putString(combinedETags, UTF_8).hash();
+
+			MvcResult result = mvc.perform(get(URL_USER)
+					.accept(MediaType.APPLICATION_JSON))
+					.andDo(print())
+					.andExpect(status().isOk())
+					.andReturn();
+
+			assertUserListRepresentation(hashCode, result);
+		}
+
+		@Test
+		@DisplayName("should return the list of all users and their etag if etag differs")
+		void shouldReturnListOfUsersAndETagHeaderIfDifferentEtagOnGetAll() throws Exception {
+			final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
+			when(userService.findAll()).thenReturn(sup.get());
+
+			final String combinedETags = sup.get().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
+			final HashCode hashCode = sha256().newHasher().putString(combinedETags, UTF_8).hash();
+
+			MvcResult result = mvc.perform(get(URL_USER)
+					.accept(MediaType.APPLICATION_JSON)
+					.header(IF_NONE_MATCH, "someDifferentETag"))
+					.andDo(print())
+					.andExpect(status().isOk())
+					.andReturn();
+
+			assertUserListRepresentation(hashCode, result);
+		}
+
+		@Test
+		@DisplayName("should return a not modified response if etags are equal")
+		void shouldReturnNoUserListIfETagMatchesOnGetAll() throws Exception {
+			final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
+			when(userService.findAll()).thenReturn(sup.get());
+
+			final String combinedETags = sup.get().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
+			final String eTag = sha256().newHasher().putString(combinedETags, UTF_8).hash().toString();
+
+			mvc.perform(get(URL_USER)
+					.accept(MediaType.APPLICATION_JSON)
+					.header(IF_NONE_MATCH, eTag))
+					.andDo(print())
+					.andExpect(status().isNotModified())
+					.andExpect(header().string(ETAG, eTag))
+					.andExpect(content().string(""));
+
+			verify(userService, times(1)).findAll();
+			verifyNoMoreInteractions(userService);
+		}
+
+		private void assertUserListRepresentation(HashCode hashCode, MvcResult result) throws UnsupportedEncodingException {
+			DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
+			assertAll("user list representation",
+					() -> assertThat(parsedResponse.read("$.content"), is(notNullValue())),
+					() -> assertThat(parsedResponse.read("$.content[0].lastName"), is("Mustermann")),
+					() -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/user")),
+					() -> assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someUserId")),
+					() -> assertThat(parsedResponse.read("$.total"), is(1)));
+
+			final String eTagHeader = result.getResponse().getHeader(ETAG);
+			assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(hashCode.toString()));
+
+			verify(userService, times(1)).findAll();
+			verifyNoMoreInteractions(userService);
+		}
+	}
+
+	@Nested
+	@DisplayName("when a user is retrieved via a given id")
+	class getOne {
+		@Test
+		@DisplayName("should return a user with all possible rel-links")
+		void shouldReturnAllLinksIfGetUserFromMiddlePosition() throws Exception {
+			when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+			when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("first").build(),
+					validMinimumUserWithId.toBuilder().id("someUserId").build(),
+					validMinimumUserWithId.toBuilder().id("last").build()));
+
+			MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
+					.accept(MediaType.APPLICATION_JSON))
+					.andDo(print())
+					.andExpect(status().isOk())
+					.andReturn();
+
+			DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
+			assertAll("user rel-links",
+					() -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId")),
+					() -> assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/first")),
+					() -> assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/first")),
+					() -> assertThat(parsedResponse.read("$.links[3].href"), containsString("/user/last")));
+
+			verify(userService, times(1)).findAll();
+			verify(userService, times(1)).findOne(validUserId);
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should return a user with only self and start rel-links")
+		void shouldReturnSelfAndStartIfOnlyOne() throws Exception {
+			when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+			when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("someUserId").build()));
+
+			MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
+					.accept(MediaType.APPLICATION_JSON))
+					.andDo(print())
+					.andExpect(status().isOk())
+					.andReturn();
+
+			DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
+			assertAll("user rel-links",
+					() -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId")),
+					() -> assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someUserId")));
+
+			verify(userService, times(1)).findAll();
+			verify(userService, times(1)).findOne(validUserId);
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should return a user with prev and start rel-links")
+		void shouldReturnPrevIfLastUser() throws Exception {
+			when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+			when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("first").build(),
+					validMinimumUserWithId.toBuilder().id("someUserId").build()));
+
+			MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
+					.accept(MediaType.APPLICATION_JSON))
+					.andDo(print())
+					.andExpect(status().isOk())
+					.andReturn();
+
+			DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
+			assertAll("user rel-links",
+					() -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId")),
+					() -> assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/first")),
+					() -> assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/first")));
+
+			verify(userService, times(1)).findAll();
+			verify(userService, times(1)).findOne(validUserId);
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should return a user with next rel-link")
+		void shouldReturnNextIfFirstUser() throws Exception {
+			when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+			when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("someUserId").build(),
+					validMinimumUserWithId.toBuilder().id("last").build()));
+
+			MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
+					.accept(MediaType.APPLICATION_JSON))
+					.andDo(print())
+					.andExpect(status().isOk())
+					.andReturn();
+
+			DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
+			assertAll("user rel-links",
+					() -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId")),
+					() -> assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someUserId")),
+					() -> assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/last")));
+
+			verify(userService, times(1)).findAll();
+			verify(userService, times(1)).findOne(validUserId);
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should return a user if eTag is different")
+		void shouldReturnAUserAndETagHeaderIfDifferentETagGetOne() throws Exception {
+			when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+			final User user = validMinimumUserWithId.toBuilder().id("someUserId").build();
+			when(userService.findAll()).thenReturn(Stream.of(user));
+
+			MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
+					.accept(MediaType.APPLICATION_JSON)
+					.header(IF_NONE_MATCH, "someDifferentETag"))
+					.andDo(print())
+					.andExpect(status().isOk())
+					.andReturn();
+
+			assertUserRepresentation(result.getResponse().getContentAsString(), validMinimumUserWithId);
+			final String eTagHeader = result.getResponse().getHeader(ETAG);
+			assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(user.getETag()));
+
+			verify(userService, times(1)).findOne(validUserId);
+			verify(userService, times(1)).findAll();
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should return a not modified response if eTag is equal")
+		void shouldReturnNoUserIfETagMatches() throws Exception {
+			when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+			final User user = validMinimumUserWithId.toBuilder().id("someUserId").build();
+			when(userService.findAll()).thenReturn(Stream.of(user));
+
+			mvc.perform(get(URL_USER + "/" + validUserId)
+					.accept(MediaType.APPLICATION_JSON)
+					.header(IF_NONE_MATCH, user.getETag()))
+					.andDo(print())
+					.andExpect(status().isNotModified())
+					.andExpect(header().string(ETAG, user.getETag()))
+					.andExpect(content().string(""));
+
+			verify(userService, times(1)).findOne(validUserId);
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should return a not found response if given id is unknown")
+		void shouldReturn404IfUserNotFoundOnGetOne() throws Exception {
+			when(userService.findOne(validUserId)).thenReturn(Optional.empty());
+
+			mvc.perform(get(URL_USER + "/" + validUserId)
+					.accept(MediaType.APPLICATION_JSON))
+					.andDo(print())
+					.andExpect(status().isNotFound());
+
+			verify(userService, times(1)).findOne(validUserId);
+			verifyNoMoreInteractions(userService);
+		}
+	}
+
+	@Nested
+	@DisplayName("when a user for a given id is about to be updated")
+	class updateUser {
+
+		@Test
+		@DisplayName("should update a user and return it with new etag")
+		void shouldUpdateUserAndReturnHimAndHisETagOnPut() throws Exception {
+			final User updatedUser = validMinimumUserWithId.toBuilder().build();
+			when(userService.update(updatedUser, null)).thenReturn(updatedUser);
+			when(userService.findAll()).thenReturn(Stream.of(updatedUser));
+
+			MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
+					.contentType(APPLICATION_JSON_VALUE)
+					.accept(APPLICATION_JSON_VALUE)
+					.content(GSON.toJson(updatedUser)))
+					.andDo(print())
+					.andExpect(status().isOk())
+					.andExpect(header().string("eTag", is(updatedUser.getETag())))
+					.andReturn();
+
+			assertUserRepresentation(result.getResponse().getContentAsString(), updatedUser);
+
+			verify(userService, times(1)).update(updatedUser, null);
+			verify(userService, times(1)).findAll();
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should update a user if the given eTag matches and return it and a new etag")
+		void shouldUpdateUserWithETagHeaderAndReturnHimAndHisETagOnPut() throws Exception {
+			final String eTag = validMinimumUserWithId.getETag();
+			when(userService.update(validMinimumUserWithId, eTag)).thenReturn(validMinimumUserWithId);
+			when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId));
+
+			MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
+					.contentType(APPLICATION_JSON_VALUE)
+					.accept(APPLICATION_JSON_VALUE)
+					.header(IF_MATCH, eTag)
+					.content(GSON.toJson(validMinimumUserWithId)))
+					.andDo(print())
+					.andExpect(status().isOk())
+					.andExpect(header().string("eTag", is(eTag)))
+					.andReturn();
+
+			assertUserRepresentation(result.getResponse().getContentAsString(), validMinimumUserWithId);
+
+			verify(userService, times(1)).update(validMinimumUserWithId, eTag);
+			verify(userService, times(1)).findAll();
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should return a precondition failed response if given eTag isn´t equal")
+		void shouldReturnPreconditionFailedIfETagsArentEqual() throws Exception {
+			when(userService.update(validMinimumUserWithId, "differentEtag")).thenThrow(new ConcurrentModificationException(""));
+
+			mvc.perform(put(URL_USER + "/" + validUserId)
+					.contentType(APPLICATION_JSON_VALUE)
+					.accept(APPLICATION_JSON_VALUE)
+					.header(IF_MATCH, "differentEtag")
+					.content(GSON.toJson(validMinimumUserWithId)))
+					.andDo(print())
+					.andExpect(status().isPreconditionFailed())
+					.andExpect(content().string(""));
+
+			verify(userService, times(1)).update(validMinimumUserWithId, "differentEtag");
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should return a not found response if ids in url and body are different")
+		void shouldReturnNotFoundIfIDsDifferOnPut() throws Exception {
+			final User updatedUser = validMinimumUserWithId.toBuilder().build();
+
+			Long differentId = 9999L;
+			mvc.perform(put(URL_USER + "/" + differentId)
+					.contentType(APPLICATION_JSON_VALUE)
+					.accept(APPLICATION_JSON_VALUE)
+					.content(GSON.toJson(updatedUser)))
+					.andDo(print())
+					.andExpect(status().isNotFound());
+
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should return a not found response if given id is unknown")
+		void shouldReturnNotFoundIfIdNotFoundOnPut() throws Exception {
+			final User updatedUser = validMinimumUserWithId.toBuilder().build();
+			when(userService.update(updatedUser, null)).thenThrow(new NotFoundException("id not found"));
+
+			mvc.perform(put(URL_USER + "/" + validUserId)
+					.contentType(APPLICATION_JSON_VALUE)
+					.accept(APPLICATION_JSON_VALUE)
+					.content(GSON.toJson(updatedUser)))
+					.andDo(print())
+					.andExpect(status().isNotFound());
+
+			verify(userService, times(1)).update(updatedUser, null);
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should return a bad request response if business validation fails")
+		void shouldReturnBadRequestIfBusinessValidationFailsOnPut() throws Exception {
+			final User userToPersist = validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().mail("max.mustermann@web.de").build()).build();
+			String errorMsg = "only mails by otto allowed";
+			String errorCause = "buasiness";
+			UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
+			when(userService.update(userToPersist, null)).thenThrow(new InvalidUserException(userToPersist, errorCause, errorMsg));
+
+			final MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
+					.contentType(APPLICATION_JSON_VALUE)
+					.content(GSON.toJson(userToPersist)))
+					.andDo(print())
+					.andExpect(status().isBadRequest())
+					.andReturn();
+
+			verify(userService, times(1)).update(userToPersist, null);
+			UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
+			assertThat(returnedErrors.getErrors().get(0), is(returnedError));
+			verifyNoMoreInteractions(userService);
+		}
+	}
+
+	@Nested
+	@DisplayName("when a new user to create is given")
+	class createUser {
+		@Test
+		@DisplayName("should create the user and return it, a location and eTag header")
+		void shouldCreateUserAndReturnItsLocationAndETagOnPost() throws Exception {
+			final User userToPersist = validMinimumUser;
+			final User persistedUser = userToPersist.toBuilder().id(validUserId).build();
+			when(userService.create(userToPersist)).thenReturn(persistedUser);
+			when(userService.findAll()).thenReturn(Stream.of(persistedUser));
+
+			MvcResult result = mvc.perform(post(URL_USER)
+					.contentType(APPLICATION_JSON_VALUE)
+					.content(GSON.toJson(userToPersist)))
+					.andDo(print())
+					.andExpect(status().isCreated())
+					.andExpect(header().string("location", containsString(URL_USER + "/" + validUserId)))
+					.andExpect(header().string("eTag", is(persistedUser.getETag())))
+					.andReturn();
+
+			assertUserRepresentation(result.getResponse().getContentAsString(), persistedUser);
+
+			verify(userService, times(1)).create(userToPersist);
+			verify(userService, times(1)).findAll();
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should return a bad request response, if id is already set")
+		void shouldReturnBadRequestIfIdIsAlreadySetOnPost() throws Exception {
+			final User userToPersist = validMinimumUser.toBuilder().id(validUserId).build();
+
+			mvc.perform(post(URL_USER)
+					.contentType(APPLICATION_JSON_VALUE)
+					.content(GSON.toJson(userToPersist)))
+					.andDo(print())
+					.andExpect(status().isBadRequest());
+
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should return bad request if business validation fails")
+		void shouldReturnBadRequestIfBusinessValidationFailsOnPost() throws Exception {
+			final User userToPersist = validMinimumUser.toBuilder().login(validLogin.toBuilder().mail("max.mustermann@web.de").build()).build();
+			String errorMsg = "only mails by otto allowed";
+			String errorCause = "business";
+			UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
+			when(userService.create(userToPersist)).thenThrow(new InvalidUserException(userToPersist, errorCause, errorMsg));
+
+			final MvcResult result = mvc.perform(post(URL_USER)
+					.contentType(APPLICATION_JSON_VALUE)
+					.content(GSON.toJson(userToPersist)))
+					.andDo(print())
+					.andExpect(status().isBadRequest())
+					.andReturn();
+
+			verify(userService, times(1)).create(userToPersist);
+			UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
+			assertThat(returnedErrors.getErrors().get(0), is(returnedError));
+			verifyNoMoreInteractions(userService);
+		}
 	}
 
 	private ExceptionHandlerExceptionResolver createExceptionResolver() {
@@ -589,5 +637,33 @@ public class UserControllerTest {
 		exceptionResolver.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
 		exceptionResolver.afterPropertiesSet();
 		return exceptionResolver;
+	}
+
+	@Nested
+	@DisplayName("when a user id is given to delete a user")
+	class deleteUser {
+		@Test
+		@DisplayName("should delete the user")
+		void shouldDeleteUserOnDelete() throws Exception {
+			mvc.perform(delete(URL_USER + "/" + validUserId))
+					.andDo(print())
+					.andExpect(status().isNoContent());
+
+			verify(userService, times(1)).delete(validUserId);
+			verifyNoMoreInteractions(userService);
+		}
+
+		@Test
+		@DisplayName("should return a not found exception if id is unknown")
+		void shouldReturnNotFoundIfUserIdNotFoundOnDelete() throws Exception {
+			doThrow(new NotFoundException("id not found")).when(userService).delete(validUserId);
+
+			mvc.perform(delete(URL_USER + "/" + validUserId))
+					.andDo(print())
+					.andExpect(status().isNotFound());
+
+			verify(userService, times(1)).delete(validUserId);
+			verifyNoMoreInteractions(userService);
+		}
 	}
 }
