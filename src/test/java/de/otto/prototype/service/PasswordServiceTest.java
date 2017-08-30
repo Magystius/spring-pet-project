@@ -18,7 +18,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.times;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 class PasswordServiceTest {
@@ -49,16 +51,16 @@ class PasswordServiceTest {
 			final String password = "somePassword";
 			final User userToUpdate = User.builder().id(userId).lastName("Mustermann").login(Login.builder().build()).build();
 			final User updatedUser = User.builder().id(userId).lastName("Mustermann").login(Login.builder().password(password).build()).build();
-			when(userService.findOne(userId)).thenReturn(of(userToUpdate));
-			when(userService.update(updatedUser, null)).thenReturn(updatedUser);
+			given(userService.findOne(userId)).willReturn(of(userToUpdate));
+			given(userService.update(updatedUser, null)).willReturn(updatedUser);
 
 			final User persistedUser = testee.update(userId, password);
 			assertAll("user",
 					() -> assertThat(persistedUser.getLogin().getPassword(), is(password)),
 					() -> assertThat(persistedUser.getId(), is(userId)));
-			verify(userService, times(1)).findOne(userId);
-			verify(userService, times(1)).update(updatedUser, null);
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).findOne(userId);
+			then(userService).should(times(1)).update(updatedUser, null);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
@@ -67,19 +69,19 @@ class PasswordServiceTest {
 			NotFoundException exception =
 					assertThrows(NotFoundException.class, () -> testee.update(null, "somePassword"));
 			assertThat(exception.getMessage(), is("user not found"));
-			verifyNoMoreInteractions(userService);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
 		@DisplayName("should throw a not found exception if the given id can´t be found")
 		void shouldReturnNotFoundExceptionIfUnknownId() throws Exception {
 			final String userId = "someId";
-			when(userService.findOne(userId)).thenReturn(empty());
+			given(userService.findOne(userId)).willReturn(empty());
 			NotFoundException exception =
 					assertThrows(NotFoundException.class, () -> testee.update(userId, "somePassword"));
 			assertThat(exception.getMessage(), is("user not found"));
-			verify(userService, times(1)).findOne(userId);
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).findOne(userId);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 	}
 

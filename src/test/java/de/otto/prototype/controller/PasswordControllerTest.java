@@ -22,7 +22,8 @@ import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.lang.Boolean.valueOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.BDDMockito.*;
+import static org.mockito.Mockito.times;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
@@ -58,7 +59,7 @@ class PasswordControllerTest {
 			final String id = "someId";
 			final String password = "somePassword";
 			final User updatedUser = User.builder().id(id).firstName("Max").lastName("Mustermann").login(Login.builder().password(password).build()).build();
-			when(passwordService.update(id, password)).thenReturn(updatedUser);
+			given(passwordService.update(id, password)).willReturn(updatedUser);
 
 			final MvcResult result = mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
 					.contentType(TEXT_PLAIN_VALUE)
@@ -70,8 +71,8 @@ class PasswordControllerTest {
 
 			assertThat(result.getResponse().getHeader("Location"), containsString(URL_USER + "/" + id));
 
-			verify(passwordService, times(1)).update(id, password);
-			verifyNoMoreInteractions(passwordService);
+			then(passwordService).should(times(1)).update(id, password);
+			then(passwordService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
@@ -79,7 +80,7 @@ class PasswordControllerTest {
 		void shouldReturnNotFoundIfUnknownId() throws Exception {
 			final String id = "someId";
 			final String password = "somePassword";
-			when(passwordService.update(id, password)).thenThrow(new NotFoundException("id not found"));
+			willThrow(new NotFoundException("id not found")).given(passwordService).update(id, password);
 
 			mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
 					.contentType(TEXT_PLAIN_VALUE)
@@ -88,8 +89,8 @@ class PasswordControllerTest {
 					.andDo(print())
 					.andExpect(status().isNotFound());
 
-			verify(passwordService, times(1)).update(id, password);
-			verifyNoMoreInteractions(passwordService);
+			then(passwordService).should(times(1)).update(id, password);
+			then(passwordService).shouldHaveNoMoreInteractions();
 		}
 	}
 
@@ -101,7 +102,7 @@ class PasswordControllerTest {
 		@DisplayName("should return result of check")
 		void shouldReturnTrueIfSecurePassword(String checkResult) throws Exception {
 			final String password = "somePassword";
-			when(passwordService.checkPassword(password)).thenReturn(valueOf(checkResult));
+			given(passwordService.checkPassword(password)).willReturn(valueOf(checkResult));
 
 			mvc.perform(post(URL_CHECK_PASSWORD)
 					.contentType(TEXT_PLAIN_VALUE)
@@ -111,8 +112,8 @@ class PasswordControllerTest {
 					.andExpect(status().isOk())
 					.andExpect(content().string(checkResult));
 
-			verify(passwordService, times(1)).checkPassword(password);
-			verifyNoMoreInteractions(passwordService);
+			then(passwordService).should(times(1)).checkPassword(password);
+			then(passwordService).shouldHaveNoMoreInteractions();
 		}
 	}
 }

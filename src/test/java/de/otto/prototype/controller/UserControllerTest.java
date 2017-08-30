@@ -51,7 +51,8 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.mockito.Mockito.*;
+import static org.mockito.BDDMockito.*;
+import static org.mockito.Mockito.times;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.http.HttpHeaders.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -156,7 +157,7 @@ class UserControllerTest {
 
 		UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
 		assertThat(returnedErrors.getErrors().stream().filter(error -> !errors.getErrors().contains(error)).collect(toList()).size(), is(0));
-		verifyNoMoreInteractions(userService);
+		then(userService).shouldHaveNoMoreInteractions();
 	}
 
 	@ParameterizedTest
@@ -172,7 +173,7 @@ class UserControllerTest {
 
 		UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
 		assertThat(returnedErrors.getErrors().stream().filter(error -> !errors.getErrors().contains(error)).collect(toList()).size(), is(0));
-		verifyNoMoreInteractions(userService);
+		then(userService).shouldHaveNoMoreInteractions();
 	}
 
 	private void assertUserRepresentation(String responseBody, User expectedUser) {
@@ -196,22 +197,22 @@ class UserControllerTest {
 		@Test
 		@DisplayName("should return a no content response if no users found")
 		void shouldReturnNotContentNoUsersOnGetAll() throws Exception {
-			when(userService.findAll()).thenReturn(Stream.of());
+			given(userService.findAll()).willReturn(Stream.of());
 
 			mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
 					.andDo(print())
 					.andExpect(status().isNoContent())
 					.andExpect(content().string(""));
 
-			verify(userService, times(1)).findAll();
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).findAll();
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
 		@DisplayName("should return the list of all users")
 		void shouldReturnListOfUsersAndETagHeaderOnGetAll() throws Exception {
 			final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
-			when(userService.findAll()).thenReturn(sup.get());
+			given(userService.findAll()).willReturn(sup.get());
 
 			final String combinedETags = sup.get().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
 			final HashCode hashCode = sha256().newHasher().putString(combinedETags, UTF_8).hash();
@@ -229,7 +230,7 @@ class UserControllerTest {
 		@DisplayName("should return the list of all users and their etag if etag differs")
 		void shouldReturnListOfUsersAndETagHeaderIfDifferentEtagOnGetAll() throws Exception {
 			final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
-			when(userService.findAll()).thenReturn(sup.get());
+			given(userService.findAll()).willReturn(sup.get());
 
 			final String combinedETags = sup.get().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
 			final HashCode hashCode = sha256().newHasher().putString(combinedETags, UTF_8).hash();
@@ -248,7 +249,7 @@ class UserControllerTest {
 		@DisplayName("should return a not modified response if etags are equal")
 		void shouldReturnNoUserListIfETagMatchesOnGetAll() throws Exception {
 			final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
-			when(userService.findAll()).thenReturn(sup.get());
+			given(userService.findAll()).willReturn(sup.get());
 
 			final String combinedETags = sup.get().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
 			final String eTag = sha256().newHasher().putString(combinedETags, UTF_8).hash().toString();
@@ -261,8 +262,8 @@ class UserControllerTest {
 					.andExpect(header().string(ETAG, eTag))
 					.andExpect(content().string(""));
 
-			verify(userService, times(1)).findAll();
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).findAll();
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		private void assertUserListRepresentation(HashCode hashCode, MvcResult result) throws UnsupportedEncodingException {
@@ -277,8 +278,8 @@ class UserControllerTest {
 			final String eTagHeader = result.getResponse().getHeader(ETAG);
 			assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(hashCode.toString()));
 
-			verify(userService, times(1)).findAll();
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).findAll();
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 	}
 
@@ -288,8 +289,8 @@ class UserControllerTest {
 		@Test
 		@DisplayName("should return a user with all possible rel-links")
 		void shouldReturnAllLinksIfGetUserFromMiddlePosition() throws Exception {
-			when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
-			when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("first").build(),
+			given(userService.findOne(validUserId)).willReturn(Optional.of(validMinimumUserWithId));
+			given(userService.findAll()).willReturn(Stream.of(validMinimumUserWithId.toBuilder().id("first").build(),
 					validMinimumUserWithId.toBuilder().id("someUserId").build(),
 					validMinimumUserWithId.toBuilder().id("last").build()));
 
@@ -306,16 +307,16 @@ class UserControllerTest {
 					() -> assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/first")),
 					() -> assertThat(parsedResponse.read("$.links[3].href"), containsString("/user/last")));
 
-			verify(userService, times(1)).findAll();
-			verify(userService, times(1)).findOne(validUserId);
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).findAll();
+			then(userService).should(times(1)).findOne(validUserId);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
 		@DisplayName("should return a user with only self and start rel-links")
 		void shouldReturnSelfAndStartIfOnlyOne() throws Exception {
-			when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
-			when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("someUserId").build()));
+			given(userService.findOne(validUserId)).willReturn(Optional.of(validMinimumUserWithId));
+			given(userService.findAll()).willReturn(Stream.of(validMinimumUserWithId.toBuilder().id("someUserId").build()));
 
 			MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
 					.accept(MediaType.APPLICATION_JSON))
@@ -328,16 +329,16 @@ class UserControllerTest {
 					() -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId")),
 					() -> assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someUserId")));
 
-			verify(userService, times(1)).findAll();
-			verify(userService, times(1)).findOne(validUserId);
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).findAll();
+			then(userService).should(times(1)).findOne(validUserId);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
 		@DisplayName("should return a user with prev and start rel-links")
 		void shouldReturnPrevIfLastUser() throws Exception {
-			when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
-			when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("first").build(),
+			given(userService.findOne(validUserId)).willReturn(Optional.of(validMinimumUserWithId));
+			given(userService.findAll()).willReturn(Stream.of(validMinimumUserWithId.toBuilder().id("first").build(),
 					validMinimumUserWithId.toBuilder().id("someUserId").build()));
 
 			MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
@@ -352,16 +353,16 @@ class UserControllerTest {
 					() -> assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/first")),
 					() -> assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/first")));
 
-			verify(userService, times(1)).findAll();
-			verify(userService, times(1)).findOne(validUserId);
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).findAll();
+			then(userService).should(times(1)).findOne(validUserId);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
 		@DisplayName("should return a user with next rel-link")
 		void shouldReturnNextIfFirstUser() throws Exception {
-			when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
-			when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId.toBuilder().id("someUserId").build(),
+			given(userService.findOne(validUserId)).willReturn(Optional.of(validMinimumUserWithId));
+			given(userService.findAll()).willReturn(Stream.of(validMinimumUserWithId.toBuilder().id("someUserId").build(),
 					validMinimumUserWithId.toBuilder().id("last").build()));
 
 			MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
@@ -376,17 +377,17 @@ class UserControllerTest {
 					() -> assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someUserId")),
 					() -> assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/last")));
 
-			verify(userService, times(1)).findAll();
-			verify(userService, times(1)).findOne(validUserId);
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).findAll();
+			then(userService).should(times(1)).findOne(validUserId);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
 		@DisplayName("should return a user if eTag is different")
 		void shouldReturnAUserAndETagHeaderIfDifferentETagGetOne() throws Exception {
-			when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+			given(userService.findOne(validUserId)).willReturn(Optional.of(validMinimumUserWithId));
 			final User user = validMinimumUserWithId.toBuilder().id("someUserId").build();
-			when(userService.findAll()).thenReturn(Stream.of(user));
+			given(userService.findAll()).willReturn(Stream.of(user));
 
 			MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
 					.accept(MediaType.APPLICATION_JSON)
@@ -399,17 +400,17 @@ class UserControllerTest {
 			final String eTagHeader = result.getResponse().getHeader(ETAG);
 			assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(user.getETag()));
 
-			verify(userService, times(1)).findOne(validUserId);
-			verify(userService, times(1)).findAll();
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).findOne(validUserId);
+			then(userService).should(times(1)).findAll();
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
 		@DisplayName("should return a not modified response if eTag is equal")
 		void shouldReturnNoUserIfETagMatches() throws Exception {
-			when(userService.findOne(validUserId)).thenReturn(Optional.of(validMinimumUserWithId));
+			given(userService.findOne(validUserId)).willReturn(Optional.of(validMinimumUserWithId));
 			final User user = validMinimumUserWithId.toBuilder().id("someUserId").build();
-			when(userService.findAll()).thenReturn(Stream.of(user));
+			given(userService.findAll()).willReturn(Stream.of(user));
 
 			mvc.perform(get(URL_USER + "/" + validUserId)
 					.accept(MediaType.APPLICATION_JSON)
@@ -419,22 +420,22 @@ class UserControllerTest {
 					.andExpect(header().string(ETAG, user.getETag()))
 					.andExpect(content().string(""));
 
-			verify(userService, times(1)).findOne(validUserId);
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).findOne(validUserId);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
 		@DisplayName("should return a not found response if given id is unknown")
 		void shouldReturn404IfUserNotFoundOnGetOne() throws Exception {
-			when(userService.findOne(validUserId)).thenReturn(Optional.empty());
+			given(userService.findOne(validUserId)).willReturn(Optional.empty());
 
 			mvc.perform(get(URL_USER + "/" + validUserId)
 					.accept(MediaType.APPLICATION_JSON))
 					.andDo(print())
 					.andExpect(status().isNotFound());
 
-			verify(userService, times(1)).findOne(validUserId);
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).findOne(validUserId);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 	}
 
@@ -446,8 +447,8 @@ class UserControllerTest {
 		@DisplayName("should update a user and return it with new etag")
 		void shouldUpdateUserAndReturnHimAndHisETagOnPut() throws Exception {
 			final User updatedUser = validMinimumUserWithId.toBuilder().build();
-			when(userService.update(updatedUser, null)).thenReturn(updatedUser);
-			when(userService.findAll()).thenReturn(Stream.of(updatedUser));
+			given(userService.update(updatedUser, null)).willReturn(updatedUser);
+			given(userService.findAll()).willReturn(Stream.of(updatedUser));
 
 			MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
 					.contentType(APPLICATION_JSON_VALUE)
@@ -460,17 +461,17 @@ class UserControllerTest {
 
 			assertUserRepresentation(result.getResponse().getContentAsString(), updatedUser);
 
-			verify(userService, times(1)).update(updatedUser, null);
-			verify(userService, times(1)).findAll();
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).update(updatedUser, null);
+			then(userService).should(times(1)).findAll();
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
 		@DisplayName("should update a user if the given eTag matches and return it and a new etag")
 		void shouldUpdateUserWithETagHeaderAndReturnHimAndHisETagOnPut() throws Exception {
 			final String eTag = validMinimumUserWithId.getETag();
-			when(userService.update(validMinimumUserWithId, eTag)).thenReturn(validMinimumUserWithId);
-			when(userService.findAll()).thenReturn(Stream.of(validMinimumUserWithId));
+			given(userService.update(validMinimumUserWithId, eTag)).willReturn(validMinimumUserWithId);
+			given(userService.findAll()).willReturn(Stream.of(validMinimumUserWithId));
 
 			MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
 					.contentType(APPLICATION_JSON_VALUE)
@@ -484,15 +485,15 @@ class UserControllerTest {
 
 			assertUserRepresentation(result.getResponse().getContentAsString(), validMinimumUserWithId);
 
-			verify(userService, times(1)).update(validMinimumUserWithId, eTag);
-			verify(userService, times(1)).findAll();
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).update(validMinimumUserWithId, eTag);
+			then(userService).should(times(1)).findAll();
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
 		@DisplayName("should return a precondition failed response if given eTag isn´t equal")
 		void shouldReturnPreconditionFailedIfETagsArentEqual() throws Exception {
-			when(userService.update(validMinimumUserWithId, "differentEtag")).thenThrow(new ConcurrentModificationException(""));
+			willThrow(new ConcurrentModificationException("")).given(userService).update(validMinimumUserWithId, "differentEtag");
 
 			mvc.perform(put(URL_USER + "/" + validUserId)
 					.contentType(APPLICATION_JSON_VALUE)
@@ -503,8 +504,8 @@ class UserControllerTest {
 					.andExpect(status().isPreconditionFailed())
 					.andExpect(content().string(""));
 
-			verify(userService, times(1)).update(validMinimumUserWithId, "differentEtag");
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).update(validMinimumUserWithId, "differentEtag");
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
@@ -520,14 +521,14 @@ class UserControllerTest {
 					.andDo(print())
 					.andExpect(status().isNotFound());
 
-			verifyNoMoreInteractions(userService);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
 		@DisplayName("should return a not found response if given id is unknown")
 		void shouldReturnNotFoundIfIdNotFoundOnPut() throws Exception {
 			final User updatedUser = validMinimumUserWithId.toBuilder().build();
-			when(userService.update(updatedUser, null)).thenThrow(new NotFoundException("id not found"));
+			willThrow(new NotFoundException("id not found")).given(userService).update(updatedUser, null);
 
 			mvc.perform(put(URL_USER + "/" + validUserId)
 					.contentType(APPLICATION_JSON_VALUE)
@@ -536,8 +537,8 @@ class UserControllerTest {
 					.andDo(print())
 					.andExpect(status().isNotFound());
 
-			verify(userService, times(1)).update(updatedUser, null);
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).update(updatedUser, null);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
@@ -547,7 +548,7 @@ class UserControllerTest {
 			String errorMsg = "only mails by otto allowed";
 			String errorCause = "buasiness";
 			UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
-			when(userService.update(userToPersist, null)).thenThrow(new InvalidUserException(userToPersist, errorCause, errorMsg));
+			willThrow(new InvalidUserException(userToPersist, errorCause, errorMsg)).given(userService).update(userToPersist, null);
 
 			final MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
 					.contentType(APPLICATION_JSON_VALUE)
@@ -556,10 +557,10 @@ class UserControllerTest {
 					.andExpect(status().isBadRequest())
 					.andReturn();
 
-			verify(userService, times(1)).update(userToPersist, null);
+			then(userService).should(times(1)).update(userToPersist, null);
 			UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
 			assertThat(returnedErrors.getErrors().get(0), is(returnedError));
-			verifyNoMoreInteractions(userService);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 	}
 
@@ -571,8 +572,8 @@ class UserControllerTest {
 		void shouldCreateUserAndReturnItsLocationAndETagOnPost() throws Exception {
 			final User userToPersist = validMinimumUser;
 			final User persistedUser = userToPersist.toBuilder().id(validUserId).build();
-			when(userService.create(userToPersist)).thenReturn(persistedUser);
-			when(userService.findAll()).thenReturn(Stream.of(persistedUser));
+			given(userService.create(userToPersist)).willReturn(persistedUser);
+			given(userService.findAll()).willReturn(Stream.of(persistedUser));
 
 			MvcResult result = mvc.perform(post(URL_USER)
 					.contentType(APPLICATION_JSON_VALUE)
@@ -585,9 +586,9 @@ class UserControllerTest {
 
 			assertUserRepresentation(result.getResponse().getContentAsString(), persistedUser);
 
-			verify(userService, times(1)).create(userToPersist);
-			verify(userService, times(1)).findAll();
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).create(userToPersist);
+			then(userService).should(times(1)).findAll();
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
@@ -601,7 +602,7 @@ class UserControllerTest {
 					.andDo(print())
 					.andExpect(status().isBadRequest());
 
-			verifyNoMoreInteractions(userService);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
@@ -611,7 +612,7 @@ class UserControllerTest {
 			String errorMsg = "only mails by otto allowed";
 			String errorCause = "business";
 			UserValidationEntryRepresentation returnedError = UserValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
-			when(userService.create(userToPersist)).thenThrow(new InvalidUserException(userToPersist, errorCause, errorMsg));
+			willThrow(new InvalidUserException(userToPersist, errorCause, errorMsg)).given(userService).create(userToPersist);
 
 			final MvcResult result = mvc.perform(post(URL_USER)
 					.contentType(APPLICATION_JSON_VALUE)
@@ -620,10 +621,10 @@ class UserControllerTest {
 					.andExpect(status().isBadRequest())
 					.andReturn();
 
-			verify(userService, times(1)).create(userToPersist);
+			then(userService).should(times(1)).create(userToPersist);
 			UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
 			assertThat(returnedErrors.getErrors().get(0), is(returnedError));
-			verifyNoMoreInteractions(userService);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 	}
 
@@ -649,21 +650,21 @@ class UserControllerTest {
 					.andDo(print())
 					.andExpect(status().isNoContent());
 
-			verify(userService, times(1)).delete(validUserId);
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).delete(validUserId);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 
 		@Test
 		@DisplayName("should return a not found exception if id is unknown")
 		void shouldReturnNotFoundIfUserIdNotFoundOnDelete() throws Exception {
-			doThrow(new NotFoundException("id not found")).when(userService).delete(validUserId);
+			willThrow(new NotFoundException("id not found")).given(userService).delete(validUserId);
 
 			mvc.perform(delete(URL_USER + "/" + validUserId))
 					.andDo(print())
 					.andExpect(status().isNotFound());
 
-			verify(userService, times(1)).delete(validUserId);
-			verifyNoMoreInteractions(userService);
+			then(userService).should(times(1)).delete(validUserId);
+			then(userService).shouldHaveNoMoreInteractions();
 		}
 	}
 }
