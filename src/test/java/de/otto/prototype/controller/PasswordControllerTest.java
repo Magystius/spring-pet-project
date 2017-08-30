@@ -23,6 +23,7 @@ import static java.lang.Boolean.valueOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.BDDMockito.*;
+import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.times;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -73,6 +74,7 @@ class PasswordControllerTest {
 
 			then(passwordService).should(times(1)).update(id, password);
 			then(passwordService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(passwordService).printInvocations());
 		}
 
 		@Test
@@ -91,6 +93,7 @@ class PasswordControllerTest {
 
 			then(passwordService).should(times(1)).update(id, password);
 			then(passwordService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(passwordService).printInvocations());
 		}
 	}
 
@@ -114,6 +117,7 @@ class PasswordControllerTest {
 
 			then(passwordService).should(times(1)).checkPassword(password);
 			then(passwordService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(passwordService).printInvocations());
 		}
 	}
 }

@@ -158,6 +158,7 @@ class UserControllerTest {
 		UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
 		assertThat(returnedErrors.getErrors().stream().filter(error -> !errors.getErrors().contains(error)).collect(toList()).size(), is(0));
 		then(userService).shouldHaveNoMoreInteractions();
+		System.out.println(mockingDetails(userService).printInvocations());
 	}
 
 	@ParameterizedTest
@@ -174,6 +175,7 @@ class UserControllerTest {
 		UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
 		assertThat(returnedErrors.getErrors().stream().filter(error -> !errors.getErrors().contains(error)).collect(toList()).size(), is(0));
 		then(userService).shouldHaveNoMoreInteractions();
+		System.out.println(mockingDetails(userService).printInvocations());
 	}
 
 	private void assertUserRepresentation(String responseBody, User expectedUser) {
@@ -206,6 +208,7 @@ class UserControllerTest {
 
 			then(userService).should(times(1)).findAll();
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -224,6 +227,7 @@ class UserControllerTest {
 					.andReturn();
 
 			assertUserListRepresentation(hashCode, result);
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -243,6 +247,7 @@ class UserControllerTest {
 					.andReturn();
 
 			assertUserListRepresentation(hashCode, result);
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -264,6 +269,7 @@ class UserControllerTest {
 
 			then(userService).should(times(1)).findAll();
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		private void assertUserListRepresentation(HashCode hashCode, MvcResult result) throws UnsupportedEncodingException {
@@ -280,6 +286,7 @@ class UserControllerTest {
 
 			then(userService).should(times(1)).findAll();
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 	}
 
@@ -310,6 +317,7 @@ class UserControllerTest {
 			then(userService).should(times(1)).findAll();
 			then(userService).should(times(1)).findOne(validUserId);
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -332,6 +340,7 @@ class UserControllerTest {
 			then(userService).should(times(1)).findAll();
 			then(userService).should(times(1)).findOne(validUserId);
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -356,6 +365,7 @@ class UserControllerTest {
 			then(userService).should(times(1)).findAll();
 			then(userService).should(times(1)).findOne(validUserId);
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -380,6 +390,7 @@ class UserControllerTest {
 			then(userService).should(times(1)).findAll();
 			then(userService).should(times(1)).findOne(validUserId);
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -403,6 +414,7 @@ class UserControllerTest {
 			then(userService).should(times(1)).findOne(validUserId);
 			then(userService).should(times(1)).findAll();
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -422,6 +434,7 @@ class UserControllerTest {
 
 			then(userService).should(times(1)).findOne(validUserId);
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -436,6 +449,7 @@ class UserControllerTest {
 
 			then(userService).should(times(1)).findOne(validUserId);
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 	}
 
@@ -464,6 +478,7 @@ class UserControllerTest {
 			then(userService).should(times(1)).update(updatedUser, null);
 			then(userService).should(times(1)).findAll();
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -488,6 +503,7 @@ class UserControllerTest {
 			then(userService).should(times(1)).update(validMinimumUserWithId, eTag);
 			then(userService).should(times(1)).findAll();
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -506,6 +522,7 @@ class UserControllerTest {
 
 			then(userService).should(times(1)).update(validMinimumUserWithId, "differentEtag");
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -521,7 +538,8 @@ class UserControllerTest {
 					.andDo(print())
 					.andExpect(status().isNotFound());
 
-			then(userService).shouldHaveNoMoreInteractions();
+			then(userService).shouldHaveZeroInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -539,6 +557,7 @@ class UserControllerTest {
 
 			then(userService).should(times(1)).update(updatedUser, null);
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -561,6 +580,7 @@ class UserControllerTest {
 			UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
 			assertThat(returnedErrors.getErrors().get(0), is(returnedError));
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 	}
 
@@ -589,6 +609,7 @@ class UserControllerTest {
 			then(userService).should(times(1)).create(userToPersist);
 			then(userService).should(times(1)).findAll();
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -602,7 +623,8 @@ class UserControllerTest {
 					.andDo(print())
 					.andExpect(status().isBadRequest());
 
-			then(userService).shouldHaveNoMoreInteractions();
+			then(userService).shouldHaveZeroInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -625,6 +647,7 @@ class UserControllerTest {
 			UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
 			assertThat(returnedErrors.getErrors().get(0), is(returnedError));
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 	}
 
@@ -652,6 +675,7 @@ class UserControllerTest {
 
 			then(userService).should(times(1)).delete(validUserId);
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -665,6 +689,7 @@ class UserControllerTest {
 
 			then(userService).should(times(1)).delete(validUserId);
 			then(userService).shouldHaveNoMoreInteractions();
+			System.out.println(mockingDetails(userService).printInvocations());
 		}
 	}
 }
