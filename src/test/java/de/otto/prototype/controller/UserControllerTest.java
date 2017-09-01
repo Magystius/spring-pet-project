@@ -155,7 +155,7 @@ class UserControllerTest {
 
         UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
         assertThat(returnedErrors.getErrors().stream().filter(error -> !errors.getErrors().contains(error)).collect(toList()).size(), is(0));
-        then(userService).shouldHaveNoMoreInteractions();
+        then(userService).shouldHaveZeroInteractions();
     }
 
     @ParameterizedTest
@@ -170,7 +170,7 @@ class UserControllerTest {
 
         UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
         assertThat(returnedErrors.getErrors().stream().filter(error -> !errors.getErrors().contains(error)).collect(toList()).size(), is(0));
-        then(userService).shouldHaveNoMoreInteractions();
+        then(userService).shouldHaveZeroInteractions();
     }
 
     private void assertUserRepresentation(String responseBody, User expectedUser) {
@@ -211,8 +211,6 @@ class UserControllerTest {
             mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isNoContent())
                     .andExpect(content().string(""));
-            then(userService).should(times(1)).findAll();
-            then(userService).shouldHaveNoMoreInteractions();
         }
 
         @Test
@@ -265,9 +263,6 @@ class UserControllerTest {
                     .andExpect(status().isNotModified())
                     .andExpect(header().string(ETAG, eTag))
                     .andExpect(content().string(""));
-
-            then(userService).should(times(1)).findAll();
-            then(userService).shouldHaveNoMoreInteractions();
         }
 
         private void assertUserListRepresentation(HashCode hashCode, MvcResult result) throws UnsupportedEncodingException {
@@ -281,9 +276,6 @@ class UserControllerTest {
 
             final String eTagHeader = result.getResponse().getHeader(ETAG);
             assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(hashCode.toString()));
-
-            then(userService).should(times(1)).findAll();
-            then(userService).shouldHaveNoMoreInteractions();
         }
     }
 
@@ -309,10 +301,6 @@ class UserControllerTest {
                     () -> assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/first")),
                     () -> assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/first")),
                     () -> assertThat(parsedResponse.read("$.links[3].href"), containsString("/user/last")));
-
-            then(userService).should(times(1)).findAll();
-            then(userService).should(times(1)).findOne(validUserId);
-            then(userService).shouldHaveNoMoreInteractions();
         }
 
         @Test
@@ -330,10 +318,6 @@ class UserControllerTest {
             assertAll("user rel-links",
                     () -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId")),
                     () -> assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someUserId")));
-
-            then(userService).should(times(1)).findAll();
-            then(userService).should(times(1)).findOne(validUserId);
-            then(userService).shouldHaveNoMoreInteractions();
         }
 
         @Test
@@ -353,10 +337,6 @@ class UserControllerTest {
                     () -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId")),
                     () -> assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/first")),
                     () -> assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/first")));
-
-            then(userService).should(times(1)).findAll();
-            then(userService).should(times(1)).findOne(validUserId);
-            then(userService).shouldHaveNoMoreInteractions();
         }
 
         @Test
@@ -376,10 +356,6 @@ class UserControllerTest {
                     () -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/someUserId")),
                     () -> assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someUserId")),
                     () -> assertThat(parsedResponse.read("$.links[2].href"), containsString("/user/last")));
-
-            then(userService).should(times(1)).findAll();
-            then(userService).should(times(1)).findOne(validUserId);
-            then(userService).shouldHaveNoMoreInteractions();
         }
 
         @Test
@@ -398,10 +374,6 @@ class UserControllerTest {
             assertUserRepresentation(result.getResponse().getContentAsString(), validMinimumUserWithId);
             final String eTagHeader = result.getResponse().getHeader(ETAG);
             assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(user.getETag()));
-
-            then(userService).should(times(1)).findOne(validUserId);
-            then(userService).should(times(1)).findAll();
-            then(userService).shouldHaveNoMoreInteractions();
         }
 
         @Test
@@ -417,9 +389,6 @@ class UserControllerTest {
                     .andExpect(status().isNotModified())
                     .andExpect(header().string(ETAG, user.getETag()))
                     .andExpect(content().string(""));
-
-            then(userService).should(times(1)).findOne(validUserId);
-            then(userService).shouldHaveNoMoreInteractions();
         }
 
         @Test
@@ -430,9 +399,6 @@ class UserControllerTest {
             mvc.perform(get(URL_USER + "/" + validUserId)
                     .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isNotFound());
-
-            then(userService).should(times(1)).findOne(validUserId);
-            then(userService).shouldHaveNoMoreInteractions();
         }
     }
 
@@ -456,10 +422,6 @@ class UserControllerTest {
                     .andReturn();
 
             assertUserRepresentation(result.getResponse().getContentAsString(), updatedUser);
-
-            then(userService).should(times(1)).update(updatedUser, null);
-            then(userService).should(times(1)).findAll();
-            then(userService).shouldHaveNoMoreInteractions();
         }
 
         @Test
@@ -479,10 +441,6 @@ class UserControllerTest {
                     .andReturn();
 
             assertUserRepresentation(result.getResponse().getContentAsString(), validMinimumUserWithId);
-
-            then(userService).should(times(1)).update(validMinimumUserWithId, eTag);
-            then(userService).should(times(1)).findAll();
-            then(userService).shouldHaveNoMoreInteractions();
         }
 
         @Test
@@ -497,9 +455,6 @@ class UserControllerTest {
                     .content(GSON.toJson(validMinimumUserWithId)))
                     .andExpect(status().isPreconditionFailed())
                     .andExpect(content().string(""));
-
-            then(userService).should(times(1)).update(validMinimumUserWithId, "differentEtag");
-            then(userService).shouldHaveNoMoreInteractions();
         }
 
         @Test
@@ -528,9 +483,6 @@ class UserControllerTest {
                     .accept(APPLICATION_JSON_VALUE)
                     .content(GSON.toJson(updatedUser)))
                     .andExpect(status().isNotFound());
-
-            then(userService).should(times(1)).update(updatedUser, null);
-            then(userService).shouldHaveNoMoreInteractions();
         }
 
         @Test
@@ -548,10 +500,8 @@ class UserControllerTest {
                     .andExpect(status().isBadRequest())
                     .andReturn();
 
-            then(userService).should(times(1)).update(userToPersist, null);
             UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
             assertThat(returnedErrors.getErrors().get(0), is(returnedError));
-            then(userService).shouldHaveNoMoreInteractions();
         }
     }
 
@@ -575,10 +525,6 @@ class UserControllerTest {
                     .andReturn();
 
             assertUserRepresentation(result.getResponse().getContentAsString(), persistedUser);
-
-            then(userService).should(times(1)).create(userToPersist);
-            then(userService).should(times(1)).findAll();
-            then(userService).shouldHaveNoMoreInteractions();
         }
 
         @Test
@@ -609,10 +555,8 @@ class UserControllerTest {
                     .andExpect(status().isBadRequest())
                     .andReturn();
 
-            then(userService).should(times(1)).create(userToPersist);
             UserValidationRepresentation returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), UserValidationRepresentation.class);
             assertThat(returnedErrors.getErrors().get(0), is(returnedError));
-            then(userService).shouldHaveNoMoreInteractions();
         }
     }
 
@@ -626,7 +570,6 @@ class UserControllerTest {
                     .andExpect(status().isNoContent());
 
             then(userService).should(times(1)).delete(validUserId);
-            then(userService).shouldHaveNoMoreInteractions();
         }
 
         @Test
@@ -636,9 +579,6 @@ class UserControllerTest {
 
             mvc.perform(delete(URL_USER + "/" + validUserId))
                     .andExpect(status().isNotFound());
-
-            then(userService).should(times(1)).delete(validUserId);
-            then(userService).shouldHaveNoMoreInteractions();
         }
     }
 }

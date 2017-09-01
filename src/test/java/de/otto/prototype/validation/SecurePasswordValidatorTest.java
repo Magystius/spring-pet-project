@@ -22,8 +22,7 @@ class SecurePasswordValidatorTest {
     @BeforeEach
     void setup() {
         initMocks(this);
-        final String pattern = "[0-9]+";
-        given(securePassword.pattern()).willReturn(pattern);
+        given(securePassword.pattern()).willReturn("[0-9]+");
         testee = new SecurePasswordValidator();
         testee.initialize(securePassword);
     }
@@ -46,6 +45,7 @@ class SecurePasswordValidatorTest {
     void shouldValidateSecurePassword() {
         given(securePassword.pattern()).willReturn(".*");
         testee.initialize(securePassword);
+
         assertThat(testee.isValid("securePassword", null), is(true));
     }
 }

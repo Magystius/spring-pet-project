@@ -22,8 +22,8 @@ import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.lang.Boolean.valueOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.BDDMockito.*;
-import static org.mockito.Mockito.times;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
@@ -68,9 +68,6 @@ class PasswordControllerTest {
                     .andReturn();
 
             assertThat(result.getResponse().getHeader("Location"), containsString(URL_USER + "/" + id));
-
-            then(passwordService).should(times(1)).update(id, password);
-            then(passwordService).shouldHaveNoMoreInteractions();
         }
 
         @Test
@@ -85,9 +82,6 @@ class PasswordControllerTest {
                     .accept(APPLICATION_JSON_VALUE)
                     .content(password))
                     .andExpect(status().isNotFound());
-
-            then(passwordService).should(times(1)).update(id, password);
-            then(passwordService).shouldHaveNoMoreInteractions();
         }
     }
 
@@ -107,9 +101,6 @@ class PasswordControllerTest {
                     .content(password))
                     .andExpect(status().isOk())
                     .andExpect(content().string(checkResult));
-
-            then(passwordService).should(times(1)).checkPassword(password);
-            then(passwordService).shouldHaveNoMoreInteractions();
         }
     }
 }
