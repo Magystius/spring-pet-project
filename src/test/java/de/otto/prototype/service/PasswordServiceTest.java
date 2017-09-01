@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.times;
 import static org.mockito.MockitoAnnotations.initMocks;
 
@@ -62,7 +61,6 @@ class PasswordServiceTest {
 			then(userService).should(times(1)).findOne(userId);
 			then(userService).should(times(1)).update(updatedUser, null);
 			then(userService).shouldHaveNoMoreInteractions();
-			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -72,7 +70,6 @@ class PasswordServiceTest {
 					assertThrows(NotFoundException.class, () -> testee.update(null, "somePassword"));
 			assertThat(exception.getMessage(), is("user not found"));
 			then(userService).shouldHaveZeroInteractions();
-			System.out.println(mockingDetails(userService).printInvocations());
 		}
 
 		@Test
@@ -85,7 +82,6 @@ class PasswordServiceTest {
 			assertThat(exception.getMessage(), is("user not found"));
 			then(userService).should(times(1)).findOne(userId);
 			then(userService).shouldHaveNoMoreInteractions();
-			System.out.println(mockingDetails(userService).printInvocations());
 		}
 	}
 
