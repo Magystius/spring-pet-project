@@ -3,9 +3,9 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/fde1f58e00ff4068b5c9b7976ad305a0)](https://www.codacy.com/app/Magystius/spring-val-demo?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Magystius/spring-val-demo&amp;utm_campaign=Badge_Grade)
 [![License](https://img.shields.io/github/license/magystius/spring-val-demo.svg)](https://github.com/magystius/spring-val-demo/blob/master/LICENSE.md)
 
-# Spring Validation Demo
+# Spring Pet Project
 
-Demo App für Spring Boot 
+Personal pet project for a spring-based microservice
 
 ### Usage:
 
