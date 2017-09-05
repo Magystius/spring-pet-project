@@ -1,6 +1,7 @@
 package de.otto.prototype.controller;
 
 import com.google.common.hash.HashCode;
+import de.otto.prototype.controller.representation.UserListEntryRepresentation;
 import de.otto.prototype.controller.representation.UserListRepresentation;
 import de.otto.prototype.controller.representation.UserRepresentation;
 import de.otto.prototype.model.User;
@@ -60,7 +61,7 @@ public class UserController {
 			return ResponseEntity.status(NOT_MODIFIED).header(ETAG, userListETag).build();
 
 		final UserListRepresentation listOfUser = UserListRepresentation.builder()
-				.users(allUsers)
+				.users(allUsers.stream().map(UserListEntryRepresentation::userListEntryRepresentationOf).collect(toList()))
 				.link(linkTo(UserController.class).withSelfRel())
 				.link(linkTo(UserController.class).slash(allUsers.get(0)).withRel("start"))
 				.total(allUsers.size())

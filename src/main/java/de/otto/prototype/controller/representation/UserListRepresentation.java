@@ -1,7 +1,6 @@
 package de.otto.prototype.controller.representation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import de.otto.prototype.model.User;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Singular;
@@ -23,5 +22,5 @@ public class UserListRepresentation extends ResourceSupport {
 
 	@Singular
 	@JsonProperty("content")
-	private final List<User> users;
+	private final List<UserListEntryRepresentation> users;
 }

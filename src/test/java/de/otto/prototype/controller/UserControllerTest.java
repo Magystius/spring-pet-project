@@ -269,7 +269,9 @@ class UserControllerTest {
             DocumentContext parsedResponse = JsonPath.parse(result.getResponse().getContentAsString());
             assertAll("user list representation",
                     () -> assertThat(parsedResponse.read("$.content"), is(notNullValue())),
-                    () -> assertThat(parsedResponse.read("$.content[0].lastName"), is("Mustermann")),
+                    () -> assertThat(parsedResponse.read("$.content[0].links[0].href"), containsString("someUserId")),
+                    () -> assertThat(parsedResponse.read("$.content[0].content.id"), is("someUserId")),
+                    () -> assertThat(parsedResponse.read("$.content[0].content.lastName"), is("Mustermann")),
                     () -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/user")),
                     () -> assertThat(parsedResponse.read("$.links[1].href"), containsString("/user/someUserId")),
                     () -> assertThat(parsedResponse.read("$.total"), is(1)));

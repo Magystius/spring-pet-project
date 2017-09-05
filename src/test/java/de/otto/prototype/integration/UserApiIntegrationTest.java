@@ -8,7 +8,6 @@ import de.otto.prototype.controller.representation.UserValidationRepresentation;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,13 +37,9 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 
 	@Before
 	public void setUp() throws Exception {
+		userRepository.deleteAll();
 		messageSource = initMessageSource();
 		this.base = new URL("http://localhost:" + port + URL_USER);
-	}
-
-	@After
-	public void tearDown() throws Exception {
-		userRepository.deleteAll();
 	}
 
 	@Test
@@ -67,10 +62,12 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 		assertThat(parsedResponse.read("$._links.self.href"), containsString("/user"));
 		assertThat(parsedResponse.read("$._links.start.href"), containsString("/user/" + persistedUser1.getId()));
 		assertThat(parsedResponse.read("$.total"), is(2));
-		assertThat(parsedResponse.read("$.content[0].firstName"), is("Max"));
-		assertThat(parsedResponse.read("$.content[0].id"), is(persistedUser1.getId()));
-		assertThat(parsedResponse.read("$.content[1].id"), is(persistedUser2.getId()));
-		assertThat(parsedResponse.read("$.content[1].firstName"), is("Heiko"));
+		assertThat(parsedResponse.read("$.content[0]._links.self.href"), containsString("/user/" + persistedUser1.getId()));
+		assertThat(parsedResponse.read("$.content[0].content.id"), is(persistedUser1.getId()));
+		assertThat(parsedResponse.read("$.content[0].content.firstName"), is("Max"));
+		assertThat(parsedResponse.read("$.content[1]._links.self.href"), containsString("/user/" + persistedUser2.getId()));
+		assertThat(parsedResponse.read("$.content[1].content.id"), is(persistedUser2.getId()));
+		assertThat(parsedResponse.read("$.content[1].content.firstName"), is("Heiko"));
 		final String eTagHeader = response.getHeaders().get(ETAG).get(0);
 		assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(eTag));
 	}
