@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.org/Magystius/spring-val-demo.svg?branch=master)](https://travis-ci.org/Magystius/spring-val-demo)
-[![codecov](https://codecov.io/gh/Magystius/spring-val-demo/branch/master/graph/badge.svg)](https://codecov.io/gh/Magystius/spring-val-demo)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/fde1f58e00ff4068b5c9b7976ad305a0)](https://www.codacy.com/app/Magystius/spring-val-demo?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Magystius/spring-val-demo&amp;utm_campaign=Badge_Grade)
+[![Build Status](https://travis-ci.org/Magystius/spring-pet-project.svg?branch=master)](https://travis-ci.org/Magystius/spring-pet-project)
+[![codecov](https://codecov.io/gh/Magystius/spring-pet-project/branch/master/graph/badge.svg)](https://codecov.io/gh/Magystius/spring-pet-project)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/df636c27882d4bc28dd7247090dc3394)](https://www.codacy.com/app/Magystius/spring-pet-project?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Magystius/spring-pet-project&amp;utm_campaign=Badge_Grade)
 [![License](https://img.shields.io/github/license/magystius/spring-val-demo.svg)](https://github.com/magystius/spring-val-demo/blob/master/LICENSE.md)
 
 # Spring Pet Project
