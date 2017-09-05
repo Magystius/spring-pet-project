@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>de.otto.prototype</groupId>
-    <artifactId>spring-val-demo</artifactId>
+    <artifactId>spring-pet-project</artifactId>
     <version>0.0.0</version>
     <packaging>jar</packaging>
 
