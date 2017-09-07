@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/Magystius/spring-pet-project.svg?branch=master)](https://travis-ci.org/Magystius/spring-pet-project)
 [![codecov](https://codecov.io/gh/Magystius/spring-pet-project/branch/master/graph/badge.svg)](https://codecov.io/gh/Magystius/spring-pet-project)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/df636c27882d4bc28dd7247090dc3394)](https://www.codacy.com/app/Magystius/spring-pet-project?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Magystius/spring-pet-project&amp;utm_campaign=Badge_Grade)
-[![License](https://img.shields.io/github/license/magystius/spring-val-demo.svg)](https://github.com/magystius/spring-val-demo/blob/master/LICENSE.md)
+[![License](https://img.shields.io/github/license/magystius/spring-pet-project.svg)](https://github.com/magystius/spring-pet-project/blob/master/LICENSE.md)
 
 # Spring Pet Project
 
@@ -21,49 +21,46 @@ _Response_ - `200`
       "href": "http://localhost:8080/user"
     },
     "start": {
-      "href": "http://localhost:8080/user/599f2e1c70f9864e881e27b9"
+      "href": "http://localhost:8080/user/59b1a63fee411e372464dd7a"
     }
   },
   "total": 3,
   "content": [
     {
-      "id": "599f2e1c70f9864e881e27b9",
-      "firstName": "AWS1",
-      "secondName": null,
-      "lastName": "AWS",
-      "age": 30,
-      "vip": false,
-      "login": {
-        "mail": "max.mustermann@otto.de",
-        "password": "somePassword"
+      "_links": {
+        "self": {
+          "href": "http://localhost:8080/user/59b1a63fee411e372464dd7a"
+        }
       },
-      "bio": null
+      "content": {
+        "id": "59b1a63fee411e372464dd7a",
+        "firstName": "AWS1",
+        "lastName": "AWS"
+      }
     },
     {
-      "id": "599f2e1d70f9864e881e27ba",
-      "firstName": "AWS4",
-      "secondName": null,
-      "lastName": "AWS2",
-      "age": 30,
-      "vip": false,
-      "login": {
-        "mail": "max.mustermann@otto.de",
-        "password": "somePassword"
+      "_links": {
+        "self": {
+          "href": "http://localhost:8080/user/59b1a63fee411e372464dd7b"
+        }
       },
-      "bio": null
+      "content": {
+        "id": "59b1a63fee411e372464dd7b",
+        "firstName": "AWS4",
+        "lastName": "AWS2"
+      }
     },
     {
-      "id": "599f2e1d70f9864e881e27bb",
-      "firstName": "Lara",
-      "secondName": null,
-      "lastName": "Lavendel",
-      "age": 30,
-      "vip": false,
-      "login": {
-        "mail": "max.mustermann@otto.de",
-        "password": "somePassword"
+      "_links": {
+        "self": {
+          "href": "http://localhost:8080/user/59b1a63fee411e372464dd7c"
+        }
       },
-      "bio": null
+      "content": {
+        "id": "59b1a63fee411e372464dd7c",
+        "firstName": "Lara",
+        "lastName": "Lavendel"
+      }
     }
   ]
 }

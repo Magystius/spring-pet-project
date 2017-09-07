@@ -5,19 +5,18 @@
     <title>Spring Val Demo</title>
 </head>
 <body>
-<p><a href="https://travis-ci.org/Magystius/spring-val-demo"><img
-        src="https://travis-ci.org/Magystius/spring-val-demo.svg?branch=master" alt="Build Status"/></a>
-    <a href="https://coveralls.io/github/Magystius/spring-val-demo?branch=master"><img
-            src="https://coveralls.io/repos/github/Magystius/spring-val-demo/badge.svg?branch=master"
-            alt="Coverage Status"/></a>
-    <a href="https://codebeat.co/projects/github-com-magystius-spring-val-demo-master"><img
-            src="https://codebeat.co/badges/95aead95-65be-4bc4-874c-3faf22c04fbb" alt="codebeat badge"/></a>
-    <a href="https://github.com/magystius/spring-val-demo/blob/master/LICENSE.md"><img
-            src="https://img.shields.io/github/license/magystius/spring-val-demo.svg" alt="License"/></a></p>
+<p><a href="https://travis-ci.org/Magystius/spring-pet-project"><img
+        src="https://travis-ci.org/Magystius/spring-pet-project.svg?branch=master" alt="Build Status"/></a>
+    <a href="https://codecov.io/gh/Magystius/spring-pet-project"><img
+            src="https://codecov.io/gh/Magystius/spring-pet-project/branch/master/graph/badge.svg" alt="codecov"/></a>
+    <a href="https://www.codacy.com/app/Magystius/spring-pet-project?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Magystius/spring-pet-project&amp;utm_campaign=Badge_Grade"><img
+            src="https://api.codacy.com/project/badge/Grade/df636c27882d4bc28dd7247090dc3394" alt="Codacy Badge"/></a>
+    <a href="https://github.com/magystius/spring-pet-project/blob/master/LICENSE.md"><img
+            src="https://img.shields.io/github/license/magystius/spring-pet-project.svg" alt="License"/></a></p>
 
-<h1 id="springvalidationdemo">Spring Validation Demo</h1>
+<h1 id="springpetproject">Spring Pet Project</h1>
 
-<p>Demo App für Spring Boot</p>
+<p>Personal pet project for a spring-based microservice</p>
 
 <h3 id="usage">Usage:</h3>
 
@@ -30,41 +29,50 @@
     _Response_ -</code>200`</p>
 
 <pre><code class="`json language-`json">{
-  "users": [
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/user"
+    },
+    "start": {
+      "href": "http://localhost:8080/user/59b1a63fee411e372464dd7a"
+    }
+  },
+  "total": 3,
+  "content": [
     {
-      "id": 1,
-      "firstName": "AWS",
-      "lastName": "AWS",
-      "age": 30,
-      "vip": false,
-      "login": {
-        "id": 1,
-        "mail": "max.mustermann@otto.de",
-        "password": "somePassword"
+      "_links": {
+        "self": {
+          "href": "http://localhost:8080/user/59b1a63fee411e372464dd7a"
+        }
+      },
+      "content": {
+        "id": "59b1a63fee411e372464dd7a",
+        "firstName": "AWS1",
+        "lastName": "AWS"
       }
     },
     {
-      "id": 2,
-      "firstName": "AWS4",
-      "lastName": "AWS2",
-      "age": 30,
-      "vip": false,
-      "login": {
-        "id": 2,
-        "mail": "max.mustermann@otto.de",
-        "password": "somePassword"
+      "_links": {
+        "self": {
+          "href": "http://localhost:8080/user/59b1a63fee411e372464dd7b"
+        }
+      },
+      "content": {
+        "id": "59b1a63fee411e372464dd7b",
+        "firstName": "AWS4",
+        "lastName": "AWS2"
       }
     },
     {
-      "id": 3,
-      "firstName": "Lara",
-      "lastName": "Lavendel",
-      "age": 30,
-      "vip": false,
-      "login": {
-        "id": 3,
-        "mail": "max.mustermann@otto.de",
-        "password": "somePassword"
+      "_links": {
+        "self": {
+          "href": "http://localhost:8080/user/59b1a63fee411e372464dd7c"
+        }
+      },
+      "content": {
+        "id": "59b1a63fee411e372464dd7c",
+        "firstName": "Lara",
+        "lastName": "Lavendel"
       }
     }
   ]
@@ -82,15 +90,32 @@
     _Response_ -</code>200`</p>
 
 <pre><code class="`json language-`json">{
-  "id": 1,
-  "firstName": "AWS",
-  "lastName": "AWS",
-  "age": 30,
-  "vip": false,
-  "login": {
-    "id": 1,
-    "mail": "max.mustermann@otto.de",
-    "password": "somePassword"
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58fe"
+    },
+    "start": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58fd"
+    },
+    "prev": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58fd"
+    },
+    "next": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58ff"
+    }
+  },
+  "content": {
+    "id": "599f2e6170f9864ae00c58fe",
+    "firstName": "AWS4",
+    "secondName": null,
+    "lastName": "AWS2",
+    "age": 30,
+    "vip": false,
+    "login": {
+      "mail": "max.mustermann@otto.de",
+      "password": "somePassword"
+    },
+    "bio": null
   }
 }
 </code></pre>
@@ -112,15 +137,45 @@
   "age": 30,
   "vip": false,
   "login": {
-  "mail": "max.mustermann@otto.de",
-  "password": "somePassword"
+      "mail": "max.mustermann@otto.de",
+      "password": "somePassword"
   },
   "bio": "some text"
 }
 </code></pre>
 
 <p><code>
-    _Response_</code>201 Location: /user/4`</p>
+    _Response_</code>201 Location: http://localhost:8080/user/599f2ec570f9864ae00c5900`</p>
+
+<pre><code class="``json language-``json">{
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/user/599f2ec570f9864ae00c5900"
+    },
+    "start": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58fd"
+    },
+    "prev": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58ff"
+    }
+  },
+  "content": {
+    "id": "599f2ec570f9864ae00c5900",
+    "firstName": "AWS1",
+    "secondName": null,
+    "lastName": "AWS",
+    "age": 30,
+    "vip": false,
+    "login": {
+      "mail": "max.mustermann@otto.de",
+      "password": "somePassword"
+    },
+    "bio": null
+  }
+}
+</code></pre>
+
+<p>``</p>
 
 <p><strong>UPDATE</strong></p>
 
@@ -131,16 +186,17 @@
     <em>Body</em></p>
 
 <pre><code class="`json language-`json">{
-  "firstName": "NEU",
-  "secondName": "Joachim",
-  "lastName": "AWS",
-  "age": 30,
-  "vip": false,
-  "login": {
-  "mail": "max.mustermann@otto.de",
-  "password": "somePassword"
-  },
-  "bio": "some text"
+     "id": "599f2ec570f9864ae00c5900",
+    "firstName": "AWS10",
+    "secondName": null,
+    "lastName": "AWS",
+    "age": 30,
+    "vip": false,
+    "login": {
+        "mail": "max.mustermann@otto.de",
+        "password": "somePassword"
+    },
+    "bio": null
 }
 </code></pre>
 
@@ -148,16 +204,30 @@
     _Response_</code>200`</p>
 
 <pre><code class="`json language-`json">{
-  "firstName": "NEU",
-  "secondName": "Joachim",
-  "lastName": "AWS",
-  "age": 30,
-  "vip": false,
-  "login": {
-  "mail": "max.mustermann@otto.de",
-  "password": "somePassword"
+  "_links": {
+    "self": {
+      "href": "http://localhost:8080/user/599f2ec570f9864ae00c5900"
+    },
+    "start": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58fd"
+    },
+    "prev": {
+      "href": "http://localhost:8080/user/599f2e6170f9864ae00c58ff"
+    }
   },
-  "bio": "some text"
+  "content": {
+    "id": "599f2ec570f9864ae00c5900",
+    "firstName": "AWS10",
+    "secondName": null,
+    "lastName": "AWS",
+    "age": 30,
+    "vip": false,
+    "login": {
+      "mail": "max.mustermann@otto.de",
+      "password": "somePassword"
+    },
+    "bio": null
+  }
 }
 </code></pre>
 
