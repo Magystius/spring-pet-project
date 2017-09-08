@@ -60,7 +60,6 @@ public class User implements Identifiable<String> {
         return hashFunction.newHasher()
                 .putObject(this, UserFunnel.INSTANCE)
                 .hash().toString();
-
     }
 
     public interface Existing extends Default {
