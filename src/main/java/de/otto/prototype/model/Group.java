@@ -3,6 +3,7 @@ package de.otto.prototype.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.hash.HashFunction;
 import lombok.Builder;
+import lombok.Singular;
 import lombok.Value;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.data.annotation.Id;
@@ -33,6 +34,7 @@ public class Group {
 	private final boolean vip;
 
 	@NotEmpty(message = "error.userlist.empty")
+	@Singular
 	private final List<String> userIds;
 
 	@JsonIgnore
