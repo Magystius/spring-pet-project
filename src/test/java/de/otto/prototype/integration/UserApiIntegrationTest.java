@@ -8,7 +8,6 @@ import de.otto.prototype.controller.representation.ValidationRepresentation;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,13 +37,9 @@ public class UserApiIntegrationTest extends BaseIntegrationTest {
 
 	@Before
 	public void setUp() throws Exception {
+		userRepository.deleteAll();
 		messageSource = initMessageSource();
 		this.base = new URL("http://localhost:" + port + URL_USER);
-	}
-
-	@After
-	public void tearDown() throws Exception {
-		userRepository.deleteAll();
 	}
 
 	private void assertUserRepresentation(String responseBody, User expectedUser) {
