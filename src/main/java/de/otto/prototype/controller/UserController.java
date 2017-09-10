@@ -1,28 +1,21 @@
 package de.otto.prototype.controller;
 
-import com.google.common.hash.HashCode;
-import de.otto.prototype.controller.representation.UserListEntryRepresentation;
-import de.otto.prototype.controller.representation.UserListRepresentation;
-import de.otto.prototype.controller.representation.UserRepresentation;
+import de.otto.prototype.controller.representation.user.UserListEntryRepresentation;
+import de.otto.prototype.controller.representation.user.UserListRepresentation;
+import de.otto.prototype.controller.representation.user.UserRepresentation;
 import de.otto.prototype.model.User;
 import de.otto.prototype.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.Link;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.Pattern;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.hash.Hashing.sha256;
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.util.stream.Collectors.toList;
 import static org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo;
@@ -36,7 +29,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.*;
 @RestController
 @RequestMapping(URL_USER)
 @Validated
-public class UserController {
+public class UserController extends BaseController {
 
 	public static final String URL_USER = "/user";
 
@@ -47,7 +40,6 @@ public class UserController {
 		this.userService = userService;
 	}
 
-	@Transactional(readOnly = true)
 	@RequestMapping(method = GET, produces = APPLICATION_JSON_VALUE)
 	public ResponseEntity<UserListRepresentation> getAll(final @RequestHeader(value = IF_NONE_MATCH, required = false) String ETagHeader) {
 		final List<User> allUsers = userService.findAll().collect(toList());
@@ -86,7 +78,7 @@ public class UserController {
 
 		return new ResponseEntity<>(UserRepresentation.builder()
 				.user(user)
-				.links(determineLinksForUser(user))
+				.links(determineLinks(user, userService.findAll().collect(toList()), UserController.class))
 				.build(), getETagHeader(user), OK);
 	}
 
@@ -97,7 +89,7 @@ public class UserController {
 				.header(ETAG, persistedUser.getETag())
 				.body(UserRepresentation.builder()
 						.user(persistedUser)
-						.links(determineLinksForUser(persistedUser))
+						.links(determineLinks(persistedUser, userService.findAll().collect(toList()), UserController.class))
 						.build());
 	}
 
@@ -110,7 +102,7 @@ public class UserController {
 		final User updatedUser = userService.update(user, ETagHeader);
 		return new ResponseEntity<>(UserRepresentation.builder()
 				.user(updatedUser)
-				.links(determineLinksForUser(updatedUser))
+				.links(determineLinks(updatedUser, userService.findAll().collect(toList()), UserController.class))
 				.build(), getETagHeader(updatedUser), OK);
 	}
 
@@ -118,33 +110,5 @@ public class UserController {
 	public ResponseEntity delete(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid") @PathVariable("userId") String userId) {
 		userService.delete(userId);
 		return noContent().build();
-	}
-
-	private List<Link> determineLinksForUser(final User user) {
-		final List<User> listOfUsers = userService.findAll().collect(toList());
-		final List<Link> links = new ArrayList<>();
-		links.add(linkTo(UserController.class).slash(user).withSelfRel());
-		links.add(linkTo(UserController.class).slash(listOfUsers.get(0)).withRel("start"));
-		int indexOfUser = listOfUsers.indexOf(user);
-		if (indexOfUser > 0)
-			links.add(linkTo(UserController.class).slash(listOfUsers.get(indexOfUser - 1)).withRel("prev"));
-		if (indexOfUser < (listOfUsers.size() - 1))
-			links.add(linkTo(UserController.class).slash(listOfUsers.get(indexOfUser + 1)).withRel("next"));
-
-		return links;
-	}
-
-	private MultiValueMap<String, String> getETagHeader(final User user) {
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-		headers.add(ETAG, user.getETag());
-		return headers;
-	}
-
-	private MultiValueMap<String, String> getETagHeader(final List<User> users) {
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-		final String combinedETags = users.stream().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
-		final HashCode hashCode = sha256().newHasher().putString(combinedETags, UTF_8).hash();
-		headers.add(ETAG, hashCode.toString());
-		return headers;
 	}
 }

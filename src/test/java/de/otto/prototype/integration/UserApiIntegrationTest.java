@@ -8,6 +8,7 @@ import de.otto.prototype.controller.representation.ValidationRepresentation;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +28,7 @@ import static org.springframework.http.HttpMethod.*;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
-public class UserApiIntegrationTest extends AbstractIntegrationTest {
+public class UserApiIntegrationTest extends BaseIntegrationTest {
 
 	private static final Login.LoginBuilder login = Login.builder().mail("max.mustermann@otto.de").password("somePassword");
 	private static final User.UserBuilder user = User.builder().lastName("Mustermann").firstName("Max").age(30);
@@ -37,9 +38,28 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 
 	@Before
 	public void setUp() throws Exception {
-		userRepository.deleteAll();
 		messageSource = initMessageSource();
 		this.base = new URL("http://localhost:" + port + URL_USER);
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		userRepository.deleteAll();
+	}
+
+	private void assertUserRepresentation(String responseBody, User expectedUser) {
+		DocumentContext parsedResponse = JsonPath.parse(responseBody);
+		assertThat(parsedResponse.read("$.content.id"), is(expectedUser.getId()));
+		assertThat(parsedResponse.read("$.content.firstName"), is(expectedUser.getFirstName()));
+		assertThat(parsedResponse.read("$.content.secondName"), is(expectedUser.getSecondName()));
+		assertThat(parsedResponse.read("$.content.lastName"), is(expectedUser.getLastName()));
+		assertThat(parsedResponse.read("$.content.age"), is(expectedUser.getAge()));
+		assertThat(parsedResponse.read("$.content.vip"), is(expectedUser.isVip()));
+		assertThat(parsedResponse.read("$.content.login.mail"), is(expectedUser.getLogin().getMail()));
+		assertThat(parsedResponse.read("$.content.login.password"), is(expectedUser.getLogin().getPassword()));
+		assertThat(parsedResponse.read("$.content.bio"), is(expectedUser.getBio()));
+		assertThat(parsedResponse.read("$._links.self.href"), containsString("/user/" + expectedUser.getId()));
+		assertThat(parsedResponse.read("$._links.start.href"), containsString("/user/" + expectedUser.getId()));
 	}
 
 	@Test
@@ -84,7 +104,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 		assertThat(response.getStatusCode(), is(OK));
 		final String eTagHeader = response.getHeaders().get(ETAG).get(0);
 		assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(persistedUser.getETag()));
-		assertUserRepresentation(response.getBody(), persistedUser, true);
+		assertUserRepresentation(response.getBody(), persistedUser);
 	}
 
 	@Test
@@ -99,7 +119,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 		assertThat(response.getHeaders().get("Location").get(0).contains("/user/"), is(true));
 		final User createdUser = userRepository.findOne((String) JsonPath.read(response.getBody(), "$.content.id"));
 		assertThat(createdUser, is(notNullValue()));
-		assertUserRepresentation(response.getBody(), createdUser, true);
+		assertUserRepresentation(response.getBody(), createdUser);
 		assertThat(response.getHeaders().get(ETAG).get(0), is(createdUser.getETag()));
 	}
 
@@ -116,7 +136,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 				String.class);
 
 		assertThat(response.getStatusCode(), is(OK));
-		assertUserRepresentation(response.getBody(), updatedUser, true);
+		assertUserRepresentation(response.getBody(), updatedUser);
 		assertThat(response.getHeaders().get(ETAG).get(0), is(updatedUser.getETag()));
 	}
 
@@ -133,7 +153,7 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 				String.class);
 
 		assertThat(response.getStatusCode(), is(OK));
-		assertUserRepresentation(response.getBody(), updatedUser, true);
+		assertUserRepresentation(response.getBody(), updatedUser);
 		assertThat(response.getHeaders().get(ETAG).get(0), is(updatedUser.getETag()));
 	}
 
@@ -194,5 +214,4 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 		assertThat(response.getStatusCode(), is(BAD_REQUEST));
 		assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
 	}
-
 }

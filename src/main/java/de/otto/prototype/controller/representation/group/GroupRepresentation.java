@@ -1,7 +1,7 @@
-package de.otto.prototype.controller.representation;
+package de.otto.prototype.controller.representation.group;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import de.otto.prototype.model.User;
+import de.otto.prototype.model.Group;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Singular;
@@ -14,11 +14,11 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Value
 @Builder
-public class UserRepresentation extends ResourceSupport {
+public class GroupRepresentation extends ResourceSupport {
 
 	@Singular
 	private final List<Link> links;
 
 	@JsonProperty("content")
-	private final User user;
+	private final Group group;
 }

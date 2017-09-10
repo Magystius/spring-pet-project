@@ -8,6 +8,7 @@ import lombok.Value;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.hateoas.Identifiable;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Null;
@@ -20,7 +21,7 @@ import static com.google.common.hash.Hashing.sha256;
 @Document
 @Value
 @Builder(toBuilder = true)
-public class Group {
+public class Group implements Identifiable<String>, Hashable {
 
 	@Id
 	@NotNull(groups = Group.Existing.class, message = "error.id.existing")

@@ -20,7 +20,7 @@ import static org.hibernate.validator.constraints.SafeHtml.WhiteListType.NONE;
 @Document
 @Value
 @Builder(toBuilder = true)
-public class User implements Identifiable<String> {
+public class User implements Identifiable<String>, Hashable {
 
     public static final int AGE_YOUNGEST = 18;
     public static final int AGE_OLDEST = 150;

@@ -13,7 +13,7 @@ import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
-public class SecurityIntegrationTest extends AbstractIntegrationTest {
+public class SecurityIntegrationTest extends BaseIntegrationTest {
 
 	@Before
 	public void setUp() throws Exception {
@@ -38,10 +38,20 @@ public class SecurityIntegrationTest extends AbstractIntegrationTest {
 	}
 
 	@Test
-	public void shouldForbidAccessIfNoUser() throws Exception {
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/user", GET, null, String.class);
+	public void shouldForbidAccessIfNoUserForUser() throws Exception {
+		final ResponseEntity<String> responseForBaseUrl = template.exchange(base.toString() + "/user", GET, null, String.class);
+		final ResponseEntity<String> responseForAUserId = template.exchange(base.toString() + "/user/1234", GET, null, String.class);
 
-		assertThat(response.getStatusCode(), is(UNAUTHORIZED));
+		assertThat(responseForBaseUrl.getStatusCode(), is(UNAUTHORIZED));
+		assertThat(responseForAUserId.getStatusCode(), is(UNAUTHORIZED));
 	}
 
+	@Test
+	public void shouldForbidAccessIfNoUserForGroup() throws Exception {
+		final ResponseEntity<String> responseForBaseUrl = template.exchange(base.toString() + "/group", GET, null, String.class);
+		final ResponseEntity<String> responseForAGroupId = template.exchange(base.toString() + "/group/1234", GET, null, String.class);
+
+		assertThat(responseForBaseUrl.getStatusCode(), is(UNAUTHORIZED));
+		assertThat(responseForAGroupId.getStatusCode(), is(UNAUTHORIZED));
+	}
 }
