@@ -4,8 +4,10 @@ import com.google.common.collect.ImmutableList;
 import de.otto.prototype.controller.representation.ValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.ValidationRepresentation;
 import de.otto.prototype.exceptions.ConcurrentModificationException;
+import de.otto.prototype.exceptions.InvalidGroupException;
 import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
+import de.otto.prototype.model.Group;
 import de.otto.prototype.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -65,6 +67,14 @@ public class ControllerValidationHandler {
 	public ValidationRepresentation<User> processValidationError(final InvalidUserException exception) {
 		ValidationEntryRepresentation error = ValidationEntryRepresentation.builder().attribute(exception.getErrorCause()).errorMessage(exception.getErrorMsg()).build();
 		return ValidationRepresentation.<User>builder().error(error).build();
+	}
+
+	@ExceptionHandler(InvalidGroupException.class)
+	@ResponseStatus(BAD_REQUEST)
+	@ResponseBody
+	public ValidationRepresentation<Group> processValidationError(final InvalidGroupException exception) {
+		ValidationEntryRepresentation error = ValidationEntryRepresentation.builder().attribute(exception.getErrorCause()).errorMessage(exception.getErrorMsg()).build();
+		return ValidationRepresentation.<Group>builder().error(error).build();
 	}
 
 	//TODO: remove this -> only here because unit test is broken...
