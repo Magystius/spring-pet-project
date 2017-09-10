@@ -5,7 +5,7 @@ import lombok.Value;
 
 @Value
 @Builder
-public class UserValidationEntryRepresentation {
+public class ValidationEntryRepresentation {
 
 	private final String attribute;
 

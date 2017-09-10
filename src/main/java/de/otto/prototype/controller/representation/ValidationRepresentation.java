@@ -1,6 +1,5 @@
 package de.otto.prototype.controller.representation;
 
-import de.otto.prototype.model.User;
 import lombok.Builder;
 import lombok.Singular;
 import lombok.Value;
@@ -9,10 +8,10 @@ import java.util.List;
 
 @Value
 @Builder
-public class UserValidationRepresentation {
+public class ValidationRepresentation<T> {
 
-	private final User user;
+	private final T data;
 
 	@Singular
-	private final List<UserValidationEntryRepresentation> errors;
+	private final List<ValidationEntryRepresentation> errors;
 }

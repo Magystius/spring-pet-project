@@ -3,8 +3,8 @@ package de.otto.prototype.integration;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import de.otto.prototype.controller.representation.UserValidationEntryRepresentation;
-import de.otto.prototype.controller.representation.UserValidationRepresentation;
+import de.otto.prototype.controller.representation.ValidationEntryRepresentation;
+import de.otto.prototype.controller.representation.ValidationRepresentation;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
@@ -157,8 +157,8 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 				String.class);
 
 		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
-		UserValidationEntryRepresentation errorEntry = UserValidationEntryRepresentation.builder().attribute("getOne.userId").errorMessage(errorMessage).build();
-		UserValidationRepresentation returnedErrors = UserValidationRepresentation.builder().error(errorEntry).build();
+		ValidationEntryRepresentation errorEntry = ValidationEntryRepresentation.builder().attribute("getOne.userId").errorMessage(errorMessage).build();
+		ValidationRepresentation<User> returnedErrors = ValidationRepresentation.<User>builder().error(errorEntry).build();
 		assertThat(response.getStatusCode(), is(BAD_REQUEST));
 		assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
 	}
@@ -175,8 +175,8 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 				String.class);
 
 		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
-		UserValidationEntryRepresentation errorEntry = UserValidationEntryRepresentation.builder().attribute("update.userId").errorMessage(errorMessage).build();
-		UserValidationRepresentation returnedErrors = UserValidationRepresentation.builder().error(errorEntry).build();
+		ValidationEntryRepresentation errorEntry = ValidationEntryRepresentation.builder().attribute("update.userId").errorMessage(errorMessage).build();
+		ValidationRepresentation<User> returnedErrors = ValidationRepresentation.<User>builder().error(errorEntry).build();
 		assertThat(response.getStatusCode(), is(BAD_REQUEST));
 		assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
 	}
@@ -189,8 +189,8 @@ public class UserApiIntegrationTest extends AbstractIntegrationTest {
 				String.class);
 
 		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
-		UserValidationEntryRepresentation errorEntry = UserValidationEntryRepresentation.builder().attribute("delete.userId").errorMessage(errorMessage).build();
-		UserValidationRepresentation returnedErrors = UserValidationRepresentation.builder().error(errorEntry).build();
+		ValidationEntryRepresentation errorEntry = ValidationEntryRepresentation.builder().attribute("delete.userId").errorMessage(errorMessage).build();
+		ValidationRepresentation<User> returnedErrors = ValidationRepresentation.<User>builder().error(errorEntry).build();
 		assertThat(response.getStatusCode(), is(BAD_REQUEST));
 		assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
 	}
