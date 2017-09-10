@@ -16,7 +16,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		http
 				.authorizeRequests()
 				.antMatchers("/").permitAll()
-				.antMatchers("/user/**", "/resetpassword").authenticated()
+				.antMatchers("/user/**", "/group/**", "/resetpassword").authenticated()
 				.and()
 				.httpBasic()
 				.realmName("user")
