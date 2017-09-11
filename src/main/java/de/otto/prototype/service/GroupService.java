@@ -9,12 +9,8 @@ import de.otto.prototype.repository.GroupRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import javax.validation.Validator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -27,13 +23,10 @@ public class GroupService {
 
 	private final UserService userService;
 
-	private final Validator validator;
-
 	@Autowired
-	public GroupService(final GroupRepository groupRepository, UserService userService, final Validator validator) {
+	public GroupService(final GroupRepository groupRepository, UserService userService) {
 		this.groupRepository = groupRepository;
 		this.userService = userService;
-		this.validator = validator;
 	}
 
 	public Stream<Group> findAll() {
@@ -65,11 +58,6 @@ public class GroupService {
 	}
 
 	private void validateGroup(final Group groupToValidate, final Boolean newGroup) {
-		Class groupType = newGroup ? Group.New.class : Group.Existing.class;
-		Set<ConstraintViolation<Group>> errors = validator.validate(groupToValidate, groupType);
-		if (!errors.isEmpty())
-			throw new ConstraintViolationException(errors);
-
 		//TODO: optimize doubled line?
 		if (newGroup && findAll().anyMatch(group -> group.getName().equals(groupToValidate.getName())))
 			throw new InvalidGroupException(groupToValidate, "business", "the group name is already taken");

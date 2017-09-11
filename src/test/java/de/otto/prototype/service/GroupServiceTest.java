@@ -8,16 +8,13 @@ import de.otto.prototype.model.Group;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.GroupRepository;
-import org.hibernate.validator.HibernateValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -61,18 +58,12 @@ class GroupServiceTest {
 	@Mock
 	private UserService userService;
 
+	@InjectMocks
 	private GroupService testee;
 
 	@BeforeEach
 	void setUp() throws Exception {
 		initMocks(this);
-
-		LocalValidatorFactoryBean validatorFactory = new LocalValidatorFactoryBean();
-		validatorFactory.setProviderClass(HibernateValidator.class);
-		validatorFactory.afterPropertiesSet();
-
-		testee = new GroupService(groupRepository, userService, validatorFactory);
-
 		given(userService.findAll()).willReturn(Stream.of(VALID_MINIMUM_USER_NON_VIP, VALID_MINIMUM_USER_VIP));
 	}
 
@@ -164,16 +155,6 @@ class GroupServiceTest {
 			final Group returnedGroup = testee.create(VALID_MINIMUM_VIP_GROUP);
 
 			assertThat(returnedGroup, is(VALID_MINIMUM_VIP_GROUP_WITH_ID));
-		}
-
-		@Test
-		@DisplayName("should throw a constraint violation if an invalid group is about to persisted")
-		void shouldThrowConstraintViolationExceptionIfInvalidNewGroup() {
-			final ConstraintViolationException exception =
-					assertThrows(ConstraintViolationException.class, () -> testee.create(VALID_MINIMUM_GROUP.toBuilder().name("a").build()));
-			final String msgCode = exception.getConstraintViolations().stream().map(ConstraintViolation::getMessage).findFirst().orElse("");
-			assertThat(msgCode, is("error.name.range"));
-			then(groupRepository).should(never()).save(any(Group.class));
 		}
 
 		@Test
@@ -288,17 +269,6 @@ class GroupServiceTest {
 			ConcurrentModificationException exception =
 					assertThrows(ConcurrentModificationException.class, () -> testee.update(VALID_MINIMUM_GROUP_WITH_ID, "someDifferentEtag"));
 			assertThat(exception.getMessage(), is("etags aren´t equal"));
-			then(groupRepository).should(never()).save(any(Group.class));
-		}
-
-		@Test
-		@DisplayName("should throw a constraint violation if an invalid group update is given")
-		void shouldThrowConstraintViolationExceptionIfInvalidExistingGroup() {
-			given(groupRepository.findById(VALID_GROUP_ID)).willReturn(Optional.of(VALID_MINIMUM_GROUP_WITH_ID));
-			final ConstraintViolationException exception =
-					assertThrows(ConstraintViolationException.class, () -> testee.update(VALID_MINIMUM_GROUP_WITH_ID.toBuilder().name("a").build(), null));
-			final String msgCode = exception.getConstraintViolations().stream().map(ConstraintViolation::getMessage).findFirst().orElse("");
-			assertThat(msgCode, is("error.name.range"));
 			then(groupRepository).should(never()).save(any(Group.class));
 		}
 
