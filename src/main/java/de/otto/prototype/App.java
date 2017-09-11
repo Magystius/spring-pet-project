@@ -10,13 +10,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
-import static java.util.Arrays.sort;
-import static java.util.Arrays.stream;
 
 @SpringBootApplication
 public class App {
@@ -48,21 +43,6 @@ public class App {
 			userRepository.findAll().forEach(group -> log.info(group.toString()));
 
 			log.info("");
-		};
-	}
-
-	@Bean
-	public CommandLineRunner checkApp(final ApplicationContext ctx) {
-		return args -> {
-			log.info("Let's inspect the beans provided by Spring Boot:");
-
-			String[] beanNames = ctx.getBeanDefinitionNames();
-			sort(beanNames);
-			stream(beanNames).forEach(log::info);
-
-			String encoded = new BCryptPasswordEncoder().encode("admin");
-			log.info(encoded);
-			log.info(Boolean.toString(new BCryptPasswordEncoder().matches("admin", encoded)));
 		};
 	}
 
