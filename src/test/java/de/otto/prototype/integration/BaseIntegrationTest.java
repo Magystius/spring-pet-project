@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.embedded.LocalServerPort;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.MessageSource;
@@ -28,7 +28,7 @@ public abstract class BaseIntegrationTest {
 
 	static final Locale LOCALE = LocaleContextHolder.getLocale();
 
-	@LocalServerPort
+	@Value("${local.server.port}")
 	protected int port;
 	@Autowired
 	protected TestRestTemplate template;

@@ -112,7 +112,7 @@ public class GroupApiIntegrationTest extends BaseIntegrationTest {
 
 		assertThat(response.getStatusCode(), is(CREATED));
 		assertThat(response.getHeaders().get("Location").get(0).contains("/group/"), is(true));
-		final Group createdGroup = groupRepository.findOne((String) JsonPath.read(response.getBody(), "$.content.id"));
+		final Group createdGroup = groupRepository.findById(JsonPath.read(response.getBody(), "$.content.id")).get();
 		assertThat(createdGroup, is(notNullValue()));
 		assertGroupRepresentation(response.getBody(), createdGroup);
 		assertThat(response.getHeaders().get(ETAG).get(0), is(createdGroup.getETag()));

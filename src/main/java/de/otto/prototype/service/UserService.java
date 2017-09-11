@@ -35,7 +35,7 @@ public class UserService {
 	}
 
 	public Optional<User> findOne(final String userId) {
-		return Optional.ofNullable(userRepository.findOne(userId));
+		return userRepository.findById(userId);
 	}
 
 	public User create(final User user) {
@@ -48,9 +48,8 @@ public class UserService {
 		if (!errors.isEmpty())
 			throw new ConstraintViolationException(errors);
 
-		User foundUser = userRepository.findOne(user.getId());
-		if (foundUser == null)
-			throw new NotFoundException("user not found");
+		final User foundUser = userRepository.findById(user.getId())
+				.orElseThrow(() -> new NotFoundException("user not found"));
 		if (!isNullOrEmpty(eTag) && !foundUser.getETag().equals(eTag))
 			throw new ConcurrentModificationException("etags aren´t equal");
 		validateUser(user);
@@ -58,10 +57,9 @@ public class UserService {
 	}
 
 	public void delete(final String userId) {
-		if (userRepository.findOne(userId) == null) {
-			throw new NotFoundException("user id not found");
-		}
-		userRepository.delete(userId);
+		if (!userRepository.findById(userId).isPresent())
+			throw new NotFoundException("user not found");
+		userRepository.deleteById(userId);
 	}
 
 	private void validateUser(final User userToValidate) {

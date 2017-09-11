@@ -112,7 +112,7 @@ public class UserApiIntegrationTest extends BaseIntegrationTest {
 
 		assertThat(response.getStatusCode(), is(CREATED));
 		assertThat(response.getHeaders().get("Location").get(0).contains("/user/"), is(true));
-		final User createdUser = userRepository.findOne((String) JsonPath.read(response.getBody(), "$.content.id"));
+		final User createdUser = userRepository.findById(JsonPath.read(response.getBody(), "$.content.id")).get();
 		assertThat(createdUser, is(notNullValue()));
 		assertUserRepresentation(response.getBody(), createdUser);
 		assertThat(response.getHeaders().get(ETAG).get(0), is(createdUser.getETag()));

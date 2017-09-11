@@ -41,7 +41,7 @@ public class GroupService {
 	}
 
 	public Optional<Group> findOne(final String groupId) {
-		return Optional.ofNullable(groupRepository.findOne(groupId));
+		return groupRepository.findById(groupId);
 	}
 
 	public Group create(final Group group) {
@@ -50,9 +50,8 @@ public class GroupService {
 	}
 
 	public Group update(final Group group, final String eTag) {
-		Group foundGroup = groupRepository.findOne(group.getId());
-		if (foundGroup == null)
-			throw new NotFoundException("group not found");
+		final Group foundGroup = groupRepository.findById(group.getId())
+				.orElseThrow(() -> new NotFoundException("group not found"));
 		if (!isNullOrEmpty(eTag) && !foundGroup.getETag().equals(eTag))
 			throw new ConcurrentModificationException("etags aren´t equal");
 		validateGroup(group, false);
@@ -60,10 +59,9 @@ public class GroupService {
 	}
 
 	public void delete(final String groupId) {
-		if (groupRepository.findOne(groupId) == null) {
-			throw new NotFoundException("group id not found");
-		}
-		groupRepository.delete(groupId);
+		if (!groupRepository.findById(groupId).isPresent())
+			throw new NotFoundException("group not found");
+		groupRepository.deleteById(groupId);
 	}
 
 	private void validateGroup(final Group groupToValidate, final Boolean newGroup) {

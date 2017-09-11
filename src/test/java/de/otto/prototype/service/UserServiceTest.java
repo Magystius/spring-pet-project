@@ -88,7 +88,7 @@ class UserServiceTest {
 		@Test
 		@DisplayName("should return an optional of found user for an id")
 		void shouldReturnAUserIfFound() throws Exception {
-			given(userRepository.findOne(VALID_USER_ID)).willReturn(VALID_MINIMUM_USER_WITH_ID);
+			given(userRepository.findById(VALID_USER_ID)).willReturn(Optional.of(VALID_MINIMUM_USER_WITH_ID));
 
 			final User foundUser = testee.findOne(VALID_USER_ID).orElse(null);
 
@@ -102,7 +102,7 @@ class UserServiceTest {
 		@DisplayName("should an empty optional if no user found for id")
 		void shouldReturnNoUserIfNotFound() throws Exception {
 			String userId = "someId";
-			given(userRepository.findOne(userId)).willReturn(null);
+			given(userRepository.findById(userId)).willReturn(Optional.empty());
 
 			final Optional<User> foundUser = testee.findOne(userId);
 
@@ -156,7 +156,7 @@ class UserServiceTest {
 		@DisplayName("should update the user and return it")
 		void shouldReturnUpdatedUser() throws Exception {
 			final User updatedUser = VALID_MINIMUM_USER_WITH_ID.toBuilder().lastName("Neumann").build();
-			given(userRepository.findOne(VALID_USER_ID)).willReturn(VALID_MINIMUM_USER_WITH_ID);
+			given(userRepository.findById(VALID_USER_ID)).willReturn(Optional.of(VALID_MINIMUM_USER_WITH_ID));
 			given(userRepository.save(updatedUser)).willReturn(updatedUser);
 			given(userRepository.streamAll()).willReturn(Stream.of(VALID_MINIMUM_USER_WITH_ID.toBuilder().firstName("Heinz").build()));
 
@@ -171,7 +171,7 @@ class UserServiceTest {
 		@DisplayName("should update a user and return it, if the given etag and the users one are equal")
 		void shouldReturnUpdatedUserIfETagsAreEqual() throws Exception {
 			final User updatedUser = VALID_MINIMUM_USER_WITH_ID.toBuilder().lastName("Neumann").build();
-			given(userRepository.findOne(VALID_USER_ID)).willReturn(VALID_MINIMUM_USER_WITH_ID);
+			given(userRepository.findById(VALID_USER_ID)).willReturn(Optional.of(VALID_MINIMUM_USER_WITH_ID));
 			given(userRepository.save(updatedUser)).willReturn(updatedUser);
 			given(userRepository.streamAll()).willReturn(Stream.of(VALID_MINIMUM_USER_WITH_ID.toBuilder().firstName("Heinz").build()));
 
@@ -185,7 +185,7 @@ class UserServiceTest {
 		@Test
 		@DisplayName("should throw an concurrent modification exception if etags aren´t equal")
 		void shouldThrowConcurrentModificationExceptionIfETagsUnequal() {
-			given(userRepository.findOne(VALID_USER_ID)).willReturn(VALID_MINIMUM_USER_WITH_ID);
+			given(userRepository.findById(VALID_USER_ID)).willReturn(Optional.of(VALID_MINIMUM_USER_WITH_ID));
 			ConcurrentModificationException exception =
 					assertThrows(ConcurrentModificationException.class, () -> testee.update(VALID_MINIMUM_USER_WITH_ID, "someDifferentEtag"));
 			assertThat(exception.getMessage(), is("etags aren´t equal"));
@@ -196,7 +196,7 @@ class UserServiceTest {
 		@DisplayName("should throw an constraint violation exception if updated user is invalid")
 		void shouldThrowConstraintViolationExceptionIfInvalidExistingUser() {
 			User invalidUserToUpdate = VALID_MINIMUM_USER_WITH_ID.toBuilder().firstName("a").build();
-			given(userRepository.findOne(VALID_USER_ID)).willReturn(invalidUserToUpdate);
+			given(userRepository.findById(VALID_USER_ID)).willReturn(Optional.of(invalidUserToUpdate));
 			ConstraintViolationException exception =
 					assertThrows(ConstraintViolationException.class, () -> testee.update(invalidUserToUpdate, null));
 			String msgCode = exception.getConstraintViolations().stream().map(ConstraintViolation::getMessage).findFirst().orElse("");
@@ -208,7 +208,7 @@ class UserServiceTest {
 		@DisplayName("should throw an invalid user exception if updated user has invalid mail")
 		void shouldThrowInvalidUserExceptionOnExistingUserWithWrongMail() {
 			User invalidUserToUpdate = VALID_MINIMUM_USER_WITH_ID.toBuilder().login(VALID_LOGIN.toBuilder().mail("max.mustermann@web.de").build()).build();
-			given(userRepository.findOne(VALID_USER_ID)).willReturn(invalidUserToUpdate);
+			given(userRepository.findById(VALID_USER_ID)).willReturn(Optional.of(invalidUserToUpdate));
 			InvalidUserException exception =
 					assertThrows(InvalidUserException.class, () -> testee.update(invalidUserToUpdate, null));
 			assertAll("exception content",
@@ -221,7 +221,7 @@ class UserServiceTest {
 		@Test
 		@DisplayName("should throw an invalid user exception if user with same data already exists")
 		void shouldThrowInvalidUserExceptionOnExistingUserIfUserAlreadyExists() {
-			given(userRepository.findOne(VALID_USER_ID)).willReturn(VALID_MINIMUM_USER_WITH_ID);
+			given(userRepository.findById(VALID_USER_ID)).willReturn(Optional.of(VALID_MINIMUM_USER_WITH_ID));
 			given(userRepository.streamAll()).willReturn(Stream.of(VALID_MINIMUM_USER_WITH_ID));
 			InvalidUserException exception =
 					assertThrows(InvalidUserException.class, () -> testee.update(VALID_MINIMUM_USER_WITH_ID, null));
@@ -235,7 +235,7 @@ class UserServiceTest {
 		@Test
 		@DisplayName("should return a not found exception if no user for given id is found")
 		void shouldReturnNotFoundExceptionIfIdUnknown() throws Exception {
-			given(userRepository.findOne(VALID_USER_ID)).willReturn(null);
+			given(userRepository.findById(VALID_USER_ID)).willReturn(Optional.empty());
 			NotFoundException exception =
 					assertThrows(NotFoundException.class, () -> testee.update(VALID_MINIMUM_USER.toBuilder().id(VALID_USER_ID).build(), null));
 			assertThat(exception.getMessage(), is("user not found"));
@@ -249,22 +249,20 @@ class UserServiceTest {
 		@Test
 		@DisplayName("should delete the user")
 		void shouldDeleteUser() throws Exception {
-			String userId = "someId";
-			given(userRepository.findOne(userId)).willReturn(User.builder().build());
+			given(userRepository.findById(VALID_USER_ID)).willReturn(Optional.of(User.builder().build()));
 
-			testee.delete(userId);
-			then(userRepository).should(inOrder(userRepository)).findOne(userId);
-			then(userRepository).should(inOrder(userRepository)).delete(userId);
+			testee.delete(VALID_USER_ID);
+			then(userRepository).should(inOrder(userRepository)).findById(VALID_USER_ID);
+			then(userRepository).should(inOrder(userRepository)).deleteById(VALID_USER_ID);
 		}
 
 		@Test
 		@DisplayName("should throw a not found exception if no user for given is found")
 		void shouldThrowNotFoundExceptionForUnkownUserId() throws Exception {
-			String userId = "someId";
-			given(userRepository.findOne(userId)).willReturn(null);
-			NotFoundException exception = assertThrows(NotFoundException.class, () -> testee.delete(userId));
-			assertThat(exception.getMessage(), is("user id not found"));
-			then(userRepository).should(never()).delete(userId);
+			given(userRepository.findById(VALID_USER_ID)).willReturn(Optional.empty());
+			NotFoundException exception = assertThrows(NotFoundException.class, () -> testee.delete(VALID_USER_ID));
+			assertThat(exception.getMessage(), is("user not found"));
+			then(userRepository).should(never()).deleteById(VALID_USER_ID);
 		}
 	}
 }
