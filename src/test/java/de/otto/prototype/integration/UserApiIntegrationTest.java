@@ -51,31 +51,19 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
     private void assertUserRepresentation(String responseBody, User expectedUser) {
         DocumentContext parsedResponse = JsonPath.parse(responseBody);
         assertAll("user representation",
-                () -> assertThat(parsedResponse.read("$.content.id"), is(expectedUser.getId())),
-                () -> assertThat(parsedResponse.read("$.content.firstName"), is(expectedUser.getFirstName())),
-                () -> assertThat(parsedResponse.read("$.content.secondName"), is(expectedUser.getSecondName())),
-                () -> assertThat(parsedResponse.read("$.content.lastName"), is(expectedUser.getLastName())),
-                () -> assertThat(parsedResponse.read("$.content.age"), is(expectedUser.getAge())),
-                () -> assertThat(parsedResponse.read("$.content.vip"), is(expectedUser.isVip())),
-                () -> assertThat(parsedResponse.read("$.content.login.mail"), is(expectedUser.getLogin().getMail())),
-                () -> assertThat(parsedResponse.read("$.content.login.password"), is(expectedUser.getLogin().getPassword())),
-                () -> assertThat(parsedResponse.read("$.content.bio"), is(expectedUser.getBio())),
+                () -> assertThat(GSON.fromJson(parsedResponse.read("$.content").toString(), User.class), is(expectedUser)),
                 () -> assertThat(parsedResponse.read("$._links.self.href"), containsString("/user/" + expectedUser.getId())),
                 () -> assertThat(parsedResponse.read("$._links.start.href"), containsString("/user/" + expectedUser.getId())));
     }
 
-    private void assertUserListRepresentation(User persistedUser1, User persistedUser2, ResponseEntity<String> response) {
+    private void assertUserListRepresentation(User persistedUser, ResponseEntity<String> response) {
         DocumentContext parsedResponse = JsonPath.parse(response.getBody());
         assertAll("user list representation",
                 () -> assertThat(parsedResponse.read("$._links.self.href"), containsString("/user")),
-                () -> assertThat(parsedResponse.read("$._links.start.href"), containsString("/user/" + persistedUser1.getId())),
-                () -> assertThat(parsedResponse.read("$.total"), is(2)),
-                () -> assertThat(parsedResponse.read("$.content[0]._links.self.href"), containsString("/user/" + persistedUser1.getId())),
-                () -> assertThat(parsedResponse.read("$.content[0].content.id"), is(persistedUser1.getId())),
-                () -> assertThat(parsedResponse.read("$.content[0].content.firstName"), is("Max")),
-                () -> assertThat(parsedResponse.read("$.content[1]._links.self.href"), containsString("/user/" + persistedUser2.getId())),
-                () -> assertThat(parsedResponse.read("$.content[1].content.id"), is(persistedUser2.getId())),
-                () -> assertThat(parsedResponse.read("$.content[1].content.firstName"), is("Heiko")));
+                () -> assertThat(parsedResponse.read("$._links.start.href"), containsString("/user/" + persistedUser.getId())),
+                () -> assertThat(parsedResponse.read("$.total"), is(1)),
+                () -> assertThat(parsedResponse.read("$.content[0]._links.self.href"), containsString("/user/" + persistedUser.getId())),
+                () -> assertThat(GSON.fromJson(parsedResponse.read("$.content[0].content").toString(), User.class), is(persistedUser)));
     }
 
     @Nested
@@ -84,10 +72,9 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
         @Test
         @DisplayName("should return a list of previously saved users")
         void shouldReturnListOfUsersOnGetAll() throws Exception {
-            User persistedUser1 = userRepository.save(user.login(login.build()).build());
-            User persistedUser2 = userRepository.save(user.firstName("Heiko").login(login.build()).build());
+            User persistedUser = userRepository.save(user.login(login.build()).build());
 
-            final String combinedETags = Stream.of(persistedUser1, persistedUser2)
+            final String combinedETags = Stream.of(persistedUser)
                     .map(User::getETag)
                     .reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
             final String eTag = sha256().newHasher().putString(combinedETags, UTF_8).hash().toString();
@@ -98,7 +85,8 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
                     String.class);
 
             assertThat(response.getStatusCode(), is(OK));
-            assertUserListRepresentation(persistedUser1, persistedUser2, response);
+            final User reducedRepresentationOfPersistedUser = persistedUser.toBuilder().login(null).age(0).build();
+            assertUserListRepresentation(reducedRepresentationOfPersistedUser, response);
             final String eTagHeader = response.getHeaders().get(ETAG).get(0);
             assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(eTag));
         }

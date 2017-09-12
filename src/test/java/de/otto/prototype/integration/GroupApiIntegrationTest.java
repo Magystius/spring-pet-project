@@ -56,24 +56,19 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
     private void assertGroupRepresentation(String responseBody, Group expectedGroup) {
         DocumentContext parsedResponse = JsonPath.parse(responseBody);
         assertAll("group representation",
-                () -> assertThat(parsedResponse.read("$.content.id"), is(expectedGroup.getId())),
-                () -> assertThat(parsedResponse.read("$.content.name"), is(expectedGroup.getName())),
-                () -> assertThat(parsedResponse.read("$.content.vip"), is(expectedGroup.isVip())),
-                () -> assertThat(parsedResponse.read("$.content.userIds[0]"), is(expectedGroup.getUserIds().get(0))),
+                () -> assertThat(GSON.fromJson(parsedResponse.read("$.content").toString(), Group.class), is(expectedGroup)),
                 () -> assertThat(parsedResponse.read("$._links.self.href"), containsString("/group/" + expectedGroup.getId())),
                 () -> assertThat(parsedResponse.read("$._links.start.href"), containsString("/group/" + expectedGroup.getId())));
     }
 
-    private void assertGroupListRepresentation(User persistedUser, Group persistedGroup, ResponseEntity<String> response) {
+    private void assertGroupListRepresentation(Group persistedGroup, ResponseEntity<String> response) {
         DocumentContext parsedResponse = JsonPath.parse(response.getBody());
         assertAll("group list representation",
                 () -> assertThat(parsedResponse.read("$._links.self.href"), containsString("/group")),
                 () -> assertThat(parsedResponse.read("$._links.start.href"), containsString("/group/" + persistedGroup.getId())),
                 () -> assertThat(parsedResponse.read("$.total"), is(1)),
                 () -> assertThat(parsedResponse.read("$.content[0]._links.self.href"), containsString("/group/" + persistedGroup.getId())),
-                () -> assertThat(parsedResponse.read("$.content[0].content.id"), is(persistedGroup.getId())),
-                () -> assertThat(parsedResponse.read("$.content[0].content.name"), is("someGroupName")),
-                () -> assertThat(parsedResponse.read("$.content[0].content.userIds[0]"), is(persistedUser.getId())));
+                () -> assertThat(GSON.fromJson(parsedResponse.read("$.content[0].content").toString(), Group.class), is(persistedGroup)));
     }
 
     @Nested
@@ -96,7 +91,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
                     String.class);
 
             assertThat(response.getStatusCode(), is(OK));
-            assertGroupListRepresentation(persistedUser, persistedGroup, response);
+            assertGroupListRepresentation(persistedGroup, response);
             final String eTagHeader = response.getHeaders().get(ETAG).get(0);
             assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(eTag));
         }

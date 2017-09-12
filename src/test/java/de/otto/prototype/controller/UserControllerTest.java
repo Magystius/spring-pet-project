@@ -1,12 +1,10 @@
 package de.otto.prototype.controller;
 
+import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import de.otto.prototype.controller.handlers.ControllerValidationHandler;
 import de.otto.prototype.controller.representation.ValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.ValidationRepresentation;
 import de.otto.prototype.exceptions.ConcurrentModificationException;
@@ -23,24 +21,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.method.HandlerMethod;
-import org.springframework.web.method.annotation.ExceptionHandlerMethodResolver;
-import org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver;
-import org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod;
 
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -61,12 +47,10 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-class UserControllerTest {
+class UserControllerTest extends BaseControllerTest {
 
-	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 	private static final Type validationRepresentationType = new TypeToken<ValidationRepresentation<User>>() {
 	}.getType();
-	private static final Locale LOCALE = LocaleContextHolder.getLocale();
 
 	private static final String validUserId = "someUserId";
 
@@ -79,61 +63,40 @@ class UserControllerTest {
 	private static final User validMinimumUserWithId =
 			User.builder().id(validUserId).lastName("Mustermann").firstName("Max").age(30).login(validLoginWithId).build();
 
-	private static MessageSource messageSource;
-
-	private MockMvc mvc;
-
 	@Mock
 	private UserService userService;
 
 	private static Stream<Arguments> invalidNewUserProvider() {
-		return Stream.of(
-				Arguments.of(validMinimumUser.toBuilder().id(validUserId).build(), buildUVRep(of(buildUVERep("error.id.new")))),
-				Arguments.of(validMinimumUser.toBuilder().firstName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))),
-				Arguments.of(validMinimumUser.toBuilder().firstName("").build(), buildUVRep(of(buildUVERep("error.name.empty"), buildUVERep("error.name.range")))),
-				Arguments.of(validMinimumUser.toBuilder().secondName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))),
-				Arguments.of(validMinimumUser.toBuilder().lastName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))),
-				Arguments.of(validMinimumUser.toBuilder().lastName("").build(), buildUVRep(of(buildUVERep("error.name.empty"), buildUVERep("error.name.range")))),
-				Arguments.of(validMinimumUser.toBuilder().age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))),
-				Arguments.of(validMinimumUser.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))),
-				Arguments.of(validMinimumUser.toBuilder().login(validLogin.toBuilder().mail("keineMail").build()).build(), buildUVRep(of(buildUVERep("error.mail.invalid")))),
-				Arguments.of(validMinimumUser.toBuilder().login(validLogin.toBuilder().password("").build()).build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))),
-				Arguments.of(validMinimumUser.toBuilder().bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))));
+		return Streams.concat(Stream.of(
+				Arguments.of(validMinimumUser.toBuilder().id(validUserId).build(), buildUVRep(of(buildUVERep("error.id.new", "user"))))),
+				commonInvalidUserProvider(validMinimumUser, validLogin));
 	}
 
 	private static Stream<Arguments> invalidExistingUserProvider() {
+		return Streams.concat(Stream.of(
+				Arguments.of(validMinimumUserWithId.toBuilder().id(null).build(), buildUVRep(of((buildUVERep("error.id.existing", "user")))))),
+				commonInvalidUserProvider(validMinimumUserWithId, validLoginWithId));
+	}
+
+	private static Stream<Arguments> commonInvalidUserProvider(User user, Login login) {
 		return Stream.of(
-				Arguments.of(validMinimumUserWithId.toBuilder().id(null).build(), buildUVRep(of((buildUVERep("error.id.existing"))))),
-				Arguments.of(validMinimumUserWithId.toBuilder().firstName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))),
-				Arguments.of(validMinimumUserWithId.toBuilder().firstName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))),
-				Arguments.of(validMinimumUserWithId.toBuilder().secondName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))),
-				Arguments.of(validMinimumUserWithId.toBuilder().lastName("a").build(), buildUVRep(of(buildUVERep("error.name.range")))),
-				Arguments.of(validMinimumUserWithId.toBuilder().lastName("").build(), buildUVRep(of(buildUVERep("error.name.range"), buildUVERep("error.name.empty")))),
-				Arguments.of(validMinimumUserWithId.toBuilder().age(15).build(), buildUVRep(of(buildUVERep("error.age.young")))),
-				Arguments.of(validMinimumUserWithId.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old")))),
-				Arguments.of(validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().mail("keineMail").build()).build(), buildUVRep(of(buildUVERep("error.mail.invalid")))),
-				Arguments.of(validMinimumUserWithId.toBuilder().login(validLoginWithId.toBuilder().password("").build()).build(), buildUVRep(of(buildUVERep("error.password.empty"), buildUVERep("error.password")))),
-				Arguments.of(validMinimumUserWithId.toBuilder().bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid")))));
+				Arguments.of(user.toBuilder().firstName("a").build(), buildUVRep(of(buildUVERep("error.name.range", "user")))),
+				Arguments.of(user.toBuilder().firstName("").build(), buildUVRep(of(buildUVERep("error.name.range", "user"), buildUVERep("error.name.empty", "user")))),
+				Arguments.of(user.toBuilder().secondName("a").build(), buildUVRep(of(buildUVERep("error.name.range", "user")))),
+				Arguments.of(user.toBuilder().lastName("a").build(), buildUVRep(of(buildUVERep("error.name.range", "user")))),
+				Arguments.of(user.toBuilder().lastName("").build(), buildUVRep(of(buildUVERep("error.name.range", "user"), buildUVERep("error.name.empty", "user")))),
+				Arguments.of(user.toBuilder().age(15).build(), buildUVRep(of(buildUVERep("error.age.young", "user")))),
+				Arguments.of(user.toBuilder().age(200).build(), buildUVRep(of(buildUVERep("error.age.old", "user")))),
+				Arguments.of(user.toBuilder().login(login.toBuilder().mail("keineMail").build()).build(), buildUVRep(of(buildUVERep("error.mail.invalid", "user")))),
+				Arguments.of(user.toBuilder().login(login.toBuilder().password("").build()).build(), buildUVRep(of(buildUVERep("error.password.empty", "user"), buildUVERep("error.password", "user")))),
+				Arguments.of(user.toBuilder().bio("<script>alert(\"malicious code\")</script>").build(), buildUVRep(of(buildUVERep("error.bio.invalid", "user")))));
 	}
 
-
-	private static ValidationEntryRepresentation buildUVERep(String msgCode) {
-		initMessageSource();
-		String msg = messageSource.getMessage(msgCode, null, LOCALE);
-		return ValidationEntryRepresentation.builder().attribute("user").errorMessage(msg).build();
-	}
-
-	private static ValidationRepresentation<User> buildUVRep(List<ValidationEntryRepresentation> errors) {
-		return ValidationRepresentation.<User>builder().errors(errors).build();
-	}
-
-	private static void initMessageSource() {
-		if (messageSource == null) {
-			ReloadableResourceBundleMessageSource messageBundle = new ReloadableResourceBundleMessageSource();
-			messageBundle.setBasename("classpath:messages/messages");
-			messageBundle.setDefaultEncoding("UTF-8");
-			messageSource = messageBundle;
-		}
+	private void assertUserRepresentation(String responseBody, User expectedUser) {
+		DocumentContext parsedResponse = JsonPath.parse(responseBody);
+		assertAll("user representation",
+				() -> assertThat(GSON.fromJson(parsedResponse.read("$.content").toString(), User.class), is(expectedUser)),
+				() -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/" + expectedUser.getId())));
 	}
 
 	@BeforeEach
@@ -175,33 +138,6 @@ class UserControllerTest {
 		ValidationRepresentation<User> returnedErrors = GSON.fromJson(result.getResponse().getContentAsString(), validationRepresentationType);
 		assertThat(returnedErrors.getErrors().stream().filter(error -> !errors.getErrors().contains(error)).collect(toList()).size(), is(0));
 		then(userService).shouldHaveZeroInteractions();
-	}
-
-	private void assertUserRepresentation(String responseBody, User expectedUser) {
-		DocumentContext parsedResponse = JsonPath.parse(responseBody);
-		assertAll("user representation",
-				() -> assertThat(parsedResponse.read("$.content.id"), is(expectedUser.getId())),
-				() -> assertThat(parsedResponse.read("$.content.firstName"), is(expectedUser.getFirstName())),
-				() -> assertThat(parsedResponse.read("$.content.secondName"), is(expectedUser.getSecondName())),
-				() -> assertThat(parsedResponse.read("$.content.lastName"), is(expectedUser.getLastName())),
-				() -> assertThat(parsedResponse.read("$.content.age"), is(expectedUser.getAge())),
-				() -> assertThat(parsedResponse.read("$.content.vip"), is(expectedUser.isVip())),
-				() -> assertThat(parsedResponse.read("$.content.login.mail"), is(expectedUser.getLogin().getMail())),
-				() -> assertThat(parsedResponse.read("$.content.login.password"), is(expectedUser.getLogin().getPassword())),
-				() -> assertThat(parsedResponse.read("$.content.bio"), is(expectedUser.getBio())),
-				() -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/user/" + expectedUser.getId())));
-	}
-
-	private ExceptionHandlerExceptionResolver createExceptionResolver() {
-		ExceptionHandlerExceptionResolver exceptionResolver = new ExceptionHandlerExceptionResolver() {
-			protected ServletInvocableHandlerMethod getExceptionHandlerMethod(HandlerMethod handlerMethod, Exception exception) {
-				Method method = new ExceptionHandlerMethodResolver(ControllerValidationHandler.class).resolveMethod(exception);
-				return new ServletInvocableHandlerMethod(new ControllerValidationHandler(messageSource), method);
-			}
-		};
-		exceptionResolver.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
-		exceptionResolver.afterPropertiesSet();
-		return exceptionResolver;
 	}
 
 	@Nested

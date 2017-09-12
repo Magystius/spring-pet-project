@@ -1,13 +1,11 @@
 package de.otto.prototype.controller;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import com.google.common.hash.HashCode;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import de.otto.prototype.controller.handlers.ControllerValidationHandler;
 import de.otto.prototype.controller.representation.ValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.ValidationRepresentation;
 import de.otto.prototype.exceptions.ConcurrentModificationException;
@@ -23,24 +21,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.method.HandlerMethod;
-import org.springframework.web.method.annotation.ExceptionHandlerMethodResolver;
-import org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver;
-import org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod;
 
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -61,12 +47,10 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-class GroupControllerTest {
+class GroupControllerTest extends BaseControllerTest {
 
-	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 	private static final Type validationRepresentationType = new TypeToken<ValidationRepresentation<Group>>() {
 	}.getType();
-	private static final Locale LOCALE = LocaleContextHolder.getLocale();
 
 	private static final String VALID_GROUP_ID = "someGroupId";
 	private static final String VALID_USER_ID = "someNonVipUserId";
@@ -75,68 +59,32 @@ class GroupControllerTest {
 	private static final Group VALID_MINIMUM_GROUP_WITH_ID =
 			VALID_MINIMUM_GROUP.toBuilder().id(VALID_GROUP_ID).build();
 
-	private static MessageSource messageSource;
-
-	private MockMvc mvc;
-
 	@Mock
 	private GroupService groupService;
 
-	private static void initMessageSource() {
-		if (messageSource == null) {
-			ReloadableResourceBundleMessageSource messageBundle = new ReloadableResourceBundleMessageSource();
-			messageBundle.setBasename("classpath:messages/messages");
-			messageBundle.setDefaultEncoding("UTF-8");
-			messageSource = messageBundle;
-		}
-	}
-
 	private static Stream<Arguments> invalidNewGroupProvider() {
-		return Stream.of(
-				Arguments.of(VALID_MINIMUM_GROUP.toBuilder().id(VALID_GROUP_ID).build(), buildUVRep(of(buildUVERep("error.id.new")))),
-				Arguments.of(VALID_MINIMUM_GROUP.toBuilder().name("a").build(), buildUVRep(of(buildUVERep("error.name.range")))),
-				Arguments.of(VALID_MINIMUM_GROUP.toBuilder().name("").build(), buildUVRep(of(buildUVERep("error.name.empty"), buildUVERep("error.name.range")))),
-				Arguments.of(VALID_MINIMUM_GROUP.toBuilder().clearUserIds().build(), buildUVRep(of(buildUVERep("error.userlist.empty")))));
+		return Streams.concat(Stream.of(
+				Arguments.of(VALID_MINIMUM_GROUP.toBuilder().id(VALID_GROUP_ID).build(), buildUVRep(of(buildUVERep("error.id.new", "group"))))),
+				commonInvalidGroupProvider(VALID_MINIMUM_GROUP));
 	}
 
 	private static Stream<Arguments> invalidExistingGroupProvider() {
+		return Streams.concat(Stream.of(
+				Arguments.of(VALID_MINIMUM_GROUP_WITH_ID.toBuilder().id(null).build(), buildUVRep(of(buildUVERep("error.id.existing", "group"))))),
+				commonInvalidGroupProvider(VALID_MINIMUM_GROUP_WITH_ID));
+	}
+
+	private static Stream<Arguments> commonInvalidGroupProvider(Group group) {
 		return Stream.of(
-				Arguments.of(VALID_MINIMUM_GROUP_WITH_ID.toBuilder().id(null).build(), buildUVRep(of(buildUVERep("error.id.existing")))),
-				Arguments.of(VALID_MINIMUM_GROUP_WITH_ID.toBuilder().name("a").build(), buildUVRep(of(buildUVERep("error.name.range")))),
-				Arguments.of(VALID_MINIMUM_GROUP_WITH_ID.toBuilder().name("").build(), buildUVRep(of(buildUVERep("error.name.empty"), buildUVERep("error.name.range")))),
-				Arguments.of(VALID_MINIMUM_GROUP_WITH_ID.toBuilder().clearUserIds().build(), buildUVRep(of(buildUVERep("error.userlist.empty")))));
-	}
-
-	private static ValidationEntryRepresentation buildUVERep(String msgCode) {
-		initMessageSource();
-		String msg = messageSource.getMessage(msgCode, null, LOCALE);
-		return ValidationEntryRepresentation.builder().attribute("group").errorMessage(msg).build();
-	}
-
-	private static ValidationRepresentation<Group> buildUVRep(List<ValidationEntryRepresentation> errors) {
-		return ValidationRepresentation.<Group>builder().errors(errors).build();
-	}
-
-	private ExceptionHandlerExceptionResolver createExceptionResolver() {
-		ExceptionHandlerExceptionResolver exceptionResolver = new ExceptionHandlerExceptionResolver() {
-			protected ServletInvocableHandlerMethod getExceptionHandlerMethod(HandlerMethod handlerMethod, Exception exception) {
-				Method method = new ExceptionHandlerMethodResolver(ControllerValidationHandler.class).resolveMethod(exception);
-				return new ServletInvocableHandlerMethod(new ControllerValidationHandler(messageSource), method);
-			}
-		};
-		exceptionResolver.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
-		exceptionResolver.afterPropertiesSet();
-		return exceptionResolver;
+				Arguments.of(group.toBuilder().name("a").build(), buildUVRep(of(buildUVERep("error.name.range", "group")))),
+				Arguments.of(group.toBuilder().name("").build(), buildUVRep(of(buildUVERep("error.name.empty", "group"), buildUVERep("error.name.range", "group")))),
+				Arguments.of(group.toBuilder().clearUserIds().build(), buildUVRep(of(buildUVERep("error.userlist.empty", "group")))));
 	}
 
 	private void assertGroupRepresentation(String responseBody, Group expectedGroup) {
 		DocumentContext parsedResponse = JsonPath.parse(responseBody);
 		assertAll("group representation",
-				() -> assertThat(parsedResponse.read("$.content.id"), is(expectedGroup.getId())),
-				() -> assertThat(parsedResponse.read("$.content.name"), is(expectedGroup.getName())),
-				() -> assertThat(parsedResponse.read("$.content.vip"), is(expectedGroup.isVip())),
-				() -> assertThat(parsedResponse.read("$.content.userIds.length()"), is(expectedGroup.getUserIds().size())),
-				() -> assertThat(parsedResponse.read("$.content.userIds[0]"), is(expectedGroup.getUserIds().get(0))),
+				() -> assertThat(GSON.fromJson(parsedResponse.read("$.content").toString(), Group.class), is(expectedGroup)),
 				() -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/group/" + expectedGroup.getId())));
 	}
 
