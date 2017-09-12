@@ -1,17 +1,22 @@
 package de.otto.prototype.integration;
 
-
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import de.otto.prototype.controller.representation.ValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.ValidationRepresentation;
+import de.otto.prototype.model.Group;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
 import java.net.URL;
@@ -21,192 +26,201 @@ import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.hash.Hashing.sha256;
 import static de.otto.prototype.controller.UserController.URL_USER;
 import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.springframework.http.HttpHeaders.ETAG;
 import static org.springframework.http.HttpMethod.*;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
-public class UserApiIntegrationTest extends BaseIntegrationTest {
+class UserApiIntegrationTest extends BaseIntegrationTest {
 
-	private static final Login.LoginBuilder login = Login.builder().mail("max.mustermann@otto.de").password("somePassword");
-	private static final User.UserBuilder user = User.builder().lastName("Mustermann").firstName("Max").age(30);
+    private static final Login.LoginBuilder login = Login.builder().mail("max.mustermann@otto.de").password("somePassword");
+    private static final User.UserBuilder user = User.builder().lastName("Mustermann").firstName("Max").age(30);
 
-	@Autowired
-	private UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-	@Before
-	public void setUp() throws Exception {
-		userRepository.deleteAll();
-		messageSource = initMessageSource();
-		this.base = new URL("http://localhost:" + port + URL_USER);
-	}
+    @BeforeEach
+    void setUp() throws Exception {
+        userRepository.deleteAll();
+        messageSource = initMessageSource();
+        this.base = new URL("http://localhost:" + port + URL_USER);
+    }
 
-	private void assertUserRepresentation(String responseBody, User expectedUser) {
-		DocumentContext parsedResponse = JsonPath.parse(responseBody);
-		assertThat(parsedResponse.read("$.content.id"), is(expectedUser.getId()));
-		assertThat(parsedResponse.read("$.content.firstName"), is(expectedUser.getFirstName()));
-		assertThat(parsedResponse.read("$.content.secondName"), is(expectedUser.getSecondName()));
-		assertThat(parsedResponse.read("$.content.lastName"), is(expectedUser.getLastName()));
-		assertThat(parsedResponse.read("$.content.age"), is(expectedUser.getAge()));
-		assertThat(parsedResponse.read("$.content.vip"), is(expectedUser.isVip()));
-		assertThat(parsedResponse.read("$.content.login.mail"), is(expectedUser.getLogin().getMail()));
-		assertThat(parsedResponse.read("$.content.login.password"), is(expectedUser.getLogin().getPassword()));
-		assertThat(parsedResponse.read("$.content.bio"), is(expectedUser.getBio()));
-		assertThat(parsedResponse.read("$._links.self.href"), containsString("/user/" + expectedUser.getId()));
-		assertThat(parsedResponse.read("$._links.start.href"), containsString("/user/" + expectedUser.getId()));
-	}
+    private void assertUserRepresentation(String responseBody, User expectedUser) {
+        DocumentContext parsedResponse = JsonPath.parse(responseBody);
+        assertAll("user representation",
+                () -> assertThat(parsedResponse.read("$.content.id"), is(expectedUser.getId())),
+                () -> assertThat(parsedResponse.read("$.content.firstName"), is(expectedUser.getFirstName())),
+                () -> assertThat(parsedResponse.read("$.content.secondName"), is(expectedUser.getSecondName())),
+                () -> assertThat(parsedResponse.read("$.content.lastName"), is(expectedUser.getLastName())),
+                () -> assertThat(parsedResponse.read("$.content.age"), is(expectedUser.getAge())),
+                () -> assertThat(parsedResponse.read("$.content.vip"), is(expectedUser.isVip())),
+                () -> assertThat(parsedResponse.read("$.content.login.mail"), is(expectedUser.getLogin().getMail())),
+                () -> assertThat(parsedResponse.read("$.content.login.password"), is(expectedUser.getLogin().getPassword())),
+                () -> assertThat(parsedResponse.read("$.content.bio"), is(expectedUser.getBio())),
+                () -> assertThat(parsedResponse.read("$._links.self.href"), containsString("/user/" + expectedUser.getId())),
+                () -> assertThat(parsedResponse.read("$._links.start.href"), containsString("/user/" + expectedUser.getId())));
+    }
 
-	@Test
-	public void shouldReturnListOfUsersOnGetAll() throws Exception {
-		User persistedUser1 = userRepository.save(user.login(login.build()).build());
-		User persistedUser2 = userRepository.save(user.firstName("Heiko").login(login.build()).build());
+    private void assertUserListRepresentation(User persistedUser1, User persistedUser2, ResponseEntity<String> response) {
+        DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+        assertAll("user list representation",
+                () -> assertThat(parsedResponse.read("$._links.self.href"), containsString("/user")),
+                () -> assertThat(parsedResponse.read("$._links.start.href"), containsString("/user/" + persistedUser1.getId())),
+                () -> assertThat(parsedResponse.read("$.total"), is(2)),
+                () -> assertThat(parsedResponse.read("$.content[0]._links.self.href"), containsString("/user/" + persistedUser1.getId())),
+                () -> assertThat(parsedResponse.read("$.content[0].content.id"), is(persistedUser1.getId())),
+                () -> assertThat(parsedResponse.read("$.content[0].content.firstName"), is("Max")),
+                () -> assertThat(parsedResponse.read("$.content[1]._links.self.href"), containsString("/user/" + persistedUser2.getId())),
+                () -> assertThat(parsedResponse.read("$.content[1].content.id"), is(persistedUser2.getId())),
+                () -> assertThat(parsedResponse.read("$.content[1].content.firstName"), is("Heiko")));
+    }
 
-		final String combinedETags = Stream.of(persistedUser1, persistedUser2)
-				.map(User::getETag)
-				.reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
-		final String eTag = sha256().newHasher().putString(combinedETags, UTF_8).hash().toString();
+    @Nested
+    @DisplayName("when the user endpoint is accessed")
+    class happyPath {
+        @Test
+        @DisplayName("should return a list of previously saved users")
+        void shouldReturnListOfUsersOnGetAll() throws Exception {
+            User persistedUser1 = userRepository.save(user.login(login.build()).build());
+            User persistedUser2 = userRepository.save(user.firstName("Heiko").login(login.build()).build());
 
-		final ResponseEntity<String> response = template.exchange(base.toString(),
-				GET,
-				new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+            final String combinedETags = Stream.of(persistedUser1, persistedUser2)
+                    .map(User::getETag)
+                    .reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
+            final String eTag = sha256().newHasher().putString(combinedETags, UTF_8).hash().toString();
 
-		assertThat(response.getStatusCode(), is(OK));
-		DocumentContext parsedResponse = JsonPath.parse(response.getBody());
-		assertThat(parsedResponse.read("$._links.self.href"), containsString("/user"));
-		assertThat(parsedResponse.read("$._links.start.href"), containsString("/user/" + persistedUser1.getId()));
-		assertThat(parsedResponse.read("$.total"), is(2));
-		assertThat(parsedResponse.read("$.content[0]._links.self.href"), containsString("/user/" + persistedUser1.getId()));
-		assertThat(parsedResponse.read("$.content[0].content.id"), is(persistedUser1.getId()));
-		assertThat(parsedResponse.read("$.content[0].content.firstName"), is("Max"));
-		assertThat(parsedResponse.read("$.content[1]._links.self.href"), containsString("/user/" + persistedUser2.getId()));
-		assertThat(parsedResponse.read("$.content[1].content.id"), is(persistedUser2.getId()));
-		assertThat(parsedResponse.read("$.content[1].content.firstName"), is("Heiko"));
-		final String eTagHeader = response.getHeaders().get(ETAG).get(0);
-		assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(eTag));
-	}
+            final ResponseEntity<String> response = template.exchange(base.toString(),
+                    GET,
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
 
-	@Test
-	public void shouldReturnAUserOnGet() throws Exception {
-		final User persistedUser = userRepository.save(user.login(login.build()).build());
+            assertThat(response.getStatusCode(), is(OK));
+            assertUserListRepresentation(persistedUser1, persistedUser2, response);
+            final String eTagHeader = response.getHeaders().get(ETAG).get(0);
+            assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(eTag));
+        }
 
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
-				GET,
-				new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+        @Test
+        @DisplayName("should return a previously saved user")
+        void shouldReturnAUserOnGet() throws Exception {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
 
-		assertThat(response.getStatusCode(), is(OK));
-		final String eTagHeader = response.getHeaders().get(ETAG).get(0);
-		assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(persistedUser.getETag()));
-		assertUserRepresentation(response.getBody(), persistedUser);
-	}
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
+                    GET,
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
 
-	@Test
-	public void shouldCreateAUserOnPost() throws Exception {
-		final ResponseEntity<String> response = template.exchange(base.toString(),
-				POST,
-				new HttpEntity<>(user.login(login.build()).build(),
-						prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+            assertThat(response.getStatusCode(), is(OK));
+            final String eTagHeader = response.getHeaders().get(ETAG).get(0);
+            assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(persistedUser.getETag()));
+            assertUserRepresentation(response.getBody(), persistedUser);
+        }
 
-		assertThat(response.getStatusCode(), is(CREATED));
-		assertThat(response.getHeaders().get("Location").get(0).contains("/user/"), is(true));
-		final User createdUser = userRepository.findById(JsonPath.read(response.getBody(), "$.content.id")).get();
-		assertThat(createdUser, is(notNullValue()));
-		assertUserRepresentation(response.getBody(), createdUser);
-		assertThat(response.getHeaders().get(ETAG).get(0), is(createdUser.getETag()));
-	}
+        @Test
+        @DisplayName("should create a new user and return its locations & eTag header")
+        void shouldCreateAUserOnPost() throws Exception {
+            final ResponseEntity<String> response = template.exchange(base.toString(),
+                    POST,
+                    new HttpEntity<>(user.login(login.build()).build(),
+                            prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
 
-	@Test
-	public void shouldUpdateAUserOnPut() throws Exception {
-		final User userToUpdate = userRepository.save(user.login(login.build()).build());
-		final String persistedId = userToUpdate.getId();
-		final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
+            final User createdUser = userRepository.findById(JsonPath.read(response.getBody(), "$.content.id")).get();
+            assertThat(createdUser, is(notNullValue()));
+            assertUserRepresentation(response.getBody(), createdUser);
+            assertAll("response",
+                    () -> assertThat(response.getStatusCode(), is(CREATED)),
+                    () -> assertThat(response.getHeaders().get("Location").get(0).contains("/user/"), is(true)),
+                    () -> assertThat(response.getHeaders().get(ETAG).get(0), is(createdUser.getETag())));
+        }
 
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
-				PUT,
-				new HttpEntity<>(updatedUser,
-						prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+        @Test
+        @DisplayName("should update a previously saved user")
+        void shouldUpdateAUserOnPut() throws Exception {
+            final User userToUpdate = userRepository.save(user.login(login.build()).build());
+            final String persistedId = userToUpdate.getId();
+            final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
 
-		assertThat(response.getStatusCode(), is(OK));
-		assertUserRepresentation(response.getBody(), updatedUser);
-		assertThat(response.getHeaders().get(ETAG).get(0), is(updatedUser.getETag()));
-	}
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
+                    PUT,
+                    new HttpEntity<>(updatedUser,
+                            prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
 
-	@Test
-	public void shouldUpdateAUserWithETagOnPut() throws Exception {
-		final User userToUpdate = userRepository.save(user.login(login.build()).build());
-		final String persistedId = userToUpdate.getId();
-		final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
+            assertThat(response.getStatusCode(), is(OK));
+            assertUserRepresentation(response.getBody(), updatedUser);
+            assertThat(response.getHeaders().get(ETAG).get(0), is(updatedUser.getETag()));
+        }
 
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
-				PUT,
-				new HttpEntity<>(updatedUser,
-						prepareAuthAndMediaTypeAndIfMatchHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE, userToUpdate.getETag())),
-				String.class);
+        @Test
+        @DisplayName("should update a user when valid eTag is given")
+        void shouldUpdateAUserWithETagOnPut() throws Exception {
+            final User userToUpdate = userRepository.save(user.login(login.build()).build());
+            final String persistedId = userToUpdate.getId();
+            final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
 
-		assertThat(response.getStatusCode(), is(OK));
-		assertUserRepresentation(response.getBody(), updatedUser);
-		assertThat(response.getHeaders().get(ETAG).get(0), is(updatedUser.getETag()));
-	}
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
+                    PUT,
+                    new HttpEntity<>(updatedUser,
+                            prepareAuthAndMediaTypeAndIfMatchHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE, userToUpdate.getETag())),
+                    String.class);
 
-	@Test
-	public void shouldDeleteUserOnDelete() throws Exception {
-		final User persistedUser = userRepository.save(user.login(login.build()).build());
+            assertThat(response.getStatusCode(), is(OK));
+            assertUserRepresentation(response.getBody(), updatedUser);
+            assertThat(response.getHeaders().get(ETAG).get(0), is(updatedUser.getETag()));
+        }
 
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
-				DELETE,
-				new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+        @Test
+        @DisplayName("should delete a previously saved user")
+        void shouldDeleteUserOnDelete() throws Exception {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
 
-		assertThat(response.getStatusCode(), is(NO_CONTENT));
-	}
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
+                    DELETE,
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
 
-	@Test
-	public void shouldReturnBadRequestIfInvalidIdOnGet() throws Exception {
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
-				GET,
-				new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+            assertThat(response.getStatusCode(), is(NO_CONTENT));
+        }
+    }
 
-		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
-		ValidationEntryRepresentation errorEntry = ValidationEntryRepresentation.builder().attribute("getOne.userId").errorMessage(errorMessage).build();
-		ValidationRepresentation<User> returnedErrors = ValidationRepresentation.<User>builder().error(errorEntry).build();
-		assertThat(response.getStatusCode(), is(BAD_REQUEST));
-		assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
-	}
+    @Nested
+    @DisplayName("when the user endpoint is accessed with an invalid id")
+    class invalidId {
+        @ParameterizedTest(name = "{0}")
+        @EnumSource(value = HttpMethod.class, names = {"GET", "DELETE"})
+        @DisplayName("should return a bad request on")
+        void shouldReturnBadRequestIfInvalidId(HttpMethod httpMethod) throws Exception {
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
+                    httpMethod,
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
 
-	@Test
-	public void shouldReturnBadRequestIfInvalidIdOnPut() throws Exception {
-		final User userToUpdate = userRepository.save(user.login(login.build()).build());
-		final String persistedId = userToUpdate.getId();
-		final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
-				PUT,
-				new HttpEntity<>(updatedUser,
-						prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+            assertThat(response.getStatusCode(), is(BAD_REQUEST));
+            DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+            assertThat(parsedResponse.read("$.errors[0].attribute"), endsWith("userId"));
+        }
 
-		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
-		ValidationEntryRepresentation errorEntry = ValidationEntryRepresentation.builder().attribute("update.userId").errorMessage(errorMessage).build();
-		ValidationRepresentation<User> returnedErrors = ValidationRepresentation.<User>builder().error(errorEntry).build();
-		assertThat(response.getStatusCode(), is(BAD_REQUEST));
-		assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
-	}
+        @Test
+        @DisplayName("should return a bad request if invalid id")
+        void shouldReturnBadRequestIfInvalidIdOnPut() throws Exception {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final User updatedUser = persistedUser.toBuilder().firstName("newName").build();
 
-	@Test
-	public void shouldReturnBadRequestIfInvalidIdOnDelete() throws Exception {
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
-				DELETE,
-				new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
+                    PUT,
+                    new HttpEntity<>(updatedUser,
+                            prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
 
-		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
-		ValidationEntryRepresentation errorEntry = ValidationEntryRepresentation.builder().attribute("delete.userId").errorMessage(errorMessage).build();
-		ValidationRepresentation<User> returnedErrors = ValidationRepresentation.<User>builder().error(errorEntry).build();
-		assertThat(response.getStatusCode(), is(BAD_REQUEST));
-		assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
-	}
+            String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
+            ValidationEntryRepresentation errorEntry = ValidationEntryRepresentation.builder().attribute("update.userId").errorMessage(errorMessage).build();
+            ValidationRepresentation<Group> returnedErrors = ValidationRepresentation.<Group>builder().error(errorEntry).build();
+            assertThat(response.getStatusCode(), is(BAD_REQUEST));
+            assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
+        }
+    }
 }

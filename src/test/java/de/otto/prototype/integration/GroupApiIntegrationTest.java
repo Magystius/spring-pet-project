@@ -9,10 +9,15 @@ import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.GroupRepository;
 import de.otto.prototype.repository.UserRepository;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
 import java.net.URL;
@@ -22,195 +27,205 @@ import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.hash.Hashing.sha256;
 import static de.otto.prototype.controller.GroupController.URL_GROUP;
 import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.springframework.http.HttpHeaders.ETAG;
 import static org.springframework.http.HttpMethod.*;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
-public class GroupApiIntegrationTest extends BaseIntegrationTest {
+class GroupApiIntegrationTest extends BaseIntegrationTest {
 
-	private static final Login.LoginBuilder login = Login.builder().mail("max.mustermann@otto.de").password("somePassword");
-	private static final User.UserBuilder user = User.builder().lastName("Mustermann").firstName("Max").age(30);
-	private static final Group.GroupBuilder group = Group.builder().name("someGroupName");
+    private static final Login.LoginBuilder login = Login.builder().mail("max.mustermann@otto.de").password("somePassword");
+    private static final User.UserBuilder user = User.builder().lastName("Mustermann").firstName("Max").age(30);
+    private static final Group.GroupBuilder group = Group.builder().name("someGroupName");
 
-	@Autowired
-	private UserRepository userRepository;
-	@Autowired
-	private GroupRepository groupRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private GroupRepository groupRepository;
 
-	@Before
-	public void setUp() throws Exception {
-		userRepository.deleteAll();
-		groupRepository.deleteAll();
-		messageSource = initMessageSource();
-		this.base = new URL("http://localhost:" + port + URL_GROUP);
-	}
+    @BeforeEach
+    void setUp() throws Exception {
+        userRepository.deleteAll();
+        groupRepository.deleteAll();
+        messageSource = initMessageSource();
+        this.base = new URL("http://localhost:" + port + URL_GROUP);
+    }
 
-	private void assertGroupRepresentation(String responseBody, Group expectedGroup) {
-		DocumentContext parsedResponse = JsonPath.parse(responseBody);
-		assertThat(parsedResponse.read("$.content.id"), is(expectedGroup.getId()));
-		assertThat(parsedResponse.read("$.content.name"), is(expectedGroup.getName()));
-		assertThat(parsedResponse.read("$.content.vip"), is(expectedGroup.isVip()));
-		assertThat(parsedResponse.read("$.content.userIds[0]"), is(expectedGroup.getUserIds().get(0)));
-		assertThat(parsedResponse.read("$._links.self.href"), containsString("/group/" + expectedGroup.getId()));
-		assertThat(parsedResponse.read("$._links.start.href"), containsString("/group/" + expectedGroup.getId()));
-	}
+    private void assertGroupRepresentation(String responseBody, Group expectedGroup) {
+        DocumentContext parsedResponse = JsonPath.parse(responseBody);
+        assertAll("group representation",
+                () -> assertThat(parsedResponse.read("$.content.id"), is(expectedGroup.getId())),
+                () -> assertThat(parsedResponse.read("$.content.name"), is(expectedGroup.getName())),
+                () -> assertThat(parsedResponse.read("$.content.vip"), is(expectedGroup.isVip())),
+                () -> assertThat(parsedResponse.read("$.content.userIds[0]"), is(expectedGroup.getUserIds().get(0))),
+                () -> assertThat(parsedResponse.read("$._links.self.href"), containsString("/group/" + expectedGroup.getId())),
+                () -> assertThat(parsedResponse.read("$._links.start.href"), containsString("/group/" + expectedGroup.getId())));
+    }
 
-	@Test
-	public void shouldReturnListOfGroupsOnGetAll() throws Exception {
-		final User persistedUser = userRepository.save(user.login(login.build()).build());
-		final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
+    private void assertGroupListRepresentation(User persistedUser, Group persistedGroup, ResponseEntity<String> response) {
+        DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+        assertAll("group list representation",
+                () -> assertThat(parsedResponse.read("$._links.self.href"), containsString("/group")),
+                () -> assertThat(parsedResponse.read("$._links.start.href"), containsString("/group/" + persistedGroup.getId())),
+                () -> assertThat(parsedResponse.read("$.total"), is(1)),
+                () -> assertThat(parsedResponse.read("$.content[0]._links.self.href"), containsString("/group/" + persistedGroup.getId())),
+                () -> assertThat(parsedResponse.read("$.content[0].content.id"), is(persistedGroup.getId())),
+                () -> assertThat(parsedResponse.read("$.content[0].content.name"), is("someGroupName")),
+                () -> assertThat(parsedResponse.read("$.content[0].content.userIds[0]"), is(persistedUser.getId())));
+    }
 
-		final String combinedETags = Stream.of(persistedGroup)
-				.map(Group::getETag)
-				.reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
-		final String eTag = sha256().newHasher().putString(combinedETags, UTF_8).hash().toString();
+    @Nested
+    @DisplayName("when the group endpoint is accessed")
+    class happyPath {
+        @Test
+        @DisplayName("should return a list of previously saved groups")
+        void shouldReturnListOfGroupsOnGetAll() throws Exception {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
 
-		final ResponseEntity<String> response = template.exchange(base.toString(),
-				GET,
-				new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+            final String combinedETags = Stream.of(persistedGroup)
+                    .map(Group::getETag)
+                    .reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
+            final String eTag = sha256().newHasher().putString(combinedETags, UTF_8).hash().toString();
 
-		assertThat(response.getStatusCode(), is(OK));
-		DocumentContext parsedResponse = JsonPath.parse(response.getBody());
-		assertThat(parsedResponse.read("$._links.self.href"), containsString("/group"));
-		assertThat(parsedResponse.read("$._links.start.href"), containsString("/group/" + persistedGroup.getId()));
-		assertThat(parsedResponse.read("$.total"), is(1));
-		assertThat(parsedResponse.read("$.content[0]._links.self.href"), containsString("/group/" + persistedGroup.getId()));
-		assertThat(parsedResponse.read("$.content[0].content.id"), is(persistedGroup.getId()));
-		assertThat(parsedResponse.read("$.content[0].content.name"), is("someGroupName"));
-		assertThat(parsedResponse.read("$.content[0].content.userIds[0]"), is(persistedUser.getId()));
-		final String eTagHeader = response.getHeaders().get(ETAG).get(0);
-		assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(eTag));
-	}
+            final ResponseEntity<String> response = template.exchange(base.toString(),
+                    GET,
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
 
-	@Test
-	public void shouldReturnAGroupOnGet() throws Exception {
-		final User persistedUser = userRepository.save(user.login(login.build()).build());
-		final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
+            assertThat(response.getStatusCode(), is(OK));
+            assertGroupListRepresentation(persistedUser, persistedGroup, response);
+            final String eTagHeader = response.getHeaders().get(ETAG).get(0);
+            assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(eTag));
+        }
 
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedGroup.getId(),
-				GET,
-				new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+        @Test
+        @DisplayName("should return a previously saved group")
+        void shouldReturnAGroupOnGet() throws Exception {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
 
-		assertThat(response.getStatusCode(), is(OK));
-		final String eTagHeader = response.getHeaders().get(ETAG).get(0);
-		assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(persistedGroup.getETag()));
-		assertGroupRepresentation(response.getBody(), persistedGroup);
-	}
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedGroup.getId(),
+                    GET,
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
 
-	@Test
-	public void shouldCreateAGroupOnPost() throws Exception {
-		final User persistedUser = userRepository.save(user.login(login.build()).build());
-		final ResponseEntity<String> response = template.exchange(base.toString(),
-				POST,
-				new HttpEntity<>(group.clearUserIds().userId(persistedUser.getId()).build(),
-						prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+            assertThat(response.getStatusCode(), is(OK));
+            final String eTagHeader = response.getHeaders().get(ETAG).get(0);
+            assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(persistedGroup.getETag()));
+            assertGroupRepresentation(response.getBody(), persistedGroup);
+        }
 
-		assertThat(response.getStatusCode(), is(CREATED));
-		assertThat(response.getHeaders().get("Location").get(0).contains("/group/"), is(true));
-		final Group createdGroup = groupRepository.findById(JsonPath.read(response.getBody(), "$.content.id")).get();
-		assertThat(createdGroup, is(notNullValue()));
-		assertGroupRepresentation(response.getBody(), createdGroup);
-		assertThat(response.getHeaders().get(ETAG).get(0), is(createdGroup.getETag()));
-	}
+        @Test
+        @DisplayName("should create a new group and return location & etag header")
+        void shouldCreateAGroupOnPost() throws Exception {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final ResponseEntity<String> response = template.exchange(base.toString(),
+                    POST,
+                    new HttpEntity<>(group.clearUserIds().userId(persistedUser.getId()).build(),
+                            prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
 
-	@Test
-	public void shouldUpdateAGroupOnPut() throws Exception {
-		final User persistedUser = userRepository.save(user.login(login.build()).build());
-		final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
-		final String persistedId = groupToUpdate.getId();
-		final Group updatedGroup = groupToUpdate.toBuilder().name("newName").build();
+            assertThat(response.getStatusCode(), is(CREATED));
+            final Group createdGroup = groupRepository.findById(JsonPath.read(response.getBody(), "$.content.id")).get();
+            assertThat(createdGroup, is(notNullValue()));
+            assertGroupRepresentation(response.getBody(), createdGroup);
+            assertAll("response headers",
+                    () -> assertThat(response.getHeaders().get("Location").get(0).contains("/group/"), is(true)),
+                    () -> assertThat(response.getHeaders().get(ETAG).get(0), is(createdGroup.getETag())));
+        }
 
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
-				PUT,
-				new HttpEntity<>(updatedGroup,
-						prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+        @Test
+        @DisplayName("should update a previously saved group")
+        void shouldUpdateAGroupOnPut() throws Exception {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
+            final String persistedId = groupToUpdate.getId();
+            final Group updatedGroup = groupToUpdate.toBuilder().name("newName").build();
 
-		assertThat(response.getStatusCode(), is(OK));
-		assertGroupRepresentation(response.getBody(), updatedGroup);
-		assertThat(response.getHeaders().get(ETAG).get(0), is(updatedGroup.getETag()));
-	}
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
+                    PUT,
+                    new HttpEntity<>(updatedGroup,
+                            prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
 
-	@Test
-	public void shouldUpdateAGroupWithETagOnPut() throws Exception {
-		final User persistedUser = userRepository.save(user.login(login.build()).build());
-		final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
-		final String persistedId = groupToUpdate.getId();
-		final Group updatedGroup = groupToUpdate.toBuilder().name("newName").build();
+            assertThat(response.getStatusCode(), is(OK));
+            assertGroupRepresentation(response.getBody(), updatedGroup);
+            assertThat(response.getHeaders().get(ETAG).get(0), is(updatedGroup.getETag()));
+        }
 
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
-				PUT,
-				new HttpEntity<>(updatedGroup,
-						prepareAuthAndMediaTypeAndIfMatchHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE, groupToUpdate.getETag())),
-				String.class);
+        @Test
+        @DisplayName("should update a group when an eTag is given")
+        void shouldUpdateAGroupWithETagOnPut() throws Exception {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
+            final String persistedId = groupToUpdate.getId();
+            final Group updatedGroup = groupToUpdate.toBuilder().name("newName").build();
 
-		assertThat(response.getStatusCode(), is(OK));
-		assertGroupRepresentation(response.getBody(), updatedGroup);
-		assertThat(response.getHeaders().get(ETAG).get(0), is(updatedGroup.getETag()));
-	}
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
+                    PUT,
+                    new HttpEntity<>(updatedGroup,
+                            prepareAuthAndMediaTypeAndIfMatchHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE, groupToUpdate.getETag())),
+                    String.class);
 
-	@Test
-	public void shouldDeleteGroupOnDelete() throws Exception {
-		final User persistedUser = userRepository.save(user.login(login.build()).build());
-		final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
+            assertThat(response.getStatusCode(), is(OK));
+            assertGroupRepresentation(response.getBody(), updatedGroup);
+            assertThat(response.getHeaders().get(ETAG).get(0), is(updatedGroup.getETag()));
+        }
 
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedGroup.getId(),
-				DELETE,
-				new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+        @Test
+        @DisplayName("should delete a previously saved group")
+        void shouldDeleteGroupOnDelete() throws Exception {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
 
-		assertThat(response.getStatusCode(), is(NO_CONTENT));
-	}
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedGroup.getId(),
+                    DELETE,
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
 
-	@Test
-	public void shouldReturnBadRequestIfInvalidIdOnGet() throws Exception {
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
-				GET,
-				new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+            assertThat(response.getStatusCode(), is(NO_CONTENT));
+        }
 
-		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
-		ValidationEntryRepresentation errorEntry = ValidationEntryRepresentation.builder().attribute("getOne.groupId").errorMessage(errorMessage).build();
-		ValidationRepresentation<Group> returnedErrors = ValidationRepresentation.<Group>builder().error(errorEntry).build();
-		assertThat(response.getStatusCode(), is(BAD_REQUEST));
-		assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
-	}
+    }
 
-	@Test
-	public void shouldReturnBadRequestIfInvalidIdOnPut() throws Exception {
-		final User persistedUser = userRepository.save(user.login(login.build()).build());
-		final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
-		final Group updatedGroup = groupToUpdate.toBuilder().name("newName").build();
+    @Nested
+    @DisplayName("when the group endpoint is accessed with an invalid id")
+    class invalidId {
+        @ParameterizedTest(name = "{0}")
+        @EnumSource(value = HttpMethod.class, names = {"GET", "DELETE"})
+        @DisplayName("should return a bad request on")
+        void shouldReturnBadRequestIfInvalidId(HttpMethod httpMethod) throws Exception {
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
+                    httpMethod,
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
 
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
-				PUT,
-				new HttpEntity<>(updatedGroup,
-						prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+            assertThat(response.getStatusCode(), is(BAD_REQUEST));
+            DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+            assertThat(parsedResponse.read("$.errors[0].attribute"), endsWith("groupId"));
+        }
 
-		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
-		ValidationEntryRepresentation errorEntry = ValidationEntryRepresentation.builder().attribute("update.groupId").errorMessage(errorMessage).build();
-		ValidationRepresentation<Group> returnedErrors = ValidationRepresentation.<Group>builder().error(errorEntry).build();
-		assertThat(response.getStatusCode(), is(BAD_REQUEST));
-		assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
-	}
+        @Test
+        @DisplayName("should return a bad request if invalid id")
+        void shouldReturnBadRequestIfInvalidIdOnPut() throws Exception {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
+            final Group updatedGroup = groupToUpdate.toBuilder().name("newName").build();
 
-	@Test
-	public void shouldReturnBadRequestIfInvalidIdOnDelete() throws Exception {
-		final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
-				DELETE,
-				new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-				String.class);
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
+                    PUT,
+                    new HttpEntity<>(updatedGroup,
+                            prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
 
-		String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
-		ValidationEntryRepresentation errorEntry = ValidationEntryRepresentation.builder().attribute("delete.groupId").errorMessage(errorMessage).build();
-		ValidationRepresentation<Group> returnedErrors = ValidationRepresentation.<Group>builder().error(errorEntry).build();
-		assertThat(response.getStatusCode(), is(BAD_REQUEST));
-		assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
-	}
+            String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
+            ValidationEntryRepresentation errorEntry = ValidationEntryRepresentation.builder().attribute("update.groupId").errorMessage(errorMessage).build();
+            ValidationRepresentation<Group> returnedErrors = ValidationRepresentation.<Group>builder().error(errorEntry).build();
+            assertThat(response.getStatusCode(), is(BAD_REQUEST));
+            assertThat(response.getBody(), is(GSON.toJson(returnedErrors)));
+        }
+    }
 }
