@@ -7,6 +7,7 @@ import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -31,16 +32,17 @@ public class UserService {
 	}
 
 	public Stream<User> findAll() {
-		return userRepository.streamAll();
+		return userRepository.findAll().toStream();
 	}
 
 	public Optional<User> findOne(final String userId) {
-		return userRepository.findById(userId);
+		return userRepository.findById(Mono.just(userId)).map(Optional::ofNullable).block();
 	}
 
 	public User create(final User user) {
 		validateUser(user);
-		return userRepository.save(user);
+		//TODO: can we use a mono here and why not?
+		return userRepository.save(user).block();
 	}
 
 	public User update(final User user, final String eTag) {
@@ -48,7 +50,8 @@ public class UserService {
 		if (!errors.isEmpty())
 			throw new ConstraintViolationException(errors);
 
-		final User foundUser = userRepository.findById(user.getId())
+		//TODO: make some cool mono -> optional -> if empty throw exceptio
+		final User foundUser = userRepository.findById(user.getId()).switchIfEmpty()
 				.orElseThrow(() -> new NotFoundException("user not found"));
 		if (!isNullOrEmpty(eTag) && !foundUser.getETag().equals(eTag))
 			throw new ConcurrentModificationException("etags aren´t equal");
