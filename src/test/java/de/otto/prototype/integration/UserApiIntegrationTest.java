@@ -43,7 +43,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        userRepository.deleteAll();
+        userRepository.deleteAll().block();
         messageSource = initMessageSource();
         this.base = new URL("http://localhost:" + port + URL_USER);
     }
@@ -72,7 +72,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
         @Test
         @DisplayName("should return a list of previously saved users")
         void shouldReturnListOfUsersOnGetAll() throws Exception {
-            User persistedUser = userRepository.save(user.login(login.build()).build());
+            User persistedUser = userRepository.save(user.login(login.build()).build()).block();
 
             final String combinedETags = Stream.of(persistedUser)
                     .map(User::getETag)
@@ -94,7 +94,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
         @Test
         @DisplayName("should return a previously saved user")
         void shouldReturnAUserOnGet() throws Exception {
-            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final User persistedUser = userRepository.save(user.login(login.build()).build()).block();
 
             final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
                     GET,
@@ -116,7 +116,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
                             prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
-            final User createdUser = userRepository.findById(JsonPath.read(response.getBody(), "$.content.id")).get();
+            final User createdUser = userRepository.findById((String) JsonPath.read(response.getBody(), "$.content.id")).block();
             assertThat(createdUser, is(notNullValue()));
             assertUserRepresentation(response.getBody(), createdUser);
             assertAll("response",
@@ -128,7 +128,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
         @Test
         @DisplayName("should update a previously saved user")
         void shouldUpdateAUserOnPut() throws Exception {
-            final User userToUpdate = userRepository.save(user.login(login.build()).build());
+            final User userToUpdate = userRepository.save(user.login(login.build()).build()).block();
             final String persistedId = userToUpdate.getId();
             final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
 
@@ -146,7 +146,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
         @Test
         @DisplayName("should update a user when valid eTag is given")
         void shouldUpdateAUserWithETagOnPut() throws Exception {
-            final User userToUpdate = userRepository.save(user.login(login.build()).build());
+            final User userToUpdate = userRepository.save(user.login(login.build()).build()).block();
             final String persistedId = userToUpdate.getId();
             final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
 
@@ -164,7 +164,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
         @Test
         @DisplayName("should delete a previously saved user")
         void shouldDeleteUserOnDelete() throws Exception {
-            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final User persistedUser = userRepository.save(user.login(login.build()).build()).block();
 
             final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
                     DELETE,
@@ -195,7 +195,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
         @Test
         @DisplayName("should return a bad request if invalid id")
         void shouldReturnBadRequestIfInvalidIdOnPut() throws Exception {
-            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final User persistedUser = userRepository.save(user.login(login.build()).build()).block();
             final User updatedUser = persistedUser.toBuilder().firstName("newName").build();
 
             final ResponseEntity<String> response = template.exchange(base.toString() + "/0",

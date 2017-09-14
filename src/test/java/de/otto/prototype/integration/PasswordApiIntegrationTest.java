@@ -45,7 +45,7 @@ class PasswordApiIntegrationTest extends BaseIntegrationTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        userRepository.deleteAll();
+        userRepository.deleteAll().block();
         messageSource = initMessageSource();
         this.base = new URL("http://localhost:" + port + URL_RESET_PASSWORD);
     }
@@ -75,7 +75,7 @@ class PasswordApiIntegrationTest extends BaseIntegrationTest {
         @DisplayName("should the location for updated user when password is updated")
         void shouldReturnUpdatedUserOnPost() throws Exception {
             final Login login = Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
-            final User persistedUser = userRepository.save(User.builder().lastName("Mustermann").firstName("Max").age(30).login(login).build());
+            final User persistedUser = userRepository.save(User.builder().lastName("Mustermann").firstName("Max").age(30).login(login).build()).block();
             final String newPassword = "anotherPassword";
 
             final ResponseEntity<String> response = template.exchange(base.toString() + "?userId=" + persistedUser.getId(),
