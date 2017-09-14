@@ -49,7 +49,6 @@ public class UserService {
         if (!errors.isEmpty())
             throw new ConstraintViolationException(errors);
 
-        //TODO: make some cool mono -> optional -> if empty throw exceptio
         final User foundUser =
                 userRepository.findById(Mono.just(userToUpdate.getId())).switchIfEmpty(Mono.error(new NotFoundException("user not found"))).block();
         if (!isNullOrEmpty(eTag) && !foundUser.getETag().equals(eTag))
@@ -61,7 +60,7 @@ public class UserService {
     public void delete(final String userId) {
         userRepository.findById(Mono.just(userId))
                 .switchIfEmpty(Mono.error(new NotFoundException("user not found")))
-                .map(userRepository::delete)
+                .flatMap(userRepository::delete)
                 .block();
     }
 

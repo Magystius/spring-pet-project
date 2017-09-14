@@ -8,6 +8,7 @@ import de.otto.prototype.model.User;
 import de.otto.prototype.repository.GroupRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,31 +31,32 @@ public class GroupService {
 	}
 
 	public Stream<Group> findAll() {
-		return groupRepository.streamAll();
+		return groupRepository.findAll().toStream();
 	}
 
 	public Optional<Group> findOne(final String groupId) {
-		return groupRepository.findById(groupId);
+		return Optional.ofNullable(groupRepository.findById(Mono.just(groupId)).block());
 	}
 
-	public Group create(final Group group) {
-		validateGroup(group, true);
-		return groupRepository.save(group);
+	public Group create(final Group groupToCreate) {
+		validateGroup(groupToCreate, true);
+		return Mono.just(groupToCreate).flatMap(groupRepository::save).block();
 	}
 
-	public Group update(final Group group, final String eTag) {
-		final Group foundGroup = groupRepository.findById(group.getId())
-				.orElseThrow(() -> new NotFoundException("group not found"));
+	public Group update(final Group groupToUpdate, final String eTag) {
+		final Group foundGroup =
+				groupRepository.findById(Mono.just(groupToUpdate.getId())).switchIfEmpty(Mono.error(new NotFoundException("group not found"))).block();
 		if (!isNullOrEmpty(eTag) && !foundGroup.getETag().equals(eTag))
 			throw new ConcurrentModificationException("etags aren´t equal");
-		validateGroup(group, false);
-		return groupRepository.save(group);
+		validateGroup(groupToUpdate, false);
+		return Mono.just(groupToUpdate).flatMap(groupRepository::save).block();
 	}
 
 	public void delete(final String groupId) {
-		if (!groupRepository.findById(groupId).isPresent())
-			throw new NotFoundException("group not found");
-		groupRepository.deleteById(groupId);
+		groupRepository.findById(Mono.just(groupId))
+				.switchIfEmpty(Mono.error(new NotFoundException("group not found")))
+				.flatMap(groupRepository::delete)
+				.block();
 	}
 
 	private void validateGroup(final Group groupToValidate, final Boolean newGroup) {

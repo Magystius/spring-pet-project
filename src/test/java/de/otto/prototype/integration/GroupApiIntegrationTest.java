@@ -48,7 +48,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
     @BeforeEach
     void setUp() throws Exception {
         userRepository.deleteAll().block();
-        groupRepository.deleteAll();
+        groupRepository.deleteAll().block();
         messageSource = initMessageSource();
         this.base = new URL("http://localhost:" + port + URL_GROUP);
     }
@@ -78,7 +78,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
         @DisplayName("should return a list of previously saved groups")
         void shouldReturnListOfGroupsOnGetAll() throws Exception {
             final User persistedUser = userRepository.save(user.login(login.build()).build()).block();
-            final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
+            final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build()).block();
 
             final String combinedETags = Stream.of(persistedGroup)
                     .map(Group::getETag)
@@ -100,7 +100,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
         @DisplayName("should return a previously saved group")
         void shouldReturnAGroupOnGet() throws Exception {
             final User persistedUser = userRepository.save(user.login(login.build()).build()).block();
-            final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
+            final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build()).block();
 
             final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedGroup.getId(),
                     GET,
@@ -124,7 +124,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
                     String.class);
 
             assertThat(response.getStatusCode(), is(CREATED));
-            final Group createdGroup = groupRepository.findById(JsonPath.read(response.getBody(), "$.content.id")).get();
+            final Group createdGroup = groupRepository.findById((String) JsonPath.read(response.getBody(), "$.content.id")).block();
             assertThat(createdGroup, is(notNullValue()));
             assertGroupRepresentation(response.getBody(), createdGroup);
             assertAll("response headers",
@@ -136,7 +136,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
         @DisplayName("should update a previously saved group")
         void shouldUpdateAGroupOnPut() throws Exception {
             final User persistedUser = userRepository.save(user.login(login.build()).build()).block();
-            final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
+            final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build()).block();
             final String persistedId = groupToUpdate.getId();
             final Group updatedGroup = groupToUpdate.toBuilder().name("newName").build();
 
@@ -155,7 +155,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
         @DisplayName("should update a group when an eTag is given")
         void shouldUpdateAGroupWithETagOnPut() throws Exception {
             final User persistedUser = userRepository.save(user.login(login.build()).build()).block();
-            final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
+            final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build()).block();
             final String persistedId = groupToUpdate.getId();
             final Group updatedGroup = groupToUpdate.toBuilder().name("newName").build();
 
@@ -174,7 +174,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
         @DisplayName("should delete a previously saved group")
         void shouldDeleteGroupOnDelete() throws Exception {
             final User persistedUser = userRepository.save(user.login(login.build()).build()).block();
-            final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
+            final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build()).block();
 
             final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedGroup.getId(),
                     DELETE,
@@ -207,7 +207,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
         @DisplayName("should return a bad request if invalid id")
         void shouldReturnBadRequestIfInvalidIdOnPut() throws Exception {
             final User persistedUser = userRepository.save(user.login(login.build()).build()).block();
-            final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
+            final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build()).block();
             final Group updatedGroup = groupToUpdate.toBuilder().name("newName").build();
 
             final ResponseEntity<String> response = template.exchange(base.toString() + "/0",

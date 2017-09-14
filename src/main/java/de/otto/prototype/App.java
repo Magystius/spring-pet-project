@@ -38,7 +38,7 @@ public class App {
             log.info("Users saved:");
             userRepository.findAll().subscribe(user -> log.info(user.toString()));
             log.info("Group saved:");
-            groupRepository.findAll().forEach(group -> log.info(group.toString()));
+            groupRepository.findAll().subscribe(group -> log.info(group.toString()));
 
             log.info("");
         };
