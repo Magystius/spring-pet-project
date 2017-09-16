@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import javax.validation.constraints.Pattern;
 import java.util.List;
@@ -42,7 +43,7 @@ public class UserController extends BaseController {
 
 	@RequestMapping(method = GET, produces = APPLICATION_JSON_VALUE)
 	public ResponseEntity<UserListRepresentation> getAll(final @RequestHeader(value = IF_NONE_MATCH, required = false) String ETagHeader) {
-		final List<User> allUsers = userService.findAll().collect(toList());
+		final List<User> allUsers = userService.findAll().toStream().collect(toList());
 
 		if (allUsers.isEmpty())
 			return noContent().build();
@@ -66,7 +67,7 @@ public class UserController extends BaseController {
 	public ResponseEntity<UserRepresentation> getOne(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid")
 													 @PathVariable("userId") String userId,
 													 final @RequestHeader(value = IF_NONE_MATCH, required = false) String ETagHeader) {
-		final Optional<User> foundUser = userService.findOne(userId);
+		final Optional<User> foundUser = Optional.ofNullable(userService.findOne(Mono.just(userId)).block());
 
 		if (!foundUser.isPresent())
 			return notFound().build();
@@ -78,18 +79,18 @@ public class UserController extends BaseController {
 
 		return new ResponseEntity<>(UserRepresentation.builder()
 				.user(user)
-				.links(determineLinks(user, userService.findAll().collect(toList()), UserController.class))
+				.links(determineLinks(user, userService.findAll().toStream().collect(toList()), UserController.class))
 				.build(), getETagHeader(user), OK);
 	}
 
 	@RequestMapping(method = POST, consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
 	public ResponseEntity<UserRepresentation> create(final @Validated(User.New.class) @RequestBody User user) {
-		final User persistedUser = userService.create(user);
+		final User persistedUser = userService.create(Mono.just(user)).block();
 		return created(linkTo(UserController.class).slash(persistedUser).toUri())
 				.header(ETAG, persistedUser.getETag())
 				.body(UserRepresentation.builder()
 						.user(persistedUser)
-						.links(determineLinks(persistedUser, userService.findAll().collect(toList()), UserController.class))
+						.links(determineLinks(persistedUser, userService.findAll().toStream().collect(toList()), UserController.class))
 						.build());
 	}
 
@@ -99,16 +100,17 @@ public class UserController extends BaseController {
 													 final @RequestHeader(value = IF_MATCH, required = false) String ETagHeader) {
 		if (!userId.equals(user.getId()))
 			return notFound().build();
-		final User updatedUser = userService.update(user, ETagHeader);
+		final Mono<String> eTag = ETagHeader == null ? Mono.empty() : Mono.just(ETagHeader);
+		final User updatedUser = userService.update(Mono.just(user), eTag).block();
 		return new ResponseEntity<>(UserRepresentation.builder()
 				.user(updatedUser)
-				.links(determineLinks(updatedUser, userService.findAll().collect(toList()), UserController.class))
+				.links(determineLinks(updatedUser, userService.findAll().toStream().collect(toList()), UserController.class))
 				.build(), getETagHeader(updatedUser), OK);
 	}
 
 	@RequestMapping(value = "/{userId}", method = DELETE)
 	public ResponseEntity delete(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid") @PathVariable("userId") String userId) {
-		userService.delete(userId);
+		userService.delete(Mono.just(userId)).block();
 		return noContent().build();
 	}
 }

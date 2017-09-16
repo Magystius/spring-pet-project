@@ -6,6 +6,7 @@ import de.otto.prototype.model.Password;
 import de.otto.prototype.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import javax.validation.Validator;
 import java.util.Optional;
@@ -24,15 +25,14 @@ public class PasswordService {
 	}
 
 	public User update(final String userId, final String password) {
-		final Optional<User> userToUpdate;
-
-		if (userId == null || !(userToUpdate = userService.findOne(userId)).isPresent()) {
+		//TODO: optimize this
+		if (userId == null || !Optional.ofNullable(userService.findOne(Mono.just(userId)).block()).isPresent()) {
 			throw new NotFoundException("user not found");
 		}
-
-		Login login = userToUpdate.get().getLogin().toBuilder().password(password).build();
-		final User updatedUser = userToUpdate.get().toBuilder().login(login).build();
-		return userService.update(updatedUser, null);
+		final User userToUpdate = userService.findOne(Mono.just(userId)).block();
+		Login login = userToUpdate.getLogin().toBuilder().password(password).build();
+		final User updatedUser = userToUpdate.toBuilder().login(login).build();
+		return userService.update(Mono.just(updatedUser), Mono.empty()).block();
 	}
 
 	public Boolean checkPassword(final String password) {

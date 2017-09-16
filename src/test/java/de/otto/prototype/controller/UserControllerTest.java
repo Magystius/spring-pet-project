@@ -24,10 +24,12 @@ import org.mockito.Mock;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -39,6 +41,7 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.times;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -146,7 +149,7 @@ class UserControllerTest extends BaseControllerTest {
 		@Test
 		@DisplayName("should return a no content response if no users found")
 		void shouldReturnNotContentNoUsersOnGetAll() throws Exception {
-			given(userService.findAll()).willReturn(Stream.of());
+			given(userService.findAll()).willReturn(Flux.empty());
 
 			mvc.perform(get(URL_USER).accept(MediaType.APPLICATION_JSON))
 					.andExpect(status().isNoContent())
@@ -156,10 +159,10 @@ class UserControllerTest extends BaseControllerTest {
 		@Test
 		@DisplayName("should return the list of all users")
 		void shouldReturnListOfUsersAndETagHeaderOnGetAll() throws Exception {
-			final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
+			final Supplier<Flux<User>> sup = () -> Flux.just(validMinimumUserWithId);
 			given(userService.findAll()).willReturn(sup.get());
 
-			final String combinedETags = sup.get().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
+			final String combinedETags = sup.get().toStream().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
 			final HashCode hashCode = sha256().newHasher().putString(combinedETags, UTF_8).hash();
 
 			MvcResult result = mvc.perform(get(URL_USER)
@@ -173,10 +176,10 @@ class UserControllerTest extends BaseControllerTest {
 		@Test
 		@DisplayName("should return the list of all users and their etag if etag differs")
 		void shouldReturnListOfUsersAndETagHeaderIfDifferentEtagOnGetAll() throws Exception {
-			final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
+			final Supplier<Flux<User>> sup = () -> Flux.just(validMinimumUserWithId);
 			given(userService.findAll()).willReturn(sup.get());
 
-			final String combinedETags = sup.get().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
+			final String combinedETags = sup.get().toStream().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
 			final HashCode hashCode = sha256().newHasher().putString(combinedETags, UTF_8).hash();
 
 			MvcResult result = mvc.perform(get(URL_USER)
@@ -191,10 +194,10 @@ class UserControllerTest extends BaseControllerTest {
 		@Test
 		@DisplayName("should return a not modified response if etags are equal")
 		void shouldReturnNoUserListIfETagMatchesOnGetAll() throws Exception {
-			final Supplier<Stream<User>> sup = () -> Stream.of(validMinimumUserWithId);
+			final Supplier<Flux<User>> sup = () -> Flux.just(validMinimumUserWithId);
 			given(userService.findAll()).willReturn(sup.get());
 
-			final String combinedETags = sup.get().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
+			final String combinedETags = sup.get().toStream().map(User::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
 			final String eTag = sha256().newHasher().putString(combinedETags, UTF_8).hash().toString();
 
 			mvc.perform(get(URL_USER)
@@ -227,8 +230,8 @@ class UserControllerTest extends BaseControllerTest {
 		@Test
 		@DisplayName("should return a user with all possible rel-links")
 		void shouldReturnAllLinksIfGetUserFromMiddlePosition() throws Exception {
-			given(userService.findOne(validUserId)).willReturn(Optional.of(validMinimumUserWithId));
-			given(userService.findAll()).willReturn(Stream.of(validMinimumUserWithId.toBuilder().id("first").build(),
+			given(userService.findOne(argThat(userIdMono -> Objects.equals(userIdMono.block(), validUserId)))).willReturn(Mono.just(validMinimumUserWithId));
+			given(userService.findAll()).willReturn(Flux.just(validMinimumUserWithId.toBuilder().id("first").build(),
 					validMinimumUserWithId.toBuilder().id("someUserId").build(),
 					validMinimumUserWithId.toBuilder().id("last").build()));
 
@@ -248,8 +251,8 @@ class UserControllerTest extends BaseControllerTest {
 		@Test
 		@DisplayName("should return a user with only self and start rel-links")
 		void shouldReturnSelfAndStartIfOnlyOne() throws Exception {
-			given(userService.findOne(validUserId)).willReturn(Optional.of(validMinimumUserWithId));
-			given(userService.findAll()).willReturn(Stream.of(validMinimumUserWithId.toBuilder().id("someUserId").build()));
+			given(userService.findOne(argThat(userIdMono -> Objects.equals(userIdMono.block(), validUserId)))).willReturn(Mono.just(validMinimumUserWithId));
+			given(userService.findAll()).willReturn(Flux.just(validMinimumUserWithId.toBuilder().id("someUserId").build()));
 
 			MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
 					.accept(MediaType.APPLICATION_JSON))
@@ -265,8 +268,8 @@ class UserControllerTest extends BaseControllerTest {
 		@Test
 		@DisplayName("should return a user with prev and start rel-links")
 		void shouldReturnPrevIfLastUser() throws Exception {
-			given(userService.findOne(validUserId)).willReturn(Optional.of(validMinimumUserWithId));
-			given(userService.findAll()).willReturn(Stream.of(validMinimumUserWithId.toBuilder().id("first").build(),
+			given(userService.findOne(argThat(userIdMono -> Objects.equals(userIdMono.block(), validUserId)))).willReturn(Mono.just(validMinimumUserWithId));
+			given(userService.findAll()).willReturn(Flux.just(validMinimumUserWithId.toBuilder().id("first").build(),
 					validMinimumUserWithId.toBuilder().id("someUserId").build()));
 
 			MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
@@ -284,8 +287,8 @@ class UserControllerTest extends BaseControllerTest {
 		@Test
 		@DisplayName("should return a user with next rel-link")
 		void shouldReturnNextIfFirstUser() throws Exception {
-			given(userService.findOne(validUserId)).willReturn(Optional.of(validMinimumUserWithId));
-			given(userService.findAll()).willReturn(Stream.of(validMinimumUserWithId.toBuilder().id("someUserId").build(),
+			given(userService.findOne(argThat(userIdMono -> Objects.equals(userIdMono.block(), validUserId)))).willReturn(Mono.just(validMinimumUserWithId));
+			given(userService.findAll()).willReturn(Flux.just(validMinimumUserWithId.toBuilder().id("someUserId").build(),
 					validMinimumUserWithId.toBuilder().id("last").build()));
 
 			MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
@@ -303,9 +306,9 @@ class UserControllerTest extends BaseControllerTest {
 		@Test
 		@DisplayName("should return a user if eTag is different")
 		void shouldReturnAUserAndETagHeaderIfDifferentETagGetOne() throws Exception {
-			given(userService.findOne(validUserId)).willReturn(Optional.of(validMinimumUserWithId));
+			given(userService.findOne(argThat(userIdMono -> Objects.equals(userIdMono.block(), validUserId)))).willReturn(Mono.just(validMinimumUserWithId));
 			final User user = validMinimumUserWithId.toBuilder().id("someUserId").build();
-			given(userService.findAll()).willReturn(Stream.of(user));
+			given(userService.findAll()).willReturn(Flux.just(user));
 
 			MvcResult result = mvc.perform(get(URL_USER + "/" + validUserId)
 					.accept(MediaType.APPLICATION_JSON)
@@ -321,9 +324,9 @@ class UserControllerTest extends BaseControllerTest {
 		@Test
 		@DisplayName("should return a not modified response if eTag is equal")
 		void shouldReturnNoUserIfETagMatches() throws Exception {
-			given(userService.findOne(validUserId)).willReturn(Optional.of(validMinimumUserWithId));
+			given(userService.findOne(argThat(userIdMono -> Objects.equals(userIdMono.block(), validUserId)))).willReturn(Mono.just(validMinimumUserWithId));
 			final User user = validMinimumUserWithId.toBuilder().id("someUserId").build();
-			given(userService.findAll()).willReturn(Stream.of(user));
+			given(userService.findAll()).willReturn(Flux.just(user));
 
 			mvc.perform(get(URL_USER + "/" + validUserId)
 					.accept(MediaType.APPLICATION_JSON)
@@ -336,7 +339,7 @@ class UserControllerTest extends BaseControllerTest {
 		@Test
 		@DisplayName("should return a not found response if given id is unknown")
 		void shouldReturn404IfUserNotFoundOnGetOne() throws Exception {
-			given(userService.findOne(validUserId)).willReturn(Optional.empty());
+			given(userService.findOne(argThat(userIdMono -> Objects.equals(userIdMono.block(), validUserId)))).willReturn(Mono.empty());
 
 			mvc.perform(get(URL_USER + "/" + validUserId)
 					.accept(MediaType.APPLICATION_JSON))
@@ -352,8 +355,8 @@ class UserControllerTest extends BaseControllerTest {
 		@DisplayName("should update a user and return it with new etag")
 		void shouldUpdateUserAndReturnHimAndHisETagOnPut() throws Exception {
 			final User updatedUser = validMinimumUserWithId.toBuilder().build();
-			given(userService.update(updatedUser, null)).willReturn(updatedUser);
-			given(userService.findAll()).willReturn(Stream.of(updatedUser));
+			given(userService.update(argThat(userMono -> Objects.equals(userMono.block(), updatedUser)), any())).willReturn(Mono.just(updatedUser));
+			given(userService.findAll()).willReturn(Flux.just(updatedUser));
 
 			MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
 					.contentType(APPLICATION_JSON_VALUE)
@@ -370,8 +373,9 @@ class UserControllerTest extends BaseControllerTest {
 		@DisplayName("should update a user if the given eTag matches and return it and a new etag")
 		void shouldUpdateUserWithETagHeaderAndReturnHimAndHisETagOnPut() throws Exception {
 			final String eTag = validMinimumUserWithId.getETag();
-			given(userService.update(validMinimumUserWithId, eTag)).willReturn(validMinimumUserWithId);
-			given(userService.findAll()).willReturn(Stream.of(validMinimumUserWithId));
+			given(userService.update(argThat(userMono -> Objects.equals(userMono.block(), validMinimumUserWithId)),
+					argThat(eTagMono -> Objects.equals(eTagMono.block(), eTag)))).willReturn(Mono.just(validMinimumUserWithId));
+			given(userService.findAll()).willReturn(Flux.just(validMinimumUserWithId));
 
 			MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
 					.contentType(APPLICATION_JSON_VALUE)
@@ -388,7 +392,9 @@ class UserControllerTest extends BaseControllerTest {
 		@Test
 		@DisplayName("should return a precondition failed response if given eTag isn´t equal")
 		void shouldReturnPreconditionFailedIfETagsArentEqual() throws Exception {
-			willThrow(new ConcurrentModificationException("")).given(userService).update(validMinimumUserWithId, "differentEtag");
+			willThrow(new ConcurrentModificationException("")).given(userService).update(
+					argThat(userMono -> Objects.equals(userMono.block(), validMinimumUserWithId)),
+					argThat(eTagMono -> Objects.equals(eTagMono.block(), "differentEtag")));
 
 			mvc.perform(put(URL_USER + "/" + validUserId)
 					.contentType(APPLICATION_JSON_VALUE)
@@ -418,7 +424,7 @@ class UserControllerTest extends BaseControllerTest {
 		@DisplayName("should return a not found response if given id is unknown")
 		void shouldReturnNotFoundIfIdNotFoundOnPut() throws Exception {
 			final User updatedUser = validMinimumUserWithId.toBuilder().build();
-			willThrow(new NotFoundException("id not found")).given(userService).update(updatedUser, null);
+			willThrow(new NotFoundException("id not found")).given(userService).update(argThat(userMono -> Objects.equals(userMono.block(), updatedUser)), any());
 
 			mvc.perform(put(URL_USER + "/" + validUserId)
 					.contentType(APPLICATION_JSON_VALUE)
@@ -434,7 +440,8 @@ class UserControllerTest extends BaseControllerTest {
 			String errorMsg = "only mails by otto allowed";
 			String errorCause = "buasiness";
 			ValidationEntryRepresentation returnedError = ValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
-			willThrow(new InvalidUserException(userToPersist, errorCause, errorMsg)).given(userService).update(userToPersist, null);
+			willThrow(new InvalidUserException(userToPersist, errorCause, errorMsg)).given(userService).update(
+					argThat(userMono -> Objects.equals(userMono.block(), userToPersist)), any());
 
 			final MvcResult result = mvc.perform(put(URL_USER + "/" + validUserId)
 					.contentType(APPLICATION_JSON_VALUE)
@@ -455,8 +462,8 @@ class UserControllerTest extends BaseControllerTest {
 		void shouldCreateUserAndReturnItsLocationAndETagOnPost() throws Exception {
 			final User userToPersist = validMinimumUser;
 			final User persistedUser = userToPersist.toBuilder().id(validUserId).build();
-			given(userService.create(userToPersist)).willReturn(persistedUser);
-			given(userService.findAll()).willReturn(Stream.of(persistedUser));
+			given(userService.create(argThat(userMono -> Objects.equals(userMono.block(), userToPersist)))).willReturn(Mono.just(persistedUser));
+			given(userService.findAll()).willReturn(Flux.just(persistedUser));
 
 			MvcResult result = mvc.perform(post(URL_USER)
 					.contentType(APPLICATION_JSON_VALUE)
@@ -489,7 +496,7 @@ class UserControllerTest extends BaseControllerTest {
 			String errorMsg = "only mails by otto allowed";
 			String errorCause = "business";
 			ValidationEntryRepresentation returnedError = ValidationEntryRepresentation.builder().attribute(errorCause).errorMessage(errorMsg).build();
-			willThrow(new InvalidUserException(userToPersist, errorCause, errorMsg)).given(userService).create(userToPersist);
+			willThrow(new InvalidUserException(userToPersist, errorCause, errorMsg)).given(userService).create(argThat(userMono -> Objects.equals(userMono.block(), userToPersist)));
 
 			final MvcResult result = mvc.perform(post(URL_USER)
 					.contentType(APPLICATION_JSON_VALUE)
@@ -508,16 +515,18 @@ class UserControllerTest extends BaseControllerTest {
 		@Test
 		@DisplayName("should delete the user")
 		void shouldDeleteUserOnDelete() throws Exception {
+			given(userService.delete(argThat(userIdMono -> Objects.equals(userIdMono.block(), validUserId)))).willReturn(Mono.empty());
+
 			mvc.perform(delete(URL_USER + "/" + validUserId))
 					.andExpect(status().isNoContent());
 
-			then(userService).should(times(1)).delete(validUserId);
+			then(userService).should(times(1)).delete(argThat(userIdMono -> Objects.equals(userIdMono.block(), validUserId)));
 		}
 
 		@Test
 		@DisplayName("should return a not found exception if id is unknown")
 		void shouldReturnNotFoundIfUserIdNotFoundOnDelete() throws Exception {
-			willThrow(new NotFoundException("id not found")).given(userService).delete(validUserId);
+			willThrow(new NotFoundException("id not found")).given(userService).delete(argThat(userIdMono -> Objects.equals(userIdMono.block(), validUserId)));
 
 			mvc.perform(delete(URL_USER + "/" + validUserId))
 					.andExpect(status().isNotFound());

@@ -66,7 +66,7 @@ public class GroupService {
 		if (!newGroup && findAll().filter(group -> !group.getId().equals(groupToValidate.getId())).anyMatch(group -> group.getName().equals(groupToValidate.getName())))
 			throw new InvalidGroupException(groupToValidate, "business", "the group name is already taken");
 
-		final List<User> fetchedUsers = userService.findAll().collect(toList());
+		final List<User> fetchedUsers = userService.findAll().toStream().collect(toList());
 		final List<String> fetchedUserIds = fetchedUsers.stream().map(User::getId).collect(toList());
 		if (!fetchedUserIds.containsAll(groupToValidate.getUserIds())) {
 			throw new InvalidGroupException(groupToValidate, "business", "the group contains unknown users");

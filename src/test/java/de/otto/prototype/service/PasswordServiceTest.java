@@ -10,15 +10,16 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+import reactor.core.publisher.Mono;
 
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
+import java.util.Objects;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -51,8 +52,8 @@ class PasswordServiceTest {
             final String password = "somePassword";
             final User userToUpdate = User.builder().id(userId).lastName("Mustermann").login(Login.builder().build()).build();
             final User updatedUser = User.builder().id(userId).lastName("Mustermann").login(Login.builder().password(password).build()).build();
-            given(userService.findOne(userId)).willReturn(of(userToUpdate));
-            given(userService.update(updatedUser, null)).willReturn(updatedUser);
+			given(userService.findOne(argThat(userIdMono -> Objects.equals(userIdMono.block(), userId)))).willReturn(Mono.just(updatedUser));
+			given(userService.update(argThat(userMono -> Objects.equals(userMono.block(), updatedUser)), any())).willReturn(Mono.just(updatedUser));
 
             final User persistedUser = testee.update(userId, password);
             assertAll("user",
@@ -66,20 +67,20 @@ class PasswordServiceTest {
             NotFoundException exception =
                     assertThrows(NotFoundException.class, () -> testee.update(null, "somePassword"));
             assertThat(exception.getMessage(), is("user not found"));
-            then(userService).should(never()).update(any(User.class), anyString());
-        }
+			then(userService).should(never()).update(any(), any());
+		}
 
         @Test
         @DisplayName("should throw a not found exception if the given id can´t be found")
         void shouldReturnNotFoundExceptionIfUnknownId() throws Exception {
             final String userId = "someId";
-            given(userService.findOne(userId)).willReturn(empty());
-            NotFoundException exception =
-                    assertThrows(NotFoundException.class, () -> testee.update(userId, "somePassword"));
+			given(userService.findOne(argThat(userIdMono -> Objects.equals(userIdMono.block(), userId)))).willReturn(Mono.empty());
+			NotFoundException exception =
+					assertThrows(NotFoundException.class, () -> testee.update(userId, "somePassword"));
             assertThat(exception.getMessage(), is("user not found"));
-            then(userService).should(never()).update(any(User.class), anyString());
-        }
-    }
+			then(userService).should(never()).update(any(), any());
+		}
+	}
 
     @Nested
     @DisplayName("when a string is tested if it´s a secure password")

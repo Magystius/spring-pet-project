@@ -67,7 +67,7 @@ class GroupServiceTest {
 	@BeforeEach
 	void setUp() throws Exception {
 		initMocks(this);
-		given(userService.findAll()).willReturn(Stream.of(VALID_MINIMUM_USER_NON_VIP, VALID_MINIMUM_USER_VIP));
+		given(userService.findAll()).willReturn(Flux.just(VALID_MINIMUM_USER_NON_VIP, VALID_MINIMUM_USER_VIP));
 	}
 
 	@Nested
