@@ -15,6 +15,9 @@ import org.mockito.Mock;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import reactor.core.publisher.Mono;
+
+import java.util.Objects;
 
 import static de.otto.prototype.controller.PasswordController.URL_CHECK_PASSWORD;
 import static de.otto.prototype.controller.PasswordController.URL_RESET_PASSWORD;
@@ -22,8 +25,9 @@ import static de.otto.prototype.controller.UserController.URL_USER;
 import static java.lang.Boolean.valueOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
@@ -58,7 +62,8 @@ class PasswordControllerTest {
 			final String id = "someId";
 			final String password = "somePassword";
 			final User updatedUser = User.builder().id(id).firstName("Max").lastName("Mustermann").login(Login.builder().password(password).build()).build();
-			given(passwordService.update(id, password)).willReturn(updatedUser);
+			given(passwordService.update(argThat(userIdMono -> Objects.equals(userIdMono.block(), id)),
+					argThat(passwordMono -> Objects.equals(passwordMono.block(), password)))).willReturn(Mono.just(updatedUser));
 
 			final MvcResult result = mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
 					.contentType(TEXT_PLAIN_VALUE)
@@ -75,7 +80,8 @@ class PasswordControllerTest {
 		void shouldReturnNotFoundIfUnknownId() throws Exception {
 			final String id = "someId";
 			final String password = "somePassword";
-			willThrow(new NotFoundException("id not found")).given(passwordService).update(id, password);
+			given(passwordService.update(argThat(userIdMono -> Objects.equals(userIdMono.block(), id)), any()))
+					.willReturn(Mono.error(new NotFoundException("user not found")));
 
 			mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
 					.contentType(TEXT_PLAIN_VALUE)
@@ -93,7 +99,7 @@ class PasswordControllerTest {
 		@DisplayName("should return result of check")
 		void shouldReturnTrueIfSecurePassword(String checkResult) throws Exception {
 			final String password = "somePassword";
-			given(passwordService.checkPassword(password)).willReturn(valueOf(checkResult));
+			given(passwordService.checkPassword(argThat(passwordMono -> Objects.equals(passwordMono.block(), password)))).willReturn(Mono.just(valueOf(checkResult)));
 
 			mvc.perform(post(URL_CHECK_PASSWORD)
 					.contentType(TEXT_PLAIN_VALUE)

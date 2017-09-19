@@ -8,21 +8,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.util.Objects;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 class PasswordServiceTest {
@@ -42,6 +42,7 @@ class PasswordServiceTest {
         testee = new PasswordService(userService, validatorFactory);
     }
 
+    //TODO: make this test better
     @Nested
     @DisplayName("when a new password for a user id is send")
     class updatePassword {
@@ -50,37 +51,32 @@ class PasswordServiceTest {
         void shouldReturnUpdatedUser() throws Exception {
             final String userId = "someId";
             final String password = "somePassword";
-            final User userToUpdate = User.builder().id(userId).lastName("Mustermann").login(Login.builder().build()).build();
-            final User updatedUser = User.builder().id(userId).lastName("Mustermann").login(Login.builder().password(password).build()).build();
-			given(userService.findOne(argThat(userIdMono -> Objects.equals(userIdMono.block(), userId)))).willReturn(Mono.just(updatedUser));
-			given(userService.update(argThat(userMono -> Objects.equals(userMono.block(), updatedUser)), any())).willReturn(Mono.just(updatedUser));
+            final Mono<String> userIdMono = Mono.just(userId);
+            final Mono<String> passwordMono = Mono.just(password);
+            final Mono<User> userToUpdate = Mono.just(User.builder().id(userId).lastName("Mustermann").login(Login.builder().build()).build());
+            final Mono<User> updatedUser = Mono.just(User.builder().id(userId).lastName("Mustermann").login(Login.builder().password(password).build()).build());
+            given(userService.findOne(userIdMono)).willReturn(userToUpdate);
+            given(userService.update(argThat(userMono -> Objects.equals(userMono.block(), updatedUser.block())), any())).willReturn(updatedUser);
 
-            final User persistedUser = testee.update(userId, password);
-            assertAll("user",
-                    () -> assertThat(persistedUser.getLogin().getPassword(), is(password)),
-                    () -> assertThat(persistedUser.getId(), is(userId)));
+            StepVerifier.create(testee.update(userIdMono, passwordMono))
+                    .assertNext(persistedUser -> assertThat(persistedUser, is(updatedUser.block())))
+                    .verifyComplete();
         }
 
         @Test
-        @DisplayName("should throw a not found exception if id for user is null")
-        void shouldReturnNotFoundExceptionIfIdIsNull() throws Exception {
-            NotFoundException exception =
-                    assertThrows(NotFoundException.class, () -> testee.update(null, "somePassword"));
-            assertThat(exception.getMessage(), is("user not found"));
-			then(userService).should(never()).update(any(), any());
-		}
-
-        @Test
-        @DisplayName("should throw a not found exception if the given id can´t be found")
+        @DisplayName("should throw a not found exception if id for user is unknown")
         void shouldReturnNotFoundExceptionIfUnknownId() throws Exception {
-            final String userId = "someId";
-			given(userService.findOne(argThat(userIdMono -> Objects.equals(userIdMono.block(), userId)))).willReturn(Mono.empty());
-			NotFoundException exception =
-					assertThrows(NotFoundException.class, () -> testee.update(userId, "somePassword"));
-            assertThat(exception.getMessage(), is("user not found"));
-			then(userService).should(never()).update(any(), any());
-		}
-	}
+            final Mono<String> nonExistingUserId = Mono.just("unknownId");
+            given(userService.findOne(nonExistingUserId)).willReturn(Mono.empty());
+
+            testee.update(nonExistingUserId, Mono.empty());
+
+            ArgumentCaptor<Mono> toBeUpdatedUser = ArgumentCaptor.forClass(Mono.class);
+            verify(userService).update(toBeUpdatedUser.capture(), any());
+            final NotFoundException notFoundException = assertThrows(NotFoundException.class, () -> toBeUpdatedUser.getValue().block());
+            assertThat(notFoundException.getMessage(), is("user not found"));
+        }
+    }
 
     @Nested
     @DisplayName("when a string is tested if it´s a secure password")
@@ -88,15 +84,19 @@ class PasswordServiceTest {
         @Test
         @DisplayName("should return false for a unsecure password")
         void shouldReturnFalseForInsecurePassword() {
-            Boolean result = testee.checkPassword("unsec");
-            assertThat(result, is(false));
+            final Mono<String> unsecPW = Mono.just("unsec");
+            StepVerifier.create(testee.checkPassword(unsecPW))
+                    .assertNext(result -> assertThat(result, is(false)))
+                    .verifyComplete();
         }
 
         @Test
         @DisplayName("should return true for a secure password")
         void shouldReturnTrueForSecurePassword() {
-            Boolean result = testee.checkPassword("securePassword");
-            assertThat(result, is(true));
+            final Mono<String> securePW = Mono.just("securePassword");
+            StepVerifier.create(testee.checkPassword(securePW))
+                    .assertNext(result -> assertThat(result, is(true)))
+                    .verifyComplete();
         }
     }
 }

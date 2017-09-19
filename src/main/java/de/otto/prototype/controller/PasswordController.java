@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 import javax.validation.constraints.Pattern;
 
@@ -42,13 +43,13 @@ public class PasswordController {
                                              final @SecurePassword(pattern = ".*")
                                              @RequestBody
                                                      String password) {
-        final User updatedUser = passwordService.update(id, password);
+        final User updatedUser = passwordService.update(Mono.just(id), Mono.just(password)).block();
         return noContent().header("Location", linkTo(UserController.class).slash(updatedUser).toString()).build();
     }
 
     @RequestMapping(value = URL_CHECK_PASSWORD, method = POST, consumes = TEXT_PLAIN_VALUE, produces = TEXT_PLAIN_VALUE)
     public ResponseEntity<String> checkPassword(final @RequestBody String password) {
-        final Boolean validationResult = passwordService.checkPassword(password);
+        final Boolean validationResult = passwordService.checkPassword(Mono.just(password)).block();
         return ok(Boolean.toString(validationResult));
     }
 
