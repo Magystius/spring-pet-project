@@ -1,4 +1,4 @@
-package de.otto.prototype.controller.representation.user;
+package de.otto.prototype.controller.representation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.otto.prototype.controller.UserController;

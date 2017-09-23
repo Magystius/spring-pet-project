@@ -1,8 +1,8 @@
 package de.otto.prototype.controller;
 
-import de.otto.prototype.controller.representation.user.UserListEntryRepresentation;
-import de.otto.prototype.controller.representation.user.UserListRepresentation;
-import de.otto.prototype.controller.representation.user.UserRepresentation;
+import de.otto.prototype.controller.representation.UserListEntryRepresentation;
+import de.otto.prototype.controller.representation.UserListRepresentation;
+import de.otto.prototype.controller.representation.UserRepresentation;
 import de.otto.prototype.model.User;
 import de.otto.prototype.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
