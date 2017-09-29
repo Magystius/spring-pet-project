@@ -1,12 +1,10 @@
 package de.otto.prototype.exceptions;
 
 import de.otto.prototype.model.Group;
-import lombok.Getter;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
-@Getter
 @ResponseStatus(value = BAD_REQUEST)
 public class InvalidGroupException extends RuntimeException {
 
@@ -19,5 +17,17 @@ public class InvalidGroupException extends RuntimeException {
 		this.group = group;
 		this.errorCause = errorCause;
 		this.errorMsg = errorMsg;
+	}
+
+	public Group getGroup() {
+		return this.group;
+	}
+
+	public String getErrorCause() {
+		return this.errorCause;
+	}
+
+	public String getErrorMsg() {
+		return this.errorMsg;
 	}
 }
