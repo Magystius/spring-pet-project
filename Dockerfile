@@ -1,6 +1,6 @@
 FROM openjdk:9-jre
 
-MAINTAINER Tim Dekarz (tim.dekarz@gmx.net)
+MAINTAINER Tim Dekarz
 LABEL version="1.0"
 LABEL service="spring-pet-project"
 
