@@ -4,7 +4,7 @@ LABEL version="1.0"
 LABEL service="spring-pet-project"
 
 #TODO: this has be get better
-USER java-runner
+USER root
 
 CMD mkdir /root/.embeddedmongo && \
     mkdir /root/.embeddedmongo/extracted && \
