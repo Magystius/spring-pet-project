@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 
 import java.net.URL;
@@ -14,8 +13,7 @@ import java.net.URL;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.http.HttpMethod.GET;
-import static org.springframework.http.HttpStatus.OK;
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import static org.springframework.http.HttpStatus.*;
 
 class SecurityIntegrationTest extends BaseIntegrationTest {
 
@@ -26,7 +24,7 @@ class SecurityIntegrationTest extends BaseIntegrationTest {
 
     @Test
     @DisplayName("should allow access to index route")
-    void shouldAllowAccessOnIndexRoute() throws Exception {
+    void shouldAllowAccessOnIndexRoute() {
         final ResponseEntity<String> response = template.exchange(base.toString(), GET, null, String.class);
 
         assertThat(response.getStatusCode(), is(OK));
@@ -34,24 +32,44 @@ class SecurityIntegrationTest extends BaseIntegrationTest {
 
     @Nested
     @DisplayName("when a restricted url is accessed")
-    class restrictedUrls {
+    class forbidAccess {
         @Test
         @DisplayName("should forbid access if wrong user")
-        void shouldForbidAccessIfWrongUser() throws Exception {
-            final ResponseEntity<String> response = template.exchange(base.toString(),
-                    GET,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("unknown", "unknown", null, null)),
-                    String.class);
+        void shouldForbidAccessIfUnknownAuthentification() {
+            final ResponseEntity<String> response = template
+                    .withBasicAuth("unknown", "unknown")
+                    .getForEntity(base.toString(), String.class);
 
             assertThat(response.getStatusCode(), is(UNAUTHORIZED));
         }
 
         @ParameterizedTest(name = "url = {0}")
-        @ValueSource(strings = {"/user", "/user/1234", "/group", "/group/1234"})
-        @DisplayName("should forbid access if no user for ")
-        void shouldForbidAccessIfNoUserForUser(String url) throws Exception {
-            final ResponseEntity<String> responseForBaseUrl = template.exchange(base.toString() + url, GET, null, String.class);
+        @ValueSource(strings = {"/user", "/user/1234", "/group", "/group/1234", "/resetpassword",
+                "/internal", "/internal/health", "/internal/status", "/internal/info", "/internal/metrics", "/internal/metrics/exampleMetric", "/internal/trace"})
+        @DisplayName("should forbid access if no authentification is send for ")
+        void shouldForbidAccessIfNotAuthenticated(String url) {
+            final ResponseEntity<String> responseForBaseUrl = template.getForEntity(url, String.class);
             assertThat(responseForBaseUrl.getStatusCode(), is(UNAUTHORIZED));
+        }
+
+        @ParameterizedTest(name = "url = {0}")
+        @ValueSource(strings = {"/user", "/user/1234", "/group", "/group/1234", "/resetpassword"})
+        @DisplayName("should forbid access if monitoring user tries to access  ")
+        void shouldForbidAccessIfMonitoringAccessBusinessEndpoints(String url) {
+            final ResponseEntity<String> responseForBaseUrl = template
+                    .withBasicAuth("monitoring", "monitoring")
+                    .getForEntity(url, String.class);
+            assertThat(responseForBaseUrl.getStatusCode(), is(FORBIDDEN));
+        }
+
+        @ParameterizedTest(name = "url = {0}")
+        @ValueSource(strings = {"/internal", "/internal/health", "/internal/status", "/internal/info", "/internal/metrics", "/internal/metrics/exampleMetric", "/internal/trace"})
+        @DisplayName("should forbid access if user user tries to access  ")
+        void shouldForbidAccessIfUserAccessMonitoringEndpoints(String url) {
+            final ResponseEntity<String> responseForBaseUrl = template
+                    .withBasicAuth("user", "user")
+                    .getForEntity(url, String.class);
+            assertThat(responseForBaseUrl.getStatusCode(), is(FORBIDDEN));
         }
     }
 }

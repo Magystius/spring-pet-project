@@ -71,7 +71,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
     class happyPath {
         @Test
         @DisplayName("should return a list of previously saved users")
-        void shouldReturnListOfUsersOnGetAll() throws Exception {
+        void shouldReturnListOfUsersOnGetAll() {
             User persistedUser = userRepository.save(user.login(login.build()).build());
 
             final String combinedETags = Stream.of(persistedUser)
@@ -81,7 +81,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
 
             final ResponseEntity<String> response = template.exchange(base.toString(),
                     GET,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
             assertThat(response.getStatusCode(), is(OK));
@@ -93,12 +93,12 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("should return a previously saved user")
-        void shouldReturnAUserOnGet() throws Exception {
+        void shouldReturnAUserOnGet() {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
 
             final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
                     GET,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
             assertThat(response.getStatusCode(), is(OK));
@@ -109,11 +109,11 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("should create a new user and return its locations & eTag header")
-        void shouldCreateAUserOnPost() throws Exception {
+        void shouldCreateAUserOnPost() {
             final ResponseEntity<String> response = template.exchange(base.toString(),
                     POST,
                     new HttpEntity<>(user.login(login.build()).build(),
-                            prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                            prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
             final User createdUser = userRepository.findById(JsonPath.read(response.getBody(), "$.content.id")).get();
@@ -127,7 +127,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("should update a previously saved user")
-        void shouldUpdateAUserOnPut() throws Exception {
+        void shouldUpdateAUserOnPut() {
             final User userToUpdate = userRepository.save(user.login(login.build()).build());
             final String persistedId = userToUpdate.getId();
             final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
@@ -135,7 +135,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
             final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
                     PUT,
                     new HttpEntity<>(updatedUser,
-                            prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                            prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
             assertThat(response.getStatusCode(), is(OK));
@@ -145,7 +145,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("should update a user when valid eTag is given")
-        void shouldUpdateAUserWithETagOnPut() throws Exception {
+        void shouldUpdateAUserWithETagOnPut() {
             final User userToUpdate = userRepository.save(user.login(login.build()).build());
             final String persistedId = userToUpdate.getId();
             final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
@@ -163,12 +163,12 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("should delete a previously saved user")
-        void shouldDeleteUserOnDelete() throws Exception {
+        void shouldDeleteUserOnDelete() {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
 
             final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
                     DELETE,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
             assertThat(response.getStatusCode(), is(NO_CONTENT));
@@ -181,10 +181,10 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
         @ParameterizedTest(name = "{0}")
         @EnumSource(value = HttpMethod.class, names = {"GET", "DELETE"})
         @DisplayName("should return a bad request on")
-        void shouldReturnBadRequestIfInvalidId(HttpMethod httpMethod) throws Exception {
+        void shouldReturnBadRequestIfInvalidId(HttpMethod httpMethod) {
             final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
                     httpMethod,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
             assertThat(response.getStatusCode(), is(BAD_REQUEST));
@@ -194,14 +194,14 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("should return a bad request if invalid id")
-        void shouldReturnBadRequestIfInvalidIdOnPut() throws Exception {
+        void shouldReturnBadRequestIfInvalidIdOnPut() {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
             final User updatedUser = persistedUser.toBuilder().firstName("newName").build();
 
             final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
                     PUT,
                     new HttpEntity<>(updatedUser,
-                            prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                            prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
             String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);

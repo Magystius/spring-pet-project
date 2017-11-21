@@ -59,9 +59,9 @@ public abstract class BaseIntegrationTest {
         }};
     }
 
-    HttpHeaders prepareAuthAndMediaTypeHeaders(String user, String password, String accept, String contentType) {
+    HttpHeaders prepareAuthAndMediaTypeHeaders(String accept, String contentType) {
         return new HttpHeaders() {{
-            String auth = user + ":" + password;
+            String auth = "admin" + ":" + "admin";
             byte[] encodedAuth = Base64.encodeBase64(
                     auth.getBytes(Charset.forName("US-ASCII")));
             String authHeader = "Basic " + new String(encodedAuth);

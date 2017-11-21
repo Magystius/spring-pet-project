@@ -53,12 +53,12 @@ class PasswordApiIntegrationTest extends BaseIntegrationTest {
     @ParameterizedTest(name = "{0}: userId={1}, password={2}, error={4}")
     @MethodSource("invalidRequestProvider")
     @DisplayName("should return a bad request if")
-    void shouldReturnBadRequestForInvalidParameterGiven(HttpMethod httpMethod, String userId, String password, String error, String attribute) throws Exception {
+    void shouldReturnBadRequestForInvalidParameterGiven(HttpMethod httpMethod, String userId, String password, String error, String attribute) {
 
         final ResponseEntity<String> response = template.exchange(base.toString() + "?userId=" + userId,
                 httpMethod,
                 new HttpEntity<>(password,
-                        prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE)),
+                        prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE)),
                 String.class);
 
         String errorMessage = messageSource.getMessage(error, null, LOCALE);
@@ -73,7 +73,7 @@ class PasswordApiIntegrationTest extends BaseIntegrationTest {
     class happyPath {
         @Test
         @DisplayName("should the location for updated user when password is updated")
-        void shouldReturnUpdatedUserOnPost() throws Exception {
+        void shouldReturnUpdatedUserOnPost() {
             final Login login = Login.builder().mail("max.mustermann@otto.de").password("somePassword").build();
             final User persistedUser = userRepository.save(User.builder().lastName("Mustermann").firstName("Max").age(30).login(login).build());
             final String newPassword = "anotherPassword";
@@ -81,7 +81,7 @@ class PasswordApiIntegrationTest extends BaseIntegrationTest {
             final ResponseEntity<String> response = template.exchange(base.toString() + "?userId=" + persistedUser.getId(),
                     POST,
                     new HttpEntity<>(newPassword,
-                            prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE)),
+                            prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE)),
                     String.class);
 
             assertAll("response",
@@ -91,7 +91,7 @@ class PasswordApiIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("should return true if a secure password is checked")
-        void shouldReturnTrueForSecurePasswordOnPost() throws Exception {
+        void shouldReturnTrueForSecurePasswordOnPost() {
             final ResponseEntity<String> response = template.exchange("http://localhost:" + port + "/checkpassword",
                     POST,
                     new HttpEntity<>("securePassword", prepareMediaTypeHeaders(TEXT_PLAIN_VALUE, TEXT_PLAIN_VALUE)),

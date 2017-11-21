@@ -76,7 +76,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
     class happyPath {
         @Test
         @DisplayName("should return a list of previously saved groups")
-        void shouldReturnListOfGroupsOnGetAll() throws Exception {
+        void shouldReturnListOfGroupsOnGetAll() {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
             final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
 
@@ -87,7 +87,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
 
             final ResponseEntity<String> response = template.exchange(base.toString(),
                     GET,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
             assertThat(response.getStatusCode(), is(OK));
@@ -98,13 +98,13 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("should return a previously saved group")
-        void shouldReturnAGroupOnGet() throws Exception {
+        void shouldReturnAGroupOnGet() {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
             final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
 
             final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedGroup.getId(),
                     GET,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
             assertThat(response.getStatusCode(), is(OK));
@@ -115,12 +115,12 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("should create a new group and return location & etag header")
-        void shouldCreateAGroupOnPost() throws Exception {
+        void shouldCreateAGroupOnPost() {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
             final ResponseEntity<String> response = template.exchange(base.toString(),
                     POST,
                     new HttpEntity<>(group.clearUserIds().userId(persistedUser.getId()).build(),
-                            prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                            prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
             assertThat(response.getStatusCode(), is(CREATED));
@@ -134,7 +134,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("should update a previously saved group")
-        void shouldUpdateAGroupOnPut() throws Exception {
+        void shouldUpdateAGroupOnPut() {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
             final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
             final String persistedId = groupToUpdate.getId();
@@ -143,7 +143,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
             final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
                     PUT,
                     new HttpEntity<>(updatedGroup,
-                            prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                            prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
             assertThat(response.getStatusCode(), is(OK));
@@ -153,7 +153,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("should update a group when an eTag is given")
-        void shouldUpdateAGroupWithETagOnPut() throws Exception {
+        void shouldUpdateAGroupWithETagOnPut() {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
             final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
             final String persistedId = groupToUpdate.getId();
@@ -172,13 +172,13 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("should delete a previously saved group")
-        void shouldDeleteGroupOnDelete() throws Exception {
+        void shouldDeleteGroupOnDelete() {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
             final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
 
             final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedGroup.getId(),
                     DELETE,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
             assertThat(response.getStatusCode(), is(NO_CONTENT));
@@ -192,10 +192,10 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
         @ParameterizedTest(name = "{0}")
         @EnumSource(value = HttpMethod.class, names = {"GET", "DELETE"})
         @DisplayName("should return a bad request on")
-        void shouldReturnBadRequestIfInvalidId(HttpMethod httpMethod) throws Exception {
+        void shouldReturnBadRequestIfInvalidId(HttpMethod httpMethod) {
             final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
                     httpMethod,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
             assertThat(response.getStatusCode(), is(BAD_REQUEST));
@@ -205,7 +205,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("should return a bad request if invalid id")
-        void shouldReturnBadRequestIfInvalidIdOnPut() throws Exception {
+        void shouldReturnBadRequestIfInvalidIdOnPut() {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
             final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
             final Group updatedGroup = groupToUpdate.toBuilder().name("newName").build();
@@ -213,7 +213,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
             final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
                     PUT,
                     new HttpEntity<>(updatedGroup,
-                            prepareAuthAndMediaTypeHeaders("admin", "admin", APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                            prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
 
             String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);

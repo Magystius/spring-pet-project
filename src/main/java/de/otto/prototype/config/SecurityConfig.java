@@ -19,7 +19,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				.authorizeRequests()
 				.antMatchers("/").permitAll()
 				.antMatchers("/user/**", "/group/**", "/resetpassword").hasAnyRole("ADMIN", "USER")
-				.antMatchers("/application/**").hasAnyRole("ADMIN", "MONITORING")
+                .antMatchers("/internal/**").hasAnyRole("ADMIN", "MONITORING")
 				.and()
 				.httpBasic()
 				.realmName("user")
