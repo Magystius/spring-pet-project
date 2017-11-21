@@ -48,28 +48,28 @@ class SecurityIntegrationTest extends BaseIntegrationTest {
                 "/internal", "/internal/health", "/internal/status", "/internal/info", "/internal/metrics", "/internal/metrics/exampleMetric", "/internal/trace"})
         @DisplayName("should forbid access if no authentification is send for ")
         void shouldForbidAccessIfNotAuthenticated(String url) {
-            final ResponseEntity<String> responseForBaseUrl = template.getForEntity(url, String.class);
-            assertThat(responseForBaseUrl.getStatusCode(), is(UNAUTHORIZED));
+            final ResponseEntity<String> response = template.getForEntity(url, String.class);
+            assertThat(response.getStatusCode(), is(UNAUTHORIZED));
         }
 
         @ParameterizedTest(name = "url = {0}")
         @ValueSource(strings = {"/user", "/user/1234", "/group", "/group/1234", "/resetpassword"})
         @DisplayName("should forbid access if monitoring user tries to access  ")
         void shouldForbidAccessIfMonitoringAccessBusinessEndpoints(String url) {
-            final ResponseEntity<String> responseForBaseUrl = template
+            final ResponseEntity<String> response = template
                     .withBasicAuth("monitoring", "monitoring")
                     .getForEntity(url, String.class);
-            assertThat(responseForBaseUrl.getStatusCode(), is(FORBIDDEN));
+            assertThat(response.getStatusCode(), is(FORBIDDEN));
         }
 
         @ParameterizedTest(name = "url = {0}")
         @ValueSource(strings = {"/internal", "/internal/health", "/internal/status", "/internal/info", "/internal/metrics", "/internal/metrics/exampleMetric", "/internal/trace"})
         @DisplayName("should forbid access if user user tries to access  ")
         void shouldForbidAccessIfUserAccessMonitoringEndpoints(String url) {
-            final ResponseEntity<String> responseForBaseUrl = template
+            final ResponseEntity<String> response = template
                     .withBasicAuth("user", "user")
                     .getForEntity(url, String.class);
-            assertThat(responseForBaseUrl.getStatusCode(), is(FORBIDDEN));
+            assertThat(response.getStatusCode(), is(FORBIDDEN));
         }
     }
 }

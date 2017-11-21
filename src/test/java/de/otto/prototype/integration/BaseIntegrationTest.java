@@ -12,6 +12,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.net.URL;
@@ -22,6 +23,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@TestPropertySource(locations="classpath:application.test.properties")
 public abstract class BaseIntegrationTest {
 
     static final Gson GSON = new GsonBuilder().serializeNulls().create();
@@ -30,6 +32,7 @@ public abstract class BaseIntegrationTest {
 
     @Value("${local.server.port}")
     protected int port;
+
     @Autowired
     protected TestRestTemplate template;
     URL base;
