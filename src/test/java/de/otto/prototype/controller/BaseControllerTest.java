@@ -6,6 +6,8 @@ import de.otto.prototype.controller.handlers.ControllerValidationHandler;
 import de.otto.prototype.controller.representation.ValidationEntryRepresentation;
 import de.otto.prototype.controller.representation.ValidationRepresentation;
 import de.otto.prototype.model.User;
+import org.mockito.Mock;
+import org.springframework.boot.actuate.metrics.web.servlet.WebMvcMetrics;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
@@ -26,6 +28,9 @@ abstract class BaseControllerTest {
 	private static final Locale LOCALE = LocaleContextHolder.getLocale();
 
 	private static MessageSource messageSource;
+
+	@Mock
+	private WebMvcMetrics metrics;
 
 	MockMvc mvc;
 
@@ -52,7 +57,7 @@ abstract class BaseControllerTest {
 		ExceptionHandlerExceptionResolver exceptionResolver = new ExceptionHandlerExceptionResolver() {
 			protected ServletInvocableHandlerMethod getExceptionHandlerMethod(HandlerMethod handlerMethod, Exception exception) {
 				Method method = new ExceptionHandlerMethodResolver(ControllerValidationHandler.class).resolveMethod(exception);
-				return new ServletInvocableHandlerMethod(new ControllerValidationHandler(messageSource), method);
+				return new ServletInvocableHandlerMethod(new ControllerValidationHandler(messageSource, metrics), method);
 			}
 		};
 		exceptionResolver.getMessageConverters().add(new MappingJackson2HttpMessageConverter());

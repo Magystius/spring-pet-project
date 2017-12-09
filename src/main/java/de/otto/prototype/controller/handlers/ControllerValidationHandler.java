@@ -10,6 +10,7 @@ import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.Group;
 import de.otto.prototype.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.metrics.web.servlet.WebMvcMetrics;
 import org.springframework.context.MessageSource;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -30,73 +31,84 @@ import static org.springframework.http.HttpStatus.*;
 @ControllerAdvice
 public class ControllerValidationHandler {
 
-	private static final Locale LOCALE = LocaleContextHolder.getLocale();
+    private static final Locale LOCALE = LocaleContextHolder.getLocale();
 
-	private final MessageSource msgSource;
+    private final MessageSource msgSource;
 
-	@Autowired
-	public ControllerValidationHandler(final MessageSource msgSource) {
-		this.msgSource = msgSource;
-	}
+    private final WebMvcMetrics metrics;
 
-	@ExceptionHandler(ConstraintViolationException.class)
-	@ResponseStatus(BAD_REQUEST)
-	@ResponseBody
-	public ValidationRepresentation processValidationError(final ConstraintViolationException exception) {
-		ImmutableList<ValidationEntryRepresentation> errors = exception.getConstraintViolations().stream()
-				.map(constraintViolation -> getValidationEntryRepresentation(constraintViolation.getMessage(), constraintViolation.getPropertyPath().toString()))
-				.collect(collectingAndThen(toList(), ImmutableList::copyOf));
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+    @Autowired
+    public ControllerValidationHandler(final MessageSource msgSource, final WebMvcMetrics metrics) {
+        this.msgSource = msgSource;
+        this.metrics = metrics;
+    }
 
-		return ValidationRepresentation.builder().errors(errors).build();
-	}
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(BAD_REQUEST)
+    @ResponseBody
+    public ValidationRepresentation processValidationError(final ConstraintViolationException exception) {
+        metrics.tagWithException(exception);
 
-	@ExceptionHandler(MethodArgumentNotValidException.class)
-	@ResponseStatus(BAD_REQUEST)
-	@ResponseBody
-	public ValidationRepresentation processValidationError(final MethodArgumentNotValidException exception) {
-		ImmutableList<ValidationEntryRepresentation> errors = exception.getBindingResult().getAllErrors().stream()
-				.map(objectError -> getValidationEntryRepresentation(objectError.getDefaultMessage(), objectError.getObjectName()))
-				.collect(collectingAndThen(toList(), ImmutableList::copyOf));
+        ImmutableList<ValidationEntryRepresentation> errors = exception.getConstraintViolations().stream()
+                .map(constraintViolation -> getValidationEntryRepresentation(constraintViolation.getMessage(), constraintViolation.getPropertyPath().toString()))
+                .collect(collectingAndThen(toList(), ImmutableList::copyOf));
 
-		return ValidationRepresentation.builder().errors(errors).build();
-	}
+        return ValidationRepresentation.builder().errors(errors).build();
+    }
 
-	@ExceptionHandler(InvalidUserException.class)
-	@ResponseStatus(BAD_REQUEST)
-	@ResponseBody
-	public ValidationRepresentation<User> processValidationError(final InvalidUserException exception) {
-		ValidationEntryRepresentation error = ValidationEntryRepresentation.builder().attribute(exception.getErrorCause()).errorMessage(exception.getErrorMsg()).build();
-		return ValidationRepresentation.<User>builder().error(error).build();
-	}
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(BAD_REQUEST)
+    @ResponseBody
+    public ValidationRepresentation processValidationError(final MethodArgumentNotValidException exception) {
+        metrics.tagWithException(exception);
 
-	@ExceptionHandler(InvalidGroupException.class)
-	@ResponseStatus(BAD_REQUEST)
-	@ResponseBody
-	public ValidationRepresentation<Group> processValidationError(final InvalidGroupException exception) {
-		ValidationEntryRepresentation error = ValidationEntryRepresentation.builder().attribute(exception.getErrorCause()).errorMessage(exception.getErrorMsg()).build();
-		return ValidationRepresentation.<Group>builder().error(error).build();
-	}
+        ImmutableList<ValidationEntryRepresentation> errors = exception.getBindingResult().getAllErrors().stream()
+                .map(objectError -> getValidationEntryRepresentation(objectError.getDefaultMessage(), objectError.getObjectName()))
+                .collect(collectingAndThen(toList(), ImmutableList::copyOf));
 
-	//TODO: remove this -> only here because unit test is broken...
+        return ValidationRepresentation.builder().errors(errors).build();
+    }
 
-	@ExceptionHandler(NotFoundException.class)
-	@ResponseStatus(NOT_FOUND)
-	public void processValidationError() {
-		//do nothing
-	}
+    @ExceptionHandler(InvalidUserException.class)
+    @ResponseStatus(BAD_REQUEST)
+    @ResponseBody
+    public ValidationRepresentation<User> processValidationError(final InvalidUserException exception) {
+        metrics.tagWithException(exception);
 
-	@ExceptionHandler(ConcurrentModificationException.class)
-	@ResponseStatus(PRECONDITION_FAILED)
-	public void proccessConcurrentModificationError() {
-		//do nothing
-	}
+        ValidationEntryRepresentation error = ValidationEntryRepresentation.builder().attribute(exception.getErrorCause()).errorMessage(exception.getErrorMsg()).build();
+        return ValidationRepresentation.<User>builder().error(error).build();
+    }
 
-	private ValidationEntryRepresentation getValidationEntryRepresentation(final String msgCode, final String errObj) {
-		String msg = msgCode;
-		try {
-			msg = msgSource.getMessage(msgCode, null, LOCALE);
-		} catch (NoSuchMessageException ignored) {
-		}
-		return ValidationEntryRepresentation.builder().attribute(errObj).errorMessage(msg).build();
-	}
+    @ExceptionHandler(InvalidGroupException.class)
+    @ResponseStatus(BAD_REQUEST)
+    @ResponseBody
+    public ValidationRepresentation<Group> processValidationError(final InvalidGroupException exception) {
+        metrics.tagWithException(exception);
+
+        ValidationEntryRepresentation error = ValidationEntryRepresentation.builder().attribute(exception.getErrorCause()).errorMessage(exception.getErrorMsg()).build();
+        return ValidationRepresentation.<Group>builder().error(error).build();
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    @ResponseStatus(NOT_FOUND)
+    public void processValidationError(final NotFoundException exception) {
+        metrics.tagWithException(exception);
+    }
+
+    @ExceptionHandler(ConcurrentModificationException.class)
+    @ResponseStatus(PRECONDITION_FAILED)
+    public void proccessConcurrentModificationError(final ConcurrentModificationException exception) {
+        metrics.tagWithException(exception);
+    }
+
+    private ValidationEntryRepresentation getValidationEntryRepresentation(final String msgCode, final String errObj) {
+        String msg = msgCode;
+        try {
+            msg = msgSource.getMessage(msgCode, null, LOCALE);
+        } catch (NoSuchMessageException ignored) {
+            //do nothing
+        }
+        return ValidationEntryRepresentation.builder().attribute(errObj).errorMessage(msg).build();
+    }
 }

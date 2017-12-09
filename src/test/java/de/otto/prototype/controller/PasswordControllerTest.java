@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class PasswordControllerTest {
+class PasswordControllerTest extends BaseControllerTest {
 
 	private MockMvc mvc;
 
@@ -46,6 +46,7 @@ class PasswordControllerTest {
 		initMocks(this);
 		mvc = MockMvcBuilders
 				.standaloneSetup(testee)
+				.setHandlerExceptionResolvers(createExceptionResolver())
 				.build();
 	}
 

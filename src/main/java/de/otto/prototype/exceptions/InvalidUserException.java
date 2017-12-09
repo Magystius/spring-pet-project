@@ -1,11 +1,7 @@
 package de.otto.prototype.exceptions;
 
 import de.otto.prototype.model.User;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-
-@ResponseStatus(value = BAD_REQUEST)
 public class InvalidUserException extends RuntimeException {
 
     private final User user;
@@ -19,15 +15,15 @@ public class InvalidUserException extends RuntimeException {
         this.errorMsg = errorMsg;
     }
 
-	public User getUser() {
-		return this.user;
-	}
+    public User getUser() {
+        return this.user;
+    }
 
-	public String getErrorCause() {
-		return this.errorCause;
-	}
+    public String getErrorCause() {
+        return this.errorCause;
+    }
 
-	public String getErrorMsg() {
-		return this.errorMsg;
-	}
+    public String getErrorMsg() {
+        return this.errorMsg;
+    }
 }

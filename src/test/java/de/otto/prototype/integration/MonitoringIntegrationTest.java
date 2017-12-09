@@ -3,6 +3,7 @@ package de.otto.prototype.integration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import de.otto.prototype.model.Group;
+import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.GroupRepository;
 import de.otto.prototype.repository.UserRepository;
@@ -17,14 +18,20 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 
 import java.net.URL;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.springframework.http.HttpMethod.GET;
-import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpMethod.PUT;
+import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 class MonitoringIntegrationTest extends BaseIntegrationTest {
+
+    private static final Login.LoginBuilder login = Login.builder().mail("max.mustermann@otto.de").password("somePassword");
+    private static final User.UserBuilder user = User.builder().lastName("Mustermann").firstName("Max").age(30);
+    private static final Group.GroupBuilder group = Group.builder().name("someGroupName");
 
     @Autowired
     private UserRepository userRepository;
@@ -32,12 +39,11 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
     @Autowired
     private GroupRepository groupRepository;
 
-
     @BeforeEach
     void setUp() throws Exception {
         userRepository.deleteAll();
         groupRepository.deleteAll();
-        this.base = new URL("http://localhost:" + port + "/internal");
+        this.base = new URL("http://localhost:" + port);
     }
 
     @ParameterizedTest(name = "url = {0}")
@@ -46,7 +52,7 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
     void shouldAccessTheMonitoringEndpoint(String url) {
         final ResponseEntity<String> response = template
                 .withBasicAuth("monitoring", "monitoring")
-                .getForEntity(base.toString() + url, String.class);
+                .getForEntity(base.toString() + "/internal" + url, String.class);
         assertThat(response.getStatusCode(), is(OK));
     }
 
@@ -59,7 +65,7 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
             userRepository.save(User.builder().build());
             userRepository.save(User.builder().vip(true).build());
 
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/info",
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/internal" + "/info",
                     GET,
                     new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
@@ -76,7 +82,7 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
             groupRepository.save(Group.builder().build());
             groupRepository.save(Group.builder().vip(true).build());
 
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/info",
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/internal" + "/info",
                     GET,
                     new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
@@ -90,7 +96,7 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
         @Test
         @DisplayName("should return a info representation with application info")
         void shouldReturnInfosOfApplication() {
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/info",
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/internal" + "/info",
                     GET,
                     new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
@@ -108,7 +114,7 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
         @Test
         @DisplayName("should return a info representation with git info")
         void shouldReturnInfosOfGit() {
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/info",
+            final ResponseEntity<String> response = template.exchange(base.toString() + "/internal" + "/info",
                     GET,
                     new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                     String.class);
@@ -119,6 +125,135 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
             assertThat(parsedResponse.read("$.git.commit.id"), is("1234"));
             assertThat(parsedResponse.read("$.git.commit.time"), is(1511220753000L));
             assertThat(parsedResponse.read("$.git.branch"), is("master"));
+        }
+    }
+
+    @Nested
+    @DisplayName("when the metrics for http requests endpoint is accessed")
+    class requestEndpoint {
+        @Test
+        @DisplayName("should return metrics with an ConstraintViolationException")
+        void shouldReturnMetricsWithConstraintViolationException() {
+            final ResponseEntity<String> invalidRequestResponse = performGetRequest("/user/invalidId");
+            assertThat(invalidRequestResponse.getStatusCode(), is(BAD_REQUEST));
+
+            final ResponseEntity<String> response = performGetRequest("/internal/metrics/http.server.requests");
+            assertThat(response.getStatusCode(), is(OK));
+            final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+            final int column = findMetricColumnByException(parsedResponse, "ConstraintViolationException");
+            assertThat(parsedResponse.read("$.availableTags[0].values[" + column + "]"), is("ConstraintViolationException"));
+            assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), is("GET"));
+            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), is("/user/{userId}"));
+            assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("400"));
+        }
+
+        @Test
+        @DisplayName("should return metrics with an MethodArgumentNotValidException")
+        void shouldReturnMetricsWithMethodArgumentNotValidException() {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final User invalidToBeUpdatedUser = persistedUser.toBuilder().age(10).build();
+            final ResponseEntity<String> invalidRequestResponse = performPutRequest("/user/" + persistedUser.getId(), invalidToBeUpdatedUser, null);
+            assertThat(invalidRequestResponse.getStatusCode(), is(BAD_REQUEST));
+
+            final ResponseEntity<String> response = performGetRequest("/internal/metrics/http.server.requests");
+            assertThat(response.getStatusCode(), is(OK));
+            final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+            final int column = findMetricColumnByException(parsedResponse, "MethodArgumentNotValidException");
+            assertThat(parsedResponse.read("$.availableTags[0].values[" + column + "]"), is("MethodArgumentNotValidException"));
+            assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), is("PUT"));
+            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), is("/user/{userId}"));
+            assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("400"));
+        }
+
+        @Test
+        @DisplayName("should return metrics with an InvalidUserException")
+        void shouldReturnMetricsWithInvalidUserException() {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final User invalidToBeUpdatedUser = persistedUser.toBuilder().login(login.mail("max.mustermann@invalid.de").build()).build();
+            final ResponseEntity<String> invalidRequestResponse = performPutRequest("/user/" + persistedUser.getId(), invalidToBeUpdatedUser, null);
+            assertThat(invalidRequestResponse.getStatusCode(), is(BAD_REQUEST));
+
+            final ResponseEntity<String> response = performGetRequest("/internal/metrics/http.server.requests");
+            assertThat(response.getStatusCode(), is(OK));
+            final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+            final int column = findMetricColumnByException(parsedResponse, "InvalidUserException");
+            assertThat(parsedResponse.read("$.availableTags[0].values[" + column + "]"), is("InvalidUserException"));
+            assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), is("PUT"));
+            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), is("/user/{userId}"));
+            assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("400"));
+        }
+
+        @Test
+        @DisplayName("should return metrics with an InvalidGroupException")
+        void shouldReturnMetricsWithInvalidGroupException() {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final Group persistedGroup = groupRepository.save(group.userId(persistedUser.getId()).build());
+            final Group invalidGroupToBeUpdated = persistedGroup.toBuilder().vip(true).build();
+            final ResponseEntity<String> invalidRequestResponse = performPutRequest("/group/" + persistedGroup.getId(), invalidGroupToBeUpdated, null);
+            assertThat(invalidRequestResponse.getStatusCode(), is(BAD_REQUEST));
+
+            final ResponseEntity<String> response = performGetRequest("/internal/metrics/http.server.requests");
+            assertThat(response.getStatusCode(), is(OK));
+            final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+            final int column = findMetricColumnByException(parsedResponse, "InvalidGroupException");
+            assertThat(parsedResponse.read("$.availableTags[0].values[" + column + "]"), is("InvalidGroupException"));
+            assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), is("PUT"));
+            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), is("/group/{groupId}"));
+            assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("400"));
+        }
+
+        @Test
+        @DisplayName("should return metrics with an NotFoundException")
+        void shouldReturnMetricsWithNotFoundException() {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final User toBeUpdatedInvalidUser = persistedUser.toBuilder().id("5a2b10d3f5b11d882invalid").build();
+            final ResponseEntity<String> invalidRequestResponse = performPutRequest("/user/5a2b10d3f5b11d882invalid", toBeUpdatedInvalidUser, null);
+            assertThat(invalidRequestResponse.getStatusCode(), is(NOT_FOUND));
+
+            final ResponseEntity<String> response = performGetRequest("/internal/metrics/http.server.requests");
+            assertThat(response.getStatusCode(), is(OK));
+            final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+            final int column = findMetricColumnByException(parsedResponse, "NotFoundException");
+            assertThat(parsedResponse.read("$.availableTags[0].values[" + column + "]"), is("NotFoundException"));
+            assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), is("PUT"));
+            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), is("/user/{userId}"));
+            assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("404"));
+        }
+
+        @Test
+        @DisplayName("should return metrics with an ConcurrentModificationException")
+        void shouldReturnMetricsWithConcurrentModificationException() {
+            final User persistedUser = userRepository.save(user.login(login.build()).build());
+            final ResponseEntity<String> invalidRequestResponse = performPutRequest("/user/" + persistedUser.getId(), persistedUser, "invalidETag");
+            assertThat(invalidRequestResponse.getStatusCode(), is(PRECONDITION_FAILED));
+
+            final ResponseEntity<String> response = performGetRequest("/internal/metrics/http.server.requests");
+            assertThat(response.getStatusCode(), is(OK));
+            final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+            final int column = findMetricColumnByException(parsedResponse, "ConcurrentModificationException");
+            assertThat(parsedResponse.read("$.availableTags[0].values[" + column + "]"), is("ConcurrentModificationException"));
+            assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), is("PUT"));
+            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), is("/user/{userId}"));
+            assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("412"));
+        }
+
+        private ResponseEntity<String> performGetRequest(final String url) {
+            return template.exchange(base.toString() + url,
+                    GET,
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    String.class);
+        }
+
+        private ResponseEntity<String> performPutRequest(final String url, final Object body, final String eTag) {
+            return template.exchange(base.toString() + url,
+                    PUT,
+                    new HttpEntity<>(body, prepareAuthAndMediaTypeAndIfMatchHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE, eTag)),
+                    String.class);
+        }
+
+        private int findMetricColumnByException(final DocumentContext parsedResponse, final String exception) {
+            final List<String> exceptions = parsedResponse.read("$.availableTags[0].values");
+            return exceptions.indexOf(exception);
         }
     }
 }
