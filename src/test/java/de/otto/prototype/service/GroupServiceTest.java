@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import de.otto.prototype.exceptions.ConcurrentModificationException;
 import de.otto.prototype.exceptions.InvalidGroupException;
 import de.otto.prototype.exceptions.NotFoundException;
+import de.otto.prototype.metrics.Counted;
 import de.otto.prototype.model.Group;
 import de.otto.prototype.model.Login;
 import de.otto.prototype.model.User;
@@ -20,6 +21,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static java.lang.reflect.Modifier.isPublic;
+import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -62,9 +65,20 @@ class GroupServiceTest {
 	private GroupService testee;
 
 	@BeforeEach
-	void setUp() throws Exception {
+	void setUp() {
 		initMocks(this);
 		given(userService.findAll()).willReturn(Stream.of(VALID_MINIMUM_USER_NON_VIP, VALID_MINIMUM_USER_VIP));
+	}
+
+	@Test
+	@DisplayName("should assert that counted annotations are in place")
+	void shouldAssertThatCountedAnnotationsAreInPlace() {
+		stream(GroupService.class.getDeclaredMethods())
+				.filter(method -> isPublic(method.getModifiers()))
+				.forEach(method ->
+						assertThat(stream(method.getDeclaredAnnotations())
+								.filter(Counted.class::isInstance)
+								.count(), is(1L)));
 	}
 
 	@Nested
@@ -72,7 +86,7 @@ class GroupServiceTest {
 	class getGroups {
 		@Test
 		@DisplayName("should return an empty list if no groups are found")
-		void shouldReturnEmptyListIfNoGroupIsFound() throws Exception {
+		void shouldReturnEmptyListIfNoGroupIsFound() {
 			given(groupRepository.streamAll()).willReturn(Stream.of());
 
 			final Stream<Group> returnedList = testee.findAll();
@@ -82,7 +96,7 @@ class GroupServiceTest {
 
 		@Test
 		@DisplayName("should return a stream of all groups found")
-		void shouldReturnListOfGroupsFound() throws Exception {
+		void shouldReturnListOfGroupsFound() {
 			final Group groupToReturn = Group.builder().name("someGroup").build();
 			given(groupRepository.streamAll()).willReturn(Stream.of(groupToReturn));
 
@@ -96,7 +110,7 @@ class GroupServiceTest {
 
 		@Test
 		@DisplayName("should return an optional of found group for an id")
-		void shouldReturnAGroupIfFound() throws Exception {
+		void shouldReturnAGroupIfFound() {
 			String groupId = "someId";
 			String groupName = "someName";
 			final Group groupToReturn = Group.builder().id(groupId).name(groupName).build();
@@ -112,7 +126,7 @@ class GroupServiceTest {
 
 		@Test
 		@DisplayName("should an empty optional if no group found for id")
-		void shouldReturnNoGroupIfNotFound() throws Exception {
+		void shouldReturnNoGroupIfNotFound() {
 			String groupId = "someId";
 			given(groupRepository.findById(groupId)).willReturn(Optional.empty());
 
@@ -127,7 +141,7 @@ class GroupServiceTest {
 	class createGroup {
 		@Test
 		@DisplayName("should persist and return the new standard group")
-		void shouldReturnCreatedStandardGroup() throws Exception {
+		void shouldReturnCreatedStandardGroup() {
 			given(groupRepository.save(VALID_MINIMUM_GROUP)).willReturn(VALID_MINIMUM_GROUP_WITH_ID);
 
 			final Group returnedGroup = testee.create(VALID_MINIMUM_GROUP);
@@ -137,7 +151,7 @@ class GroupServiceTest {
 
 		@Test
 		@DisplayName("should persist and return the new standard group with vip user")
-		void shouldReturnCreatedStandardGroupWithVipUser() throws Exception {
+		void shouldReturnCreatedStandardGroupWithVipUser() {
 			final Group standardGroupToCreateWithVipUser = VALID_MINIMUM_GROUP.toBuilder().userId(VALID_USER_ID_VIP).build();
 			final Group expectedGroup = standardGroupToCreateWithVipUser.toBuilder().id(VALID_GROUP_ID).build();
 			given(groupRepository.save(standardGroupToCreateWithVipUser)).willReturn(expectedGroup);
@@ -149,7 +163,7 @@ class GroupServiceTest {
 
 		@Test
 		@DisplayName("should persist and return the new vip group")
-		void shouldReturnCreatedVipGroup() throws Exception {
+		void shouldReturnCreatedVipGroup() {
 			given(groupRepository.save(VALID_MINIMUM_VIP_GROUP)).willReturn(VALID_MINIMUM_VIP_GROUP_WITH_ID);
 
 			final Group returnedGroup = testee.create(VALID_MINIMUM_VIP_GROUP);
@@ -202,7 +216,7 @@ class GroupServiceTest {
 	class updateGroup {
 		@Test
 		@DisplayName("should update the standard group and return it")
-		void shouldReturnUpdatedStandardGroup() throws Exception {
+		void shouldReturnUpdatedStandardGroup() {
 			final Group updatedGroup = VALID_MINIMUM_GROUP_WITH_ID.toBuilder().name("newName").build();
 			given(groupRepository.findById(VALID_GROUP_ID)).willReturn(Optional.of(VALID_MINIMUM_GROUP_WITH_ID));
 			given(groupRepository.save(updatedGroup)).willReturn(updatedGroup);
@@ -215,7 +229,7 @@ class GroupServiceTest {
 
 		@Test
 		@DisplayName("should update the standard group with an vip user and return it")
-		void shouldReturnUpdatedStandardGroupWithVipUser() throws Exception {
+		void shouldReturnUpdatedStandardGroupWithVipUser() {
 			final Group updatedGroup = VALID_MINIMUM_GROUP_WITH_ID.toBuilder().userId(VALID_USER_ID_VIP).build();
 			given(groupRepository.findById(VALID_GROUP_ID)).willReturn(Optional.of(VALID_MINIMUM_GROUP_WITH_ID));
 			given(groupRepository.save(updatedGroup)).willReturn(updatedGroup);
@@ -228,7 +242,7 @@ class GroupServiceTest {
 
 		@Test
 		@DisplayName("should update the vip group and return it")
-		void shouldReturnUpdatedVipGroup() throws Exception {
+		void shouldReturnUpdatedVipGroup() {
 			final Group updatedGroup = VALID_MINIMUM_VIP_GROUP_WITH_ID.toBuilder().name("newName").build();
 			given(groupRepository.findById(VALID_GROUP_ID)).willReturn(Optional.of(VALID_MINIMUM_GROUP_WITH_ID));
 			given(groupRepository.save(updatedGroup)).willReturn(updatedGroup);
@@ -241,7 +255,7 @@ class GroupServiceTest {
 
 		@Test
 		@DisplayName("should return a not found exception if no group for given id is found")
-		void shouldReturnNotFoundExceptionIfIdUnknown() throws Exception {
+		void shouldReturnNotFoundExceptionIfIdUnknown() {
 			given(groupRepository.findById(VALID_GROUP_ID)).willReturn(Optional.empty());
 			NotFoundException exception =
 					assertThrows(NotFoundException.class, () -> testee.update(VALID_MINIMUM_GROUP_WITH_ID, null));
@@ -251,7 +265,7 @@ class GroupServiceTest {
 
 		@Test
 		@DisplayName("should update group and return it, if the given etag and the group one are equal")
-		void shouldReturnUpdatedUserIfETagsAreEqual() throws Exception {
+		void shouldReturnUpdatedUserIfETagsAreEqual() {
 			final Group updatedGroup = VALID_MINIMUM_GROUP_WITH_ID.toBuilder().name("newName").build();
 			given(groupRepository.findById(VALID_GROUP_ID)).willReturn(Optional.of(VALID_MINIMUM_GROUP_WITH_ID));
 			given(groupRepository.streamAll()).willReturn(Stream.of(VALID_MINIMUM_GROUP_WITH_ID));
@@ -321,7 +335,7 @@ class GroupServiceTest {
 	class deleteGroup {
 		@Test
 		@DisplayName("should delete the group")
-		void shouldDeleteGroup() throws Exception {
+		void shouldDeleteGroup() {
 			given(groupRepository.findById(VALID_GROUP_ID)).willReturn(Optional.of(Group.builder().build()));
 
 			testee.delete(VALID_GROUP_ID);
@@ -331,7 +345,7 @@ class GroupServiceTest {
 
 		@Test
 		@DisplayName("should throw a not found exception if no group for given is found")
-		void shouldThrowNotFoundExceptionForUnkownGroupId() throws Exception {
+		void shouldThrowNotFoundExceptionForUnkownGroupId() {
 			given(groupRepository.findById(VALID_GROUP_ID)).willReturn(Optional.empty());
 			NotFoundException exception = assertThrows(NotFoundException.class, () -> testee.delete(VALID_GROUP_ID));
 			assertThat(exception.getMessage(), is("group not found"));

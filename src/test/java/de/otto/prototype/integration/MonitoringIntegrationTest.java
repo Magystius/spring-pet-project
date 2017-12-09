@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 
 import java.net.URL;
@@ -22,10 +21,8 @@ import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.springframework.http.HttpMethod.GET;
-import static org.springframework.http.HttpMethod.PUT;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.springframework.http.HttpStatus.*;
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 class MonitoringIntegrationTest extends BaseIntegrationTest {
 
@@ -56,76 +53,19 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode(), is(OK));
     }
 
-    @Nested
-    @DisplayName("when the info endpoint is accessed")
-    class infoEndpoint {
-        @Test
-        @DisplayName("should return a info representation with users info")
-        void shouldReturnInfosForUsers() {
-            userRepository.save(User.builder().build());
-            userRepository.save(User.builder().vip(true).build());
+    @Test
+    @DisplayName("should return metrics counter for service method executions")
+    void shouldReturnMetricsWithCounterForServiceMethodsExecutions() {
+        final User persistedUser = userRepository.save(user.login(login.build()).build());
+        final ResponseEntity<String> invalidRequestResponse = performGetRequest("/user/" + persistedUser.getId());
+        assertThat(invalidRequestResponse.getStatusCode(), is(OK));
 
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/internal" + "/info",
-                    GET,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
-
-            assertThat(response.getStatusCode(), is(OK));
-            final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
-            assertThat(parsedResponse.read("$.user.total"), is(2));
-            assertThat(parsedResponse.read("$.user.vip"), is(1));
-        }
-
-        @Test
-        @DisplayName("should return a info representation with groups info")
-        void shouldReturnInfosForGroups() {
-            groupRepository.save(Group.builder().build());
-            groupRepository.save(Group.builder().vip(true).build());
-
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/internal" + "/info",
-                    GET,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
-
-            assertThat(response.getStatusCode(), is(OK));
-            final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
-            assertThat(parsedResponse.read("$.group.total"), is(2));
-            assertThat(parsedResponse.read("$.group.vip"), is(1));
-        }
-
-        @Test
-        @DisplayName("should return a info representation with application info")
-        void shouldReturnInfosOfApplication() {
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/internal" + "/info",
-                    GET,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
-
-            assertThat(response.getStatusCode(), is(OK));
-            final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
-            assertThat(parsedResponse.read("$.app.name"), is("Spring Pet Project"));
-            assertThat(parsedResponse.read("$.app.description"), is("a simple spring pet project for testing purposes"));
-            assertThat(parsedResponse.read("$.app.version"), is("1.0.0"));
-            assertThat(parsedResponse.read("$.technical.encoding"), is("UTF-8"));
-            assertThat(parsedResponse.read("$.technical.java.source"), is("9.0.0"));
-            assertThat(parsedResponse.read("$.technical.java.target"), is("9.0.0"));
-        }
-
-        @Test
-        @DisplayName("should return a info representation with git info")
-        void shouldReturnInfosOfGit() {
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/internal" + "/info",
-                    GET,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
-
-            assertThat(response.getStatusCode(), is(OK));
-            final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
-            assertThat(parsedResponse.read("$.git.commit.message.full"), is("test commit"));
-            assertThat(parsedResponse.read("$.git.commit.id"), is("1234"));
-            assertThat(parsedResponse.read("$.git.commit.time"), is(1511220753000L));
-            assertThat(parsedResponse.read("$.git.branch"), is("master"));
-        }
+        final ResponseEntity<String> response = performGetRequest("/internal/metrics/UserService.findAll");
+        assertThat(response.getStatusCode(), is(OK));
+        final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+        assertThat(parsedResponse.read("$.name"), is("UserService.findAll"));
+        assertThat(parsedResponse.read("$.measurements[0].statistic"), is("Count"));
+        assertThat(parsedResponse.read("$.measurements[0].value"), greaterThanOrEqualTo(1.0));
     }
 
     @Nested
@@ -237,23 +177,69 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
             assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("412"));
         }
 
-        private ResponseEntity<String> performGetRequest(final String url) {
-            return template.exchange(base.toString() + url,
-                    GET,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
-        }
-
-        private ResponseEntity<String> performPutRequest(final String url, final Object body, final String eTag) {
-            return template.exchange(base.toString() + url,
-                    PUT,
-                    new HttpEntity<>(body, prepareAuthAndMediaTypeAndIfMatchHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE, eTag)),
-                    String.class);
-        }
-
         private int findMetricColumnByException(final DocumentContext parsedResponse, final String exception) {
             final List<String> exceptions = parsedResponse.read("$.availableTags[0].values");
             return exceptions.indexOf(exception);
+        }
+    }
+
+    @Nested
+    @DisplayName("when the info endpoint is accessed")
+    class infoEndpoint {
+        @Test
+        @DisplayName("should return a info representation with users info")
+        void shouldReturnInfosForUsers() {
+            userRepository.save(User.builder().build());
+            userRepository.save(User.builder().vip(true).build());
+
+            final ResponseEntity<String> response = performGetRequest("/internal/info");
+
+            assertThat(response.getStatusCode(), is(OK));
+            final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+            assertThat(parsedResponse.read("$.user.total"), is(2));
+            assertThat(parsedResponse.read("$.user.vip"), is(1));
+        }
+
+        @Test
+        @DisplayName("should return a info representation with groups info")
+        void shouldReturnInfosForGroups() {
+            groupRepository.save(Group.builder().build());
+            groupRepository.save(Group.builder().vip(true).build());
+
+            final ResponseEntity<String> response = performGetRequest("/internal/info");
+
+            assertThat(response.getStatusCode(), is(OK));
+            final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+            assertThat(parsedResponse.read("$.group.total"), is(2));
+            assertThat(parsedResponse.read("$.group.vip"), is(1));
+        }
+
+        @Test
+        @DisplayName("should return a info representation with application info")
+        void shouldReturnInfosOfApplication() {
+            final ResponseEntity<String> response = performGetRequest("/internal/info");
+
+            assertThat(response.getStatusCode(), is(OK));
+            final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+            assertThat(parsedResponse.read("$.app.name"), is("Spring Pet Project"));
+            assertThat(parsedResponse.read("$.app.description"), is("a simple spring pet project for testing purposes"));
+            assertThat(parsedResponse.read("$.app.version"), is("1.0.0"));
+            assertThat(parsedResponse.read("$.technical.encoding"), is("UTF-8"));
+            assertThat(parsedResponse.read("$.technical.java.source"), is("9.0.0"));
+            assertThat(parsedResponse.read("$.technical.java.target"), is("9.0.0"));
+        }
+
+        @Test
+        @DisplayName("should return a info representation with git info")
+        void shouldReturnInfosOfGit() {
+            final ResponseEntity<String> response = performGetRequest("/internal/info");
+
+            assertThat(response.getStatusCode(), is(OK));
+            final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
+            assertThat(parsedResponse.read("$.git.commit.message.full"), is("test commit"));
+            assertThat(parsedResponse.read("$.git.commit.id"), is("1234"));
+            assertThat(parsedResponse.read("$.git.commit.time"), is(1511220753000L));
+            assertThat(parsedResponse.read("$.git.branch"), is("master"));
         }
     }
 }

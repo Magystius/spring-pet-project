@@ -32,7 +32,7 @@ class PasswordServiceTest {
     private PasswordService testee;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         initMocks(this);
         LocalValidatorFactoryBean validatorFactory = new LocalValidatorFactoryBean();
         validatorFactory.setProviderClass(HibernateValidator.class);
@@ -46,7 +46,7 @@ class PasswordServiceTest {
     class updatePassword {
         @Test
         @DisplayName("should update the password and return the updated user")
-        void shouldReturnUpdatedUser() throws Exception {
+        void shouldReturnUpdatedUser() {
             final String userId = "someId";
             final String password = "somePassword";
             final User userToUpdate = User.builder().id(userId).lastName("Mustermann").login(Login.builder().build()).build();
@@ -62,7 +62,7 @@ class PasswordServiceTest {
 
         @Test
         @DisplayName("should throw a not found exception if id for user is null")
-        void shouldReturnNotFoundExceptionIfIdIsNull() throws Exception {
+        void shouldReturnNotFoundExceptionIfIdIsNull() {
             NotFoundException exception =
                     assertThrows(NotFoundException.class, () -> testee.update(null, "somePassword"));
             assertThat(exception.getMessage(), is("user not found"));
@@ -71,7 +71,7 @@ class PasswordServiceTest {
 
         @Test
         @DisplayName("should throw a not found exception if the given id can´t be found")
-        void shouldReturnNotFoundExceptionIfUnknownId() throws Exception {
+        void shouldReturnNotFoundExceptionIfUnknownId() {
             final String userId = "someId";
             given(userService.findOne(userId)).willReturn(empty());
             NotFoundException exception =

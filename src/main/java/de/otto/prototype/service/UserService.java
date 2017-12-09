@@ -3,6 +3,7 @@ package de.otto.prototype.service;
 import de.otto.prototype.exceptions.ConcurrentModificationException;
 import de.otto.prototype.exceptions.InvalidUserException;
 import de.otto.prototype.exceptions.NotFoundException;
+import de.otto.prototype.metrics.Counted;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,19 +31,23 @@ public class UserService {
 		this.validator = validator;
 	}
 
+	@Counted
 	public Stream<User> findAll() {
 		return userRepository.streamAll();
 	}
 
+	@Counted
 	public Optional<User> findOne(final String userId) {
 		return userRepository.findById(userId);
 	}
 
+	@Counted
 	public User create(final User user) {
 		validateUser(user);
 		return userRepository.save(user);
 	}
 
+	@Counted
 	public User update(final User user, final String eTag) {
 		Set<ConstraintViolation<User>> errors = validator.validate(user, User.Existing.class);
 		if (!errors.isEmpty())
@@ -56,6 +61,7 @@ public class UserService {
 		return userRepository.save(user);
 	}
 
+	@Counted
 	public void delete(final String userId) {
 		if (!userRepository.findById(userId).isPresent())
 			throw new NotFoundException("user not found");

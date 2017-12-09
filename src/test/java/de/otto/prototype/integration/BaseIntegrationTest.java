@@ -11,7 +11,9 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -20,6 +22,9 @@ import java.nio.charset.Charset;
 import java.util.Locale;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.PUT;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -83,5 +88,19 @@ public abstract class BaseIntegrationTest {
             if (!isNullOrEmpty(contentType))
                 set(CONTENT_TYPE, contentType);
         }};
+    }
+
+    ResponseEntity<String> performGetRequest(final String url) {
+        return template.exchange(base.toString() + url,
+                GET,
+                new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                String.class);
+    }
+
+    ResponseEntity<String> performPutRequest(final String url, final Object body, final String eTag) {
+        return template.exchange(base.toString() + url,
+                PUT,
+                new HttpEntity<>(body, prepareAuthAndMediaTypeAndIfMatchHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE, eTag)),
+                String.class);
     }
 }

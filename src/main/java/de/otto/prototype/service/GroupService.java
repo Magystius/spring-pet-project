@@ -3,6 +3,7 @@ package de.otto.prototype.service;
 import de.otto.prototype.exceptions.ConcurrentModificationException;
 import de.otto.prototype.exceptions.InvalidGroupException;
 import de.otto.prototype.exceptions.NotFoundException;
+import de.otto.prototype.metrics.Counted;
 import de.otto.prototype.model.Group;
 import de.otto.prototype.model.User;
 import de.otto.prototype.repository.GroupRepository;
@@ -29,19 +30,23 @@ public class GroupService {
 		this.userService = userService;
 	}
 
+	@Counted
 	public Stream<Group> findAll() {
 		return groupRepository.streamAll();
 	}
 
+	@Counted
 	public Optional<Group> findOne(final String groupId) {
 		return groupRepository.findById(groupId);
 	}
 
+	@Counted
 	public Group create(final Group group) {
 		validateGroup(group, true);
 		return groupRepository.save(group);
 	}
 
+	@Counted
 	public Group update(final Group group, final String eTag) {
 		final Group foundGroup = groupRepository.findById(group.getId())
 				.orElseThrow(() -> new NotFoundException("group not found"));
@@ -51,6 +56,7 @@ public class GroupService {
 		return groupRepository.save(group);
 	}
 
+	@Counted
 	public void delete(final String groupId) {
 		if (!groupRepository.findById(groupId).isPresent())
 			throw new NotFoundException("group not found");
