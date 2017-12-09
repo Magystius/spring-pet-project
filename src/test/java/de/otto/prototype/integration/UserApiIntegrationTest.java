@@ -29,7 +29,6 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.springframework.http.HttpHeaders.ETAG;
-import static org.springframework.http.HttpMethod.*;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
@@ -79,10 +78,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
                     .reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
             final String eTag = sha256().newHasher().putString(combinedETags, UTF_8).hash().toString();
 
-            final ResponseEntity<String> response = template.exchange(base.toString(),
-                    GET,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
+            final ResponseEntity<String> response = performGetRequest("");
 
             assertThat(response.getStatusCode(), is(OK));
             final User reducedRepresentationOfPersistedUser = persistedUser.toBuilder().login(null).age(0).build();
@@ -96,10 +92,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
         void shouldReturnAUserOnGet() {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
 
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
-                    GET,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
+            final ResponseEntity<String> response = performGetRequest("/" + persistedUser.getId());
 
             assertThat(response.getStatusCode(), is(OK));
             final String eTagHeader = response.getHeaders().get(ETAG).get(0);
@@ -110,11 +103,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
         @Test
         @DisplayName("should create a new user and return its locations & eTag header")
         void shouldCreateAUserOnPost() {
-            final ResponseEntity<String> response = template.exchange(base.toString(),
-                    POST,
-                    new HttpEntity<>(user.login(login.build()).build(),
-                            prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
+            final ResponseEntity<String> response = performPostRequest("", user.login(login.build()).build());
 
             final User createdUser = userRepository.findById(JsonPath.read(response.getBody(), "$.content.id")).get();
             assertThat(createdUser, is(notNullValue()));
@@ -132,11 +121,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
             final String persistedId = userToUpdate.getId();
             final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
 
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
-                    PUT,
-                    new HttpEntity<>(updatedUser,
-                            prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
+            final ResponseEntity<String> response = performPutRequest("/" + persistedId, updatedUser, null);
 
             assertThat(response.getStatusCode(), is(OK));
             assertUserRepresentation(response.getBody(), updatedUser);
@@ -150,11 +135,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
             final String persistedId = userToUpdate.getId();
             final User updatedUser = userToUpdate.toBuilder().lastName("Neumann").id(persistedId).build();
 
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
-                    PUT,
-                    new HttpEntity<>(updatedUser,
-                            prepareAuthAndMediaTypeAndIfMatchHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE, userToUpdate.getETag())),
-                    String.class);
+            final ResponseEntity<String> response = performPutRequest("/" + persistedId, updatedUser, userToUpdate.getETag());
 
             assertThat(response.getStatusCode(), is(OK));
             assertUserRepresentation(response.getBody(), updatedUser);
@@ -166,10 +147,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
         void shouldDeleteUserOnDelete() {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
 
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedUser.getId(),
-                    DELETE,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
+            final ResponseEntity<String> response = performDeleteRequest("/" + persistedUser.getId());
 
             assertThat(response.getStatusCode(), is(NO_CONTENT));
         }
@@ -198,11 +176,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
             final User updatedUser = persistedUser.toBuilder().firstName("newName").build();
 
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
-                    PUT,
-                    new HttpEntity<>(updatedUser,
-                            prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
+            final ResponseEntity<String> response = performPutRequest("/0", updatedUser, null);
 
             String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
             ValidationEntryRepresentation errorEntry = ValidationEntryRepresentation.builder().attribute("update.userId").errorMessage(errorMessage).build();

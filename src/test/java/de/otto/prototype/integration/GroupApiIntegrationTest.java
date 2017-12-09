@@ -30,7 +30,6 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.springframework.http.HttpHeaders.ETAG;
-import static org.springframework.http.HttpMethod.*;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
@@ -85,10 +84,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
                     .reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
             final String eTag = sha256().newHasher().putString(combinedETags, UTF_8).hash().toString();
 
-            final ResponseEntity<String> response = template.exchange(base.toString(),
-                    GET,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
+            final ResponseEntity<String> response = performGetRequest("");
 
             assertThat(response.getStatusCode(), is(OK));
             assertGroupListRepresentation(persistedGroup, response);
@@ -102,10 +98,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
             final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
 
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedGroup.getId(),
-                    GET,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
+            final ResponseEntity<String> response = performGetRequest("/" + persistedGroup.getId());
 
             assertThat(response.getStatusCode(), is(OK));
             final String eTagHeader = response.getHeaders().get(ETAG).get(0);
@@ -117,11 +110,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
         @DisplayName("should create a new group and return location & etag header")
         void shouldCreateAGroupOnPost() {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
-            final ResponseEntity<String> response = template.exchange(base.toString(),
-                    POST,
-                    new HttpEntity<>(group.clearUserIds().userId(persistedUser.getId()).build(),
-                            prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
+            final ResponseEntity<String> response = performPostRequest("", group.clearUserIds().userId(persistedUser.getId()).build());
 
             assertThat(response.getStatusCode(), is(CREATED));
             final Group createdGroup = groupRepository.findById(JsonPath.read(response.getBody(), "$.content.id")).get();
@@ -140,11 +129,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
             final String persistedId = groupToUpdate.getId();
             final Group updatedGroup = groupToUpdate.toBuilder().name("newName").build();
 
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
-                    PUT,
-                    new HttpEntity<>(updatedGroup,
-                            prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
+            final ResponseEntity<String> response = performPutRequest("/" + persistedId, updatedGroup, null);
 
             assertThat(response.getStatusCode(), is(OK));
             assertGroupRepresentation(response.getBody(), updatedGroup);
@@ -159,11 +144,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
             final String persistedId = groupToUpdate.getId();
             final Group updatedGroup = groupToUpdate.toBuilder().name("newName").build();
 
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedId,
-                    PUT,
-                    new HttpEntity<>(updatedGroup,
-                            prepareAuthAndMediaTypeAndIfMatchHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE, groupToUpdate.getETag())),
-                    String.class);
+            final ResponseEntity<String> response = performPutRequest("/" + persistedId, updatedGroup, groupToUpdate.getETag());
 
             assertThat(response.getStatusCode(), is(OK));
             assertGroupRepresentation(response.getBody(), updatedGroup);
@@ -176,14 +157,10 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
             final Group persistedGroup = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
 
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/" + persistedGroup.getId(),
-                    DELETE,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
+            final ResponseEntity<String> response = performDeleteRequest("/" + persistedGroup.getId());
 
             assertThat(response.getStatusCode(), is(NO_CONTENT));
         }
-
     }
 
     @Nested
@@ -210,11 +187,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
             final Group groupToUpdate = groupRepository.save(group.clearUserIds().userId(persistedUser.getId()).build());
             final Group updatedGroup = groupToUpdate.toBuilder().name("newName").build();
 
-            final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
-                    PUT,
-                    new HttpEntity<>(updatedGroup,
-                            prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
-                    String.class);
+            final ResponseEntity<String> response = performPutRequest("/0", updatedGroup, null);
 
             String errorMessage = messageSource.getMessage("error.id.invalid", null, LOCALE);
             ValidationEntryRepresentation errorEntry = ValidationEntryRepresentation.builder().attribute("update.groupId").errorMessage(errorMessage).build();

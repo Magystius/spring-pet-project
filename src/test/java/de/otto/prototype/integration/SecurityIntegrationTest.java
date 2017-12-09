@@ -12,7 +12,6 @@ import java.net.URL;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpStatus.*;
 
 class SecurityIntegrationTest extends BaseIntegrationTest {
@@ -25,7 +24,7 @@ class SecurityIntegrationTest extends BaseIntegrationTest {
     @Test
     @DisplayName("should allow access to index route")
     void shouldAllowAccessOnIndexRoute() {
-        final ResponseEntity<String> response = template.exchange(base.toString(), GET, null, String.class);
+        final ResponseEntity<String> response = template.getForEntity(base.toString(), String.class);
 
         assertThat(response.getStatusCode(), is(OK));
     }

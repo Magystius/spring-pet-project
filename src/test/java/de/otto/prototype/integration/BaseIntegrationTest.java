@@ -22,8 +22,7 @@ import java.nio.charset.Charset;
 import java.util.Locale;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
-import static org.springframework.http.HttpMethod.GET;
-import static org.springframework.http.HttpMethod.PUT;
+import static org.springframework.http.HttpMethod.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @ExtendWith(SpringExtension.class)
@@ -97,10 +96,31 @@ public abstract class BaseIntegrationTest {
                 String.class);
     }
 
+    ResponseEntity<String> performPostRequest(final String url, final Object body) {
+        return template.exchange(base.toString() + url,
+                POST,
+                new HttpEntity<>(body, prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                String.class);
+    }
+
+    ResponseEntity<String> performPostRequest(final String url, final Object body, final HttpHeaders httpHeaders) {
+        return template.exchange(base.toString() + url,
+                POST,
+                new HttpEntity<>(body, httpHeaders),
+                String.class);
+    }
+
     ResponseEntity<String> performPutRequest(final String url, final Object body, final String eTag) {
         return template.exchange(base.toString() + url,
                 PUT,
                 new HttpEntity<>(body, prepareAuthAndMediaTypeAndIfMatchHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE, eTag)),
+                String.class);
+    }
+
+    ResponseEntity<String> performDeleteRequest(final String url) {
+        return template.exchange(base.toString() + url,
+                DELETE,
+                new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
                 String.class);
     }
 }
