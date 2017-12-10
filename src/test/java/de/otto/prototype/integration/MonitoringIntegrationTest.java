@@ -22,8 +22,10 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.isIn;
 import static org.springframework.http.HttpStatus.*;
 
+//TODO: reset metrics for each test?
 class MonitoringIntegrationTest extends BaseIntegrationTest {
 
     private static final Login.LoginBuilder login = Login.builder().mail("max.mustermann@otto.de").password("somePassword");
@@ -83,7 +85,7 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
             final int column = findMetricColumnByException(parsedResponse, "ConstraintViolationException");
             assertThat(parsedResponse.read("$.availableTags[0].values[" + column + "]"), is("ConstraintViolationException"));
             assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), is("GET"));
-            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), is("/user/{userId}"));
+            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), isIn(List.of("/user/{userId}", "/group/{groupId}")));
             assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("400"));
         }
 
@@ -101,7 +103,7 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
             final int column = findMetricColumnByException(parsedResponse, "MethodArgumentNotValidException");
             assertThat(parsedResponse.read("$.availableTags[0].values[" + column + "]"), is("MethodArgumentNotValidException"));
             assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), is("PUT"));
-            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), is("/user/{userId}"));
+            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), isIn(List.of("/user/{userId}", "/group/{groupId}")));
             assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("400"));
         }
 
@@ -156,7 +158,7 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
             final int column = findMetricColumnByException(parsedResponse, "NotFoundException");
             assertThat(parsedResponse.read("$.availableTags[0].values[" + column + "]"), is("NotFoundException"));
             assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), is("PUT"));
-            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), is("/user/{userId}"));
+            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), isIn(List.of("/user/{userId}", "/group/{groupId}")));
             assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("404"));
         }
 
@@ -173,7 +175,7 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
             final int column = findMetricColumnByException(parsedResponse, "ConcurrentModificationException");
             assertThat(parsedResponse.read("$.availableTags[0].values[" + column + "]"), is("ConcurrentModificationException"));
             assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), is("PUT"));
-            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), is("/user/{userId}"));
+            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), isIn(List.of("/user/{userId}", "/group/{groupId}")));
             assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("412"));
         }
 
