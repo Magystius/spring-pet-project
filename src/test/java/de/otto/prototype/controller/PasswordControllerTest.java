@@ -10,11 +10,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static de.otto.prototype.controller.PasswordController.URL_CHECK_PASSWORD;
 import static de.otto.prototype.controller.PasswordController.URL_RESET_PASSWORD;
@@ -33,75 +30,67 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class PasswordControllerTest extends BaseControllerTest {
 
-	private MockMvc mvc;
+    @Mock
+    private PasswordService passwordService;
 
-	@Mock
-	private PasswordService passwordService;
+    @BeforeEach
+    void setUp() {
+        initMocks(this);
+        setupDefaultMockMvc(new PasswordController(passwordService));
+    }
 
-	@InjectMocks
-	private PasswordController testee;
+    @Nested
+    @DisplayName("when a new password for a user id is send")
+    class resetPassword {
+        @Test
+        @DisplayName("should update the password and return a location header")
+        void shouldUpdatePasswordOnPost() throws Exception {
+            final String id = "someId";
+            final String password = "somePassword";
+            final User updatedUser = User.builder().id(id).firstName("Max").lastName("Mustermann").login(Login.builder().password(password).build()).build();
+            given(passwordService.update(id, password)).willReturn(updatedUser);
 
-	@BeforeEach
-	void setUp() {
-		initMocks(this);
-		mvc = MockMvcBuilders
-				.standaloneSetup(testee)
-				.setHandlerExceptionResolvers(createExceptionResolver())
-				.build();
-	}
+            final MvcResult result = mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
+                    .contentType(TEXT_PLAIN_VALUE)
+                    .accept(APPLICATION_JSON_VALUE)
+                    .content(password))
+                    .andExpect(status().isNoContent())
+                    .andReturn();
 
-	@Nested
-	@DisplayName("when a new password for a user id is send")
-	class resetPassword {
-		@Test
-		@DisplayName("should update the password and return a location header")
-		void shouldUpdatePasswordOnPost() throws Exception {
-			final String id = "someId";
-			final String password = "somePassword";
-			final User updatedUser = User.builder().id(id).firstName("Max").lastName("Mustermann").login(Login.builder().password(password).build()).build();
-			given(passwordService.update(id, password)).willReturn(updatedUser);
+            assertThat(result.getResponse().getHeader("Location"), containsString(URL_USER + "/" + id));
+        }
 
-			final MvcResult result = mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
-					.contentType(TEXT_PLAIN_VALUE)
-					.accept(APPLICATION_JSON_VALUE)
-					.content(password))
-					.andExpect(status().isNoContent())
-					.andReturn();
+        @Test
+        @DisplayName("should return a not found response if user id can´t be found")
+        void shouldReturnNotFoundIfUnknownId() throws Exception {
+            final String id = "someId";
+            final String password = "somePassword";
+            willThrow(new NotFoundException("id not found")).given(passwordService).update(id, password);
 
-			assertThat(result.getResponse().getHeader("Location"), containsString(URL_USER + "/" + id));
-		}
+            mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
+                    .contentType(TEXT_PLAIN_VALUE)
+                    .accept(APPLICATION_JSON_VALUE)
+                    .content(password))
+                    .andExpect(status().isNotFound());
+        }
+    }
 
-		@Test
-		@DisplayName("should return a not found response if user id can´t be found")
-		void shouldReturnNotFoundIfUnknownId() throws Exception {
-			final String id = "someId";
-			final String password = "somePassword";
-			willThrow(new NotFoundException("id not found")).given(passwordService).update(id, password);
+    @Nested
+    @DisplayName("when a password is send to check if secure")
+    class checkPassword {
+        @ParameterizedTest(name = "-> result is {0}")
+        @ValueSource(strings = {"true", "false"})
+        @DisplayName("should return result of check")
+        void shouldReturnTrueIfSecurePassword(String checkResult) throws Exception {
+            final String password = "somePassword";
+            given(passwordService.checkPassword(password)).willReturn(valueOf(checkResult));
 
-			mvc.perform(post(URL_RESET_PASSWORD + "?userId=" + id)
-					.contentType(TEXT_PLAIN_VALUE)
-					.accept(APPLICATION_JSON_VALUE)
-					.content(password))
-					.andExpect(status().isNotFound());
-		}
-	}
-
-	@Nested
-	@DisplayName("when a password is send to check if secure")
-	class checkPassword {
-		@ParameterizedTest(name = "-> result is {0}")
-		@ValueSource(strings = {"true", "false"})
-		@DisplayName("should return result of check")
-		void shouldReturnTrueIfSecurePassword(String checkResult) throws Exception {
-			final String password = "somePassword";
-			given(passwordService.checkPassword(password)).willReturn(valueOf(checkResult));
-
-			mvc.perform(post(URL_CHECK_PASSWORD)
-					.contentType(TEXT_PLAIN_VALUE)
-					.accept(TEXT_PLAIN_VALUE)
-					.content(password))
-					.andExpect(status().isOk())
-					.andExpect(content().string(checkResult));
-		}
-	}
+            mvc.perform(post(URL_CHECK_PASSWORD)
+                    .contentType(TEXT_PLAIN_VALUE)
+                    .accept(TEXT_PLAIN_VALUE)
+                    .content(password))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(checkResult));
+        }
+    }
 }

@@ -13,6 +13,7 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.method.annotation.ExceptionHandlerMethodResolver;
 import org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver;
@@ -33,6 +34,13 @@ abstract class BaseControllerTest {
 	private WebMvcMetrics metrics;
 
 	MockMvc mvc;
+
+    void setupDefaultMockMvc(Object controller) {
+        mvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setHandlerExceptionResolvers(createExceptionResolver())
+                .build();
+    }
 
 	static void initMessageSource() {
 		if (messageSource == null) {
