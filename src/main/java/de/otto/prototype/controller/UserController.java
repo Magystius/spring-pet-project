@@ -33,7 +33,7 @@ public class UserController extends BaseController {
 
 	public static final String URL_USER = "/user";
 
-	private UserService userService;
+	private final UserService userService;
 
 	@Autowired
 	public UserController(final UserService userService) {

@@ -28,7 +28,7 @@ public class PasswordController {
     
     public static final String URL_CHECK_PASSWORD = "/checkpassword";
 
-    private PasswordService passwordService;
+    private final PasswordService passwordService;
 
     @Autowired
     public PasswordController(final PasswordService passwordService) {
@@ -39,7 +39,7 @@ public class PasswordController {
     public ResponseEntity updateUserPassword(final @Pattern(regexp = "^\\w{24}$", message = "error.id.invalid")
                                              @RequestParam("userId")
                                                      String id,
-                                             final @SecurePassword(pattern = ".*")
+                                             final @SecurePassword()
                                              @RequestBody
                                                      String password) {
         final User updatedUser = passwordService.update(id, password);

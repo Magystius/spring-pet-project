@@ -2,7 +2,6 @@ package de.otto.prototype.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.hash.HashFunction;
-import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.SafeHtml;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -18,8 +17,8 @@ import static org.hibernate.validator.constraints.SafeHtml.WhiteListType.NONE;
 @Document
 public class User implements Identifiable<String>, Hashable {
 
-	public static final int AGE_YOUNGEST = 18;
-	public static final int AGE_OLDEST = 150;
+    private static final int AGE_YOUNGEST = 18;
+    private static final int AGE_OLDEST = 150;
 
 	@Id
 	@NotNull(groups = Existing.class, message = "error.id.existing")

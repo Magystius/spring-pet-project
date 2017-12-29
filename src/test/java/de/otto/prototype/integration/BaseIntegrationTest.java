@@ -24,11 +24,12 @@ import java.util.Locale;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.springframework.http.HttpMethod.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource(locations="classpath:application.test.properties")
-public abstract class BaseIntegrationTest {
+@TestPropertySource(locations = "classpath:application.test.properties")
+abstract class BaseIntegrationTest {
 
     static final Gson GSON = new GsonBuilder().serializeNulls().create();
 
@@ -50,56 +51,51 @@ public abstract class BaseIntegrationTest {
         return messageBundle;
     }
 
-    HttpHeaders prepareAuthAndMediaTypeAndIfMatchHeaders(String accept, String contentType, String etag) {
+    private HttpHeaders prepareAuthAndMediaTypeAndIfMatchHeaders(String eTag) {
         return new HttpHeaders() {{
             String auth = "admin" + ":" + "admin";
             byte[] encodedAuth = Base64.encodeBase64(
                     auth.getBytes(Charset.forName("US-ASCII")));
             String authHeader = "Basic " + new String(encodedAuth);
             set(AUTHORIZATION, authHeader);
-            if (!isNullOrEmpty(accept))
-                set(ACCEPT, accept);
-            if (!isNullOrEmpty(contentType))
-                set(CONTENT_TYPE, contentType);
-            if (!isNullOrEmpty(etag))
-                set(IF_MATCH, etag);
+            set(ACCEPT, APPLICATION_JSON_VALUE);
+            set(CONTENT_TYPE, APPLICATION_JSON_VALUE);
+            if (!isNullOrEmpty(eTag))
+                set(IF_MATCH, eTag);
         }};
     }
 
-    HttpHeaders prepareAuthAndMediaTypeHeaders(String accept, String contentType) {
+    HttpHeaders prepareAuthAndMediaTypeHeaders(String contentType) {
         return new HttpHeaders() {{
             String auth = "admin" + ":" + "admin";
             byte[] encodedAuth = Base64.encodeBase64(
                     auth.getBytes(Charset.forName("US-ASCII")));
             String authHeader = "Basic " + new String(encodedAuth);
             set(AUTHORIZATION, authHeader);
-            if (!isNullOrEmpty(accept))
-                set(ACCEPT, accept);
+            set(ACCEPT, APPLICATION_JSON_VALUE);
             if (!isNullOrEmpty(contentType))
                 set(CONTENT_TYPE, contentType);
         }};
     }
 
-    HttpHeaders prepareMediaTypeHeaders(String accept, String contentType) {
+    HttpHeaders prepareMediaTypeHeaders() {
         return new HttpHeaders() {{
-            if (!isNullOrEmpty(accept))
-                set(ACCEPT, accept);
-            if (!isNullOrEmpty(contentType))
-                set(CONTENT_TYPE, contentType);
+            set(ACCEPT, TEXT_PLAIN_VALUE);
+            set(CONTENT_TYPE, TEXT_PLAIN_VALUE);
         }};
     }
 
     ResponseEntity<String> performGetRequest(final String url) {
         return template.exchange(base.toString() + url,
                 GET,
-                new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE)),
                 String.class);
     }
 
-    ResponseEntity<String> performPostRequest(final String url, final Object body) {
-        return template.exchange(base.toString() + url,
+    ResponseEntity<String> performPostRequest(final Object body) {
+        return template.exchange(base.toString(),
                 POST,
-                new HttpEntity<>(body, prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                new HttpEntity<>(body, prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE)),
                 String.class);
     }
 
@@ -113,14 +109,14 @@ public abstract class BaseIntegrationTest {
     ResponseEntity<String> performPutRequest(final String url, final Object body, final String eTag) {
         return template.exchange(base.toString() + url,
                 PUT,
-                new HttpEntity<>(body, prepareAuthAndMediaTypeAndIfMatchHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE, eTag)),
+                new HttpEntity<>(body, prepareAuthAndMediaTypeAndIfMatchHeaders(eTag)),
                 String.class);
     }
 
     ResponseEntity<String> performDeleteRequest(final String url) {
         return template.exchange(base.toString() + url,
                 DELETE,
-                new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE)),
                 String.class);
     }
 }

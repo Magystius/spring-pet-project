@@ -26,7 +26,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.springframework.http.HttpStatus.*;
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 
 class PasswordApiIntegrationTest extends BaseIntegrationTest {
@@ -54,7 +53,7 @@ class PasswordApiIntegrationTest extends BaseIntegrationTest {
     void shouldReturnBadRequestForInvalidParameterGiven(String userId, String password, String error, String attribute) {
 
         final ResponseEntity<String> response = performPostRequest(URL_RESET_PASSWORD + "?userId=" + userId,
-                password, prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE));
+                password, prepareAuthAndMediaTypeHeaders(TEXT_PLAIN_VALUE));
 
         String errorMessage = messageSource.getMessage(error, null, LOCALE);
         ValidationEntryRepresentation errorEntry = ValidationEntryRepresentation.builder().attribute(attribute).errorMessage(errorMessage).build();
@@ -74,7 +73,7 @@ class PasswordApiIntegrationTest extends BaseIntegrationTest {
             final String newPassword = "anotherPassword";
 
             final ResponseEntity<String> response = performPostRequest(URL_RESET_PASSWORD + "?userId=" + persistedUser.getId(),
-                    newPassword, prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, TEXT_PLAIN_VALUE));
+                    newPassword, prepareAuthAndMediaTypeHeaders(TEXT_PLAIN_VALUE));
 
             assertAll("response",
                     () -> assertThat(response.getStatusCode(), is(NO_CONTENT)),
@@ -85,7 +84,7 @@ class PasswordApiIntegrationTest extends BaseIntegrationTest {
         @DisplayName("should return true if a secure password is checked")
         void shouldReturnTrueForSecurePasswordOnPost() {
             final ResponseEntity<String> response = performPostRequest(URL_CHECK_PASSWORD, "securePassword",
-                    prepareMediaTypeHeaders(TEXT_PLAIN_VALUE, TEXT_PLAIN_VALUE));
+                    prepareMediaTypeHeaders());
 
             assertAll("response",
                     () -> assertThat(response.getStatusCode(), is(OK)),

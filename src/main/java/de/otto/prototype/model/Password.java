@@ -4,7 +4,7 @@ import de.otto.prototype.validation.SecurePassword;
 
 public class Password {
 
-	@SecurePassword(pattern = ".*")
+    @SecurePassword
 	private final String password;
 
 	@java.beans.ConstructorProperties({"password"})

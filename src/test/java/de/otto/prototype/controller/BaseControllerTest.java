@@ -25,15 +25,13 @@ import java.util.Locale;
 
 abstract class BaseControllerTest {
 
-	static final Gson GSON = new GsonBuilder().serializeNulls().create();
-	private static final Locale LOCALE = LocaleContextHolder.getLocale();
+    static final Gson GSON = new GsonBuilder().serializeNulls().create();
+    private static final Locale LOCALE = LocaleContextHolder.getLocale();
 
-	private static MessageSource messageSource;
-
-	@Mock
-	private WebMvcMetrics metrics;
-
-	MockMvc mvc;
+    private static MessageSource messageSource;
+    MockMvc mvc;
+    @Mock
+    private WebMvcMetrics metrics;
 
     void setupDefaultMockMvc(Object controller) {
         mvc = MockMvcBuilders
@@ -42,34 +40,34 @@ abstract class BaseControllerTest {
                 .build();
     }
 
-	static void initMessageSource() {
-		if (messageSource == null) {
-			ReloadableResourceBundleMessageSource messageBundle = new ReloadableResourceBundleMessageSource();
-			messageBundle.setBasename("classpath:messages/messages");
-			messageBundle.setDefaultEncoding("UTF-8");
-			messageSource = messageBundle;
-		}
-	}
+    static void initMessageSource() {
+        if (messageSource == null) {
+            ReloadableResourceBundleMessageSource messageBundle = new ReloadableResourceBundleMessageSource();
+            messageBundle.setBasename("classpath:messages/messages");
+            messageBundle.setDefaultEncoding("UTF-8");
+            messageSource = messageBundle;
+        }
+    }
 
-	static ValidationEntryRepresentation buildUVERep(String msgCode, String attribute) {
-		initMessageSource();
-		String msg = messageSource.getMessage(msgCode, null, LOCALE);
-		return ValidationEntryRepresentation.builder().attribute(attribute).errorMessage(msg).build();
-	}
+    static ValidationEntryRepresentation buildUVERep(String msgCode, String attribute) {
+        initMessageSource();
+        String msg = messageSource.getMessage(msgCode, null, LOCALE);
+        return ValidationEntryRepresentation.builder().attribute(attribute).errorMessage(msg).build();
+    }
 
-	static ValidationRepresentation<User> buildUVRep(List<ValidationEntryRepresentation> errors) {
-		return ValidationRepresentation.<User>builder().errors(errors).build();
-	}
+    static ValidationRepresentation<User> buildUVRep(List<ValidationEntryRepresentation> errors) {
+        return ValidationRepresentation.<User>builder().errors(errors).build();
+    }
 
-	ExceptionHandlerExceptionResolver createExceptionResolver() {
-		ExceptionHandlerExceptionResolver exceptionResolver = new ExceptionHandlerExceptionResolver() {
-			protected ServletInvocableHandlerMethod getExceptionHandlerMethod(HandlerMethod handlerMethod, Exception exception) {
-				Method method = new ExceptionHandlerMethodResolver(ControllerValidationHandler.class).resolveMethod(exception);
-				return new ServletInvocableHandlerMethod(new ControllerValidationHandler(messageSource, metrics), method);
-			}
-		};
-		exceptionResolver.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
-		exceptionResolver.afterPropertiesSet();
-		return exceptionResolver;
-	}
+    private ExceptionHandlerExceptionResolver createExceptionResolver() {
+        ExceptionHandlerExceptionResolver exceptionResolver = new ExceptionHandlerExceptionResolver() {
+            protected ServletInvocableHandlerMethod getExceptionHandlerMethod(HandlerMethod handlerMethod, Exception exception) {
+                Method method = new ExceptionHandlerMethodResolver(ControllerValidationHandler.class).resolveMethod(exception);
+                return new ServletInvocableHandlerMethod(new ControllerValidationHandler(messageSource, metrics), method);
+            }
+        };
+        exceptionResolver.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
+        exceptionResolver.afterPropertiesSet();
+        return exceptionResolver;
+    }
 }

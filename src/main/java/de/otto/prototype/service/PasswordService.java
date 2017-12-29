@@ -13,9 +13,9 @@ import java.util.Optional;
 @Service
 public class PasswordService {
 
-	private UserService userService;
+    private final UserService userService;
 
-	private Validator validator;
+    private final Validator validator;
 
 	@Autowired
 	public PasswordService(final UserService userService, final Validator validator) {

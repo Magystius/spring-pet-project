@@ -110,7 +110,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
         @DisplayName("should create a new group and return location & etag header")
         void shouldCreateAGroupOnPost() {
             final User persistedUser = userRepository.save(user.login(login.build()).build());
-            final ResponseEntity<String> response = performPostRequest("", group.clearUserIds().userId(persistedUser.getId()).build());
+            final ResponseEntity<String> response = performPostRequest(group.clearUserIds().userId(persistedUser.getId()).build());
 
             assertThat(response.getStatusCode(), is(CREATED));
             final Group createdGroup = groupRepository.findById(JsonPath.read(response.getBody(), "$.content.id")).get();
@@ -172,7 +172,7 @@ class GroupApiIntegrationTest extends BaseIntegrationTest {
         void shouldReturnBadRequestIfInvalidId(HttpMethod httpMethod) {
             final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
                     httpMethod,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE)),
                     String.class);
 
             assertThat(response.getStatusCode(), is(BAD_REQUEST));

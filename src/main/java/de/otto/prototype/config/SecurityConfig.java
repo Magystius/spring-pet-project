@@ -22,7 +22,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/internal/**").hasAnyRole("ADMIN", "MONITORING")
 				.and()
 				.httpBasic()
-				.realmName("user")
+                .realmName("pet-project")
 				.and()
 				.csrf().disable()
 				.sessionManagement()

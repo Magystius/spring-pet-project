@@ -39,7 +39,6 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.mockito.BDDMockito.*;
-import static org.mockito.Mockito.times;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.http.HttpHeaders.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -80,11 +79,11 @@ class GroupControllerTest extends BaseControllerTest {
                 Arguments.of(group.toBuilder().clearUserIds().build(), buildUVRep(of(buildUVERep("error.userlist.empty", "group")))));
     }
 
-    private void assertGroupRepresentation(String responseBody, Group expectedGroup) {
+    private void assertGroupRepresentation(String responseBody) {
         DocumentContext parsedResponse = JsonPath.parse(responseBody);
         assertAll("group representation",
-                () -> assertThat(GSON.fromJson(parsedResponse.read("$.content").toString(), Group.class), is(expectedGroup)),
-                () -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/group/" + expectedGroup.getId())));
+                () -> assertThat(GSON.fromJson(parsedResponse.read("$.content").toString(), Group.class), is(VALID_MINIMUM_GROUP_WITH_ID)),
+                () -> assertThat(parsedResponse.read("$.links[0].href"), containsString("/group/" + VALID_MINIMUM_GROUP_WITH_ID.getId())));
     }
 
     @BeforeEach
@@ -299,7 +298,7 @@ class GroupControllerTest extends BaseControllerTest {
                     .andExpect(status().isOk())
                     .andReturn();
 
-            assertGroupRepresentation(result.getResponse().getContentAsString(), VALID_MINIMUM_GROUP_WITH_ID);
+            assertGroupRepresentation(result.getResponse().getContentAsString());
             final String eTagHeader = result.getResponse().getHeader(ETAG);
             assertThat(eTagHeader.substring(1, eTagHeader.length() - 1), is(VALID_MINIMUM_GROUP_WITH_ID.getETag()));
         }
@@ -346,7 +345,7 @@ class GroupControllerTest extends BaseControllerTest {
                     .andExpect(header().string("eTag", is(VALID_MINIMUM_GROUP_WITH_ID.getETag())))
                     .andReturn();
 
-            assertGroupRepresentation(result.getResponse().getContentAsString(), VALID_MINIMUM_GROUP_WITH_ID);
+            assertGroupRepresentation(result.getResponse().getContentAsString());
         }
 
         @Test
@@ -397,7 +396,7 @@ class GroupControllerTest extends BaseControllerTest {
                     .andExpect(header().string("eTag", is(VALID_MINIMUM_GROUP_WITH_ID.getETag())))
                     .andReturn();
 
-            assertGroupRepresentation(result.getResponse().getContentAsString(), VALID_MINIMUM_GROUP_WITH_ID);
+            assertGroupRepresentation(result.getResponse().getContentAsString());
         }
 
         @Test
@@ -416,7 +415,7 @@ class GroupControllerTest extends BaseControllerTest {
                     .andExpect(header().string("eTag", is(eTag)))
                     .andReturn();
 
-            assertGroupRepresentation(result.getResponse().getContentAsString(), VALID_MINIMUM_GROUP_WITH_ID);
+            assertGroupRepresentation(result.getResponse().getContentAsString());
         }
 
         @Test

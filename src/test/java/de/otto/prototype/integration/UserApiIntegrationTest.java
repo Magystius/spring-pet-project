@@ -103,7 +103,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
         @Test
         @DisplayName("should create a new user and return its locations & eTag header")
         void shouldCreateAUserOnPost() {
-            final ResponseEntity<String> response = performPostRequest("", user.login(login.build()).build());
+            final ResponseEntity<String> response = performPostRequest(user.login(login.build()).build());
 
             final User createdUser = userRepository.findById(JsonPath.read(response.getBody(), "$.content.id")).get();
             assertThat(createdUser, is(notNullValue()));
@@ -162,7 +162,7 @@ class UserApiIntegrationTest extends BaseIntegrationTest {
         void shouldReturnBadRequestIfInvalidId(HttpMethod httpMethod) {
             final ResponseEntity<String> response = template.exchange(base.toString() + "/0",
                     httpMethod,
-                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE, APPLICATION_JSON_VALUE)),
+                    new HttpEntity<>(prepareAuthAndMediaTypeHeaders(APPLICATION_JSON_VALUE)),
                     String.class);
 
             assertThat(response.getStatusCode(), is(BAD_REQUEST));

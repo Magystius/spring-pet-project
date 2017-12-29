@@ -33,7 +33,7 @@ public class GroupController extends BaseController {
 
 	public static final String URL_GROUP = "/group";
 
-	private GroupService groupService;
+    private final GroupService groupService;
 
 	@Autowired
 	public GroupController(final GroupService groupService) {
