@@ -84,7 +84,7 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
             final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
             final int column = findMetricColumnByException(parsedResponse, "ConstraintViolationException");
             assertThat(parsedResponse.read("$.availableTags[0].values[" + column + "]"), is("ConstraintViolationException"));
-            assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), is("GET"));
+            assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), isIn(List.of("GET", "PUT", "POST", "DELETE")));
             assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), isIn(List.of("/user/{userId}", "/group/{groupId}")));
             assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("400"));
         }
@@ -102,7 +102,7 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
             final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
             final int column = findMetricColumnByException(parsedResponse, "MethodArgumentNotValidException");
             assertThat(parsedResponse.read("$.availableTags[0].values[" + column + "]"), is("MethodArgumentNotValidException"));
-            assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), is("PUT"));
+            assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), isIn(List.of("PUT", "POST")));
             assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), isIn(List.of("/user/{userId}", "/group/{groupId}")));
             assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("400"));
         }
@@ -120,8 +120,8 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
             final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
             final int column = findMetricColumnByException(parsedResponse, "InvalidUserException");
             assertThat(parsedResponse.read("$.availableTags[0].values[" + column + "]"), is("InvalidUserException"));
-            assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), is("PUT"));
-            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), is("/user/{userId}"));
+            assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), isIn(List.of("PUT", "POST")));
+            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), isIn(List.of("/user", "/user/{userId}")));
             assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("400"));
         }
 
@@ -139,8 +139,8 @@ class MonitoringIntegrationTest extends BaseIntegrationTest {
             final DocumentContext parsedResponse = JsonPath.parse(response.getBody());
             final int column = findMetricColumnByException(parsedResponse, "InvalidGroupException");
             assertThat(parsedResponse.read("$.availableTags[0].values[" + column + "]"), is("InvalidGroupException"));
-            assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), is("PUT"));
-            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), is("/group/{groupId}"));
+            assertThat(parsedResponse.read("$.availableTags[1].values[" + column + "]"), isIn(List.of("PUT", "POST")));
+            assertThat(parsedResponse.read("$.availableTags[2].values[" + column + "]"), isIn(List.of("/group", "/group/{groupId}")));
             assertThat(parsedResponse.read("$.availableTags[3].values[" + column + "]"), is("400"));
         }
 
