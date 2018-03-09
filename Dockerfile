@@ -1,4 +1,4 @@
-FROM openjdk:9-jre
+FROM openjdk:9-jre-slim
 
 LABEL version="1.0"
 LABEL service="spring-pet-project"
@@ -6,15 +6,17 @@ LABEL service="spring-pet-project"
 #TODO: this has be get better
 USER root
 
-CMD mkdir /root/.embeddedmongo && \
-    mkdir /root/.embeddedmongo/extracted && \
-    apk update && \
-    apk add openssl && \
-    cd /root/.embeddedmongo && \
-    wget -O mongo.tgz https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-3.2.2.tgz && \
-    tar -xzf mongo.tgz -C /root/.embeddedmongo/extracted
+#TODO: download mongo on build-time
+#RUN mkdir -p /root/.embedmongo && \
+#    mkdir -p /root/.embedmongo/linux && \
+#    mkdir -p /var/opt/spring-pet-project && \
+#    cd /root/.embedmongo/linux && \
+#    wget -O mongodb-linux-x86_64-3.2.2.tgz https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-3.2.2.tgz && \
+#    tar -xzf mongodb-linux-x86_64-3.2.2.tgz bin/mongod -C /root/.embedmongo/extracted
 
-CMD mkdir /var/opt/spring-pet-project
+RUN mkdir -p /var/opt/spring-pet-project && \
+    apt-get update && \
+    apt-get install -y wget
 
 ADD ./target/spring-pet-project-0.0.0.jar /var/opt/spring-pet-project/spring-pet-project-0.0.0.jar
 
