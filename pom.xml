@@ -5,7 +5,7 @@
 
   <groupId>de.otto.prototype</groupId>
   <artifactId>spring-pet-project</artifactId>
-  <version>0.0.0</version>
+  <version>1.0.0</version>
   <packaging>jar</packaging>
 
   <name>spring-pet-project</name>
@@ -143,18 +143,6 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-        <version>1.5.8.RELEASE</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>repackage</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>pl.project13.maven</groupId>
         <artifactId>git-commit-id-plugin</artifactId>
         <version>2.2.3</version>
@@ -170,6 +158,33 @@
             <includeOnlyProperty>git.commit.time</includeOnlyProperty>
             <includeOnlyProperty>git.commit.message.full</includeOnlyProperty>
           </includeOnlyProperties>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>1.5.8.RELEASE</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.spotify</groupId>
+        <artifactId>dockerfile-maven-plugin</artifactId>
+        <version>1.4.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>build</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <tag>${project.version}</tag>
         </configuration>
       </plugin>
     </plugins>
