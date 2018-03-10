@@ -3,8 +3,6 @@ FROM openjdk:9-jre-slim
 LABEL version="1.0"
 LABEL service="spring-pet-project"
 
-MAINTAINER Tim Dekarz <tim.dekarz@[hidden]>
-
 #TODO: this has be get better
 USER root
 
@@ -20,7 +18,7 @@ RUN mkdir -p /var/opt/spring-pet-project && \
     apt-get update && \
     apt-get install -y wget
 
-ADD ./target/spring-pet-project-1.0.0.jar /var/opt/spring-pet-project/spring-pet-project-1.0.0.jar
+ADD ./target/spring-pet-project-0.0.0.jar /var/opt/spring-pet-project/spring-pet-project-0.0.0.jar
 
 WORKDIR /var/opt/spring-pet-project
 
@@ -28,4 +26,4 @@ HEALTHCHECK --interval=30s --timeout=3s \
   CMD wget -q http://localhost:8080 || exit 1
 
 EXPOSE 8080
-ENTRYPOINT java -jar spring-pet-project-1.0.0.jar
+ENTRYPOINT java -jar spring-pet-project-0.0.0.jar
