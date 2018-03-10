@@ -2,10 +2,19 @@
 [![codecov](https://codecov.io/gh/Magystius/spring-pet-project/branch/master/graph/badge.svg)](https://codecov.io/gh/Magystius/spring-pet-project)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/df636c27882d4bc28dd7247090dc3394)](https://www.codacy.com/app/Magystius/spring-pet-project?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Magystius/spring-pet-project&amp;utm_campaign=Badge_Grade)
 [![License](https://img.shields.io/github/license/magystius/spring-pet-project.svg)](https://github.com/magystius/spring-pet-project/blob/master/LICENSE.md)
+[![Docker Stars](https://img.shields.io/docker/stars/tdekarz/spring-pet-project.svg)](https://hub.docker.com/r/tdekarz/spring-pet-project/)
+[![Docker Pulls](https://img.shields.io/docker/pulls/tdekarz/spring-pet-project.svg)](https://hub.docker.com/r/tdekarz/spring-pet-project/)
 
 # Spring Pet Project
 
 Personal pet project for a spring-based microservice
+
+### Releases
+
+This project is available on **dockerhub**:
+````
+docker run -p 8080:8080/tcp tdekarz/spring-pet-project:latest
+````
 
 ### Usage:
 
