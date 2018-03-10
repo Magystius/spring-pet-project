@@ -1,3 +1,5 @@
+FROM tdekarz/docker-maven-jdk9-onbuild:latest
+
 FROM openjdk:9-jre-slim
 
 LABEL version="1.0"
@@ -18,7 +20,7 @@ RUN mkdir -p /var/opt/spring-pet-project && \
     apt-get update && \
     apt-get install -y wget
 
-ADD ./target/spring-pet-project-0.0.0.jar /var/opt/spring-pet-project/spring-pet-project-0.0.0.jar
+COPY --from=0 /usr/src/target/spring-pet-project-0.0.0.jar /var/opt/spring-pet-project/spring-pet-project-0.0.0.jar
 
 WORKDIR /var/opt/spring-pet-project
 
