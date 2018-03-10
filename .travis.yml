@@ -23,5 +23,6 @@ after_success:
   - bash <(curl -s https://codecov.io/bash)
   - java -cp ~/codacy-coverage-reporter-assembly-latest.jar com.codacy.CodacyCoverageReporter -l Java -r target/site/jacoco/jacoco.xml
 deploy:
-  - docker login -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
-  - docker push tdekarz/spring-pet-project:latest
+  skip_cleanup: true
+  provider: script
+  script: bash ./ci/docker_push.sh
