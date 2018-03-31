@@ -1,6 +1,6 @@
-FROM tdekarz/docker-maven-jdk9-onbuild:latest
+FROM tdekarz/docker-maven-jdk10-onbuild:latest
 
-FROM openjdk:9-jre-slim
+FROM openjdk:10-jre-slim
 
 LABEL version="1.0"
 LABEL service="spring-pet-project"
