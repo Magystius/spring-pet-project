@@ -10,7 +10,6 @@ import de.otto.prototype.exceptions.NotFoundException;
 import de.otto.prototype.model.Group;
 import de.otto.prototype.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.metrics.web.servlet.WebMvcMetrics;
 import org.springframework.context.MessageSource;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -35,21 +34,16 @@ public class ControllerValidationHandler {
 
     private final MessageSource msgSource;
 
-    private final WebMvcMetrics metrics;
-
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     @Autowired
-    public ControllerValidationHandler(final MessageSource msgSource, final WebMvcMetrics metrics) {
+    public ControllerValidationHandler(final MessageSource msgSource) {
         this.msgSource = msgSource;
-        this.metrics = metrics;
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     @ResponseStatus(BAD_REQUEST)
     @ResponseBody
     public ValidationRepresentation processValidationError(final ConstraintViolationException exception) {
-        metrics.tagWithException(exception);
-
         ImmutableList<ValidationEntryRepresentation> errors = exception.getConstraintViolations().stream()
                 .map(constraintViolation -> getValidationEntryRepresentation(constraintViolation.getMessage(), constraintViolation.getPropertyPath().toString()))
                 .collect(collectingAndThen(toList(), ImmutableList::copyOf));
@@ -61,8 +55,6 @@ public class ControllerValidationHandler {
     @ResponseStatus(BAD_REQUEST)
     @ResponseBody
     public ValidationRepresentation processValidationError(final MethodArgumentNotValidException exception) {
-        metrics.tagWithException(exception);
-
         ImmutableList<ValidationEntryRepresentation> errors = exception.getBindingResult().getAllErrors().stream()
                 .map(objectError -> getValidationEntryRepresentation(objectError.getDefaultMessage(), objectError.getObjectName()))
                 .collect(collectingAndThen(toList(), ImmutableList::copyOf));
@@ -74,8 +66,6 @@ public class ControllerValidationHandler {
     @ResponseStatus(BAD_REQUEST)
     @ResponseBody
     public ValidationRepresentation<User> processValidationError(final InvalidUserException exception) {
-        metrics.tagWithException(exception);
-
         ValidationEntryRepresentation error = ValidationEntryRepresentation.builder().attribute(exception.getErrorCause()).errorMessage(exception.getErrorMsg()).build();
         return ValidationRepresentation.<User>builder().error(error).build();
     }
@@ -84,8 +74,6 @@ public class ControllerValidationHandler {
     @ResponseStatus(BAD_REQUEST)
     @ResponseBody
     public ValidationRepresentation<Group> processValidationError(final InvalidGroupException exception) {
-        metrics.tagWithException(exception);
-
         ValidationEntryRepresentation error = ValidationEntryRepresentation.builder().attribute(exception.getErrorCause()).errorMessage(exception.getErrorMsg()).build();
         return ValidationRepresentation.<Group>builder().error(error).build();
     }
@@ -93,13 +81,13 @@ public class ControllerValidationHandler {
     @ExceptionHandler(NotFoundException.class)
     @ResponseStatus(NOT_FOUND)
     public void processValidationError(final NotFoundException exception) {
-        metrics.tagWithException(exception);
+      // DO NOTHING
     }
 
     @ExceptionHandler(ConcurrentModificationException.class)
     @ResponseStatus(PRECONDITION_FAILED)
     public void proccessConcurrentModificationError(final ConcurrentModificationException exception) {
-        metrics.tagWithException(exception);
+      // DO NOTHING
     }
 
     private ValidationEntryRepresentation getValidationEntryRepresentation(final String msgCode, final String errObj) {

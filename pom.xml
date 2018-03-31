@@ -14,14 +14,14 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>2.0.0.M5</version>
+    <version>2.0.0.RELEASE</version>
     <relativePath/> <!-- lookup parent from repository -->
   </parent>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <java.version>9</java.version>
+    <java.version>10</java.version>
   </properties>
 
   <dependencies>
@@ -56,7 +56,7 @@
     <dependency>
       <groupId>de.flapdoodle.embed</groupId>
       <artifactId>de.flapdoodle.embed.mongo</artifactId>
-      <version>2.0.0</version>
+      <version>2.0.3</version>
     </dependency>
     <!-- only use lombok for development -->
     <!--<dependency>-->
@@ -73,12 +73,12 @@
     <dependency>
       <groupId>org.jsoup</groupId>
       <artifactId>jsoup</artifactId>
-      <version>1.10.3</version>
+      <version>1.11.2</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>23.0</version>
+      <version>24.0-jre</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -88,19 +88,19 @@
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
-      <version>5.0.1</version>
+      <version>5.1.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-params</artifactId>
-      <version>5.0.1</version>
+      <version>5.1.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>2.11.0</version>
+      <version>2.16.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -114,19 +114,19 @@
           <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-surefire-provider</artifactId>
-            <version>1.0.1</version>
+            <version>1.1.0</version>
           </dependency>
           <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.0.1</version>
+            <version>5.1.0</version>
           </dependency>
         </dependencies>
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.7.9</version>
+        <version>0.8.1</version>
         <executions>
           <execution>
             <goals>
@@ -145,7 +145,7 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
-        <version>1.5.8.RELEASE</version>
+        <version>2.0.0.RELEASE</version>
         <executions>
           <execution>
             <goals>
@@ -157,7 +157,7 @@
       <plugin>
         <groupId>pl.project13.maven</groupId>
         <artifactId>git-commit-id-plugin</artifactId>
-        <version>2.2.3</version>
+        <version>2.2.4</version>
         <configuration>
           <excludeProperties>
             <excludeProperty>git.commit.id.abbrev</excludeProperty>
@@ -166,7 +166,7 @@
           </excludeProperties>
           <includeOnlyProperties>
             <includeOnlyProperty>git.branch</includeOnlyProperty>
-            <includeOnlyProperty>git.commit.id</includeOnlyProperty>
+            <includeOnlyProperty>git.commit.id.full</includeOnlyProperty>
             <includeOnlyProperty>git.commit.time</includeOnlyProperty>
             <includeOnlyProperty>git.commit.message.full</includeOnlyProperty>
           </includeOnlyProperties>
@@ -174,23 +174,4 @@
       </plugin>
     </plugins>
   </build>
-
-  <repositories>
-    <repository>
-      <id>spring-snapshots</id>
-      <name>Spring Snapshots</name>
-      <url>https://repo.spring.io/snapshot</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>spring-milestones</id>
-      <name>Spring Milestones</name>
-      <url>https://repo.spring.io/milestone</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
 </project>
