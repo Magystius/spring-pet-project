@@ -36,10 +36,36 @@ public abstract class BaseController {
 		return headers;
 	}
 
-	//TODO: do we really need this extends?
+	/**
+	 * Generates an order-independent ETag for a list of hashable entities.
+	 * The ETag remains consistent regardless of the order of items in the list,
+	 * as long as the same set of items is present.
+	 * 
+	 * Performance optimizations:
+	 * - Sorts ETags to ensure order independence
+	 * - Uses String.join() for efficient concatenation
+	 * - Handles empty lists gracefully
+	 * 
+	 * @param data List of hashable entities
+	 * @return MultiValueMap containing the ETag header
+	 */
 	MultiValueMap<String, String> getETagHeader(final List<? extends Hashable> data) {
 		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
-		final String combinedETags = data.stream().map(Hashable::getETag).reduce("", (eTag1, eTag2) -> eTag1 + "," + eTag2);
+		
+		if (data.isEmpty()) {
+			// Handle empty list case - use a consistent empty marker
+			headers.add(ETAG, sha256().newHasher().putString("EMPTY_LIST", UTF_8).hash().toString());
+			return headers;
+		}
+		
+		// Sort individual ETags to ensure order independence
+		// Use String.join() for better performance than reduce() with concatenation
+		final String combinedETags = String.join(",", 
+			data.stream()
+				.map(Hashable::getETag)
+				.sorted() // Key optimization: sort ETags before combining
+				.toArray(String[]::new));
+		
 		final HashCode hashCode = sha256().newHasher().putString(combinedETags, UTF_8).hash();
 		headers.add(ETAG, hashCode.toString());
 		return headers;

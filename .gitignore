@@ -1,6 +1,12 @@
 # Created by .ignore support plugin (hsz.mobi)
 ### Java template
 
+# jvm dumps
+core.*
+
+# logs
+app.log
+
 # User-specific stuff:
 .idea
 

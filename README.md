@@ -9,18 +9,55 @@
 
 Personal pet project for a spring-based microservice
 
-### Releases
+## Requirements
+
+- Java 21+ (requires JVM arguments for module compatibility)
+- Maven 3.6+
+
+## Running the Application
+
+### Local Development
+
+```bash
+# Build the application
+mvn clean compile
+
+# Run with required JVM arguments for Java 21 compatibility
+MAVEN_OPTS="--add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED" mvn spring-boot:run
+
+# Alternative: Package and run JAR
+mvn clean package
+java --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED -jar target/spring-pet-project-0.0.0.jar
+```
+
+### Docker
 
 This project is available on **dockerhub**:
 ````
 docker run -p 8080:8080/tcp tdekarz/spring-pet-project:latest
 ````
 
+## Authentication
+
+The application uses HTTP Basic Authentication with the following predefined users:
+
+- **admin/admin** - ADMIN role (access to all endpoints)
+- **user/user** - USER role (access to /user and /group endpoints)  
+- **monitoring/monitoring** - MONITORING role (access to /internal endpoints)
+
+## API Endpoints
+
+- `/user` - User management (requires USER or ADMIN role)
+- `/group` - Group management (requires USER or ADMIN role)
+- `/internal/health` - Health check (requires MONITORING or ADMIN role)
+- `/internal/info` - Application info (requires MONITORING or ADMIN role)
+- `/internal/metrics` - Application metrics (requires MONITORING or ADMIN role)
+
 ### Usage:
 
 **GET ALL**
 ````
-curl -i -H "Accept: application/json"  -X GET /user
+curl -i -H "Accept: application/json" -u admin:admin -X GET http://localhost:8080/user
 ````
 _Response_ - `200`
 ````json
@@ -77,7 +114,7 @@ _Response_ - `200`
 
 **GET ONE**
 ````
-curl -i -H "Accept: application/json"  -X GET /user/{userId}
+curl -i -H "Accept: application/json" -u admin:admin -X GET http://localhost:8080/user/{userId}
 ````
 _Response_ - `200`
 ````json
@@ -114,7 +151,7 @@ _Response_ - `200`
 
 **CREATE**
 ````
-curl -i -H "Content-Type: application/json" -X POST /user
+curl -i -H "Content-Type: application/json" -u admin:admin -X POST http://localhost:8080/user
 ````
 _Body_
 ````json
@@ -163,7 +200,7 @@ _Response_ `201 Location: http://localhost:8080/user/599f2ec570f9864ae00c5900`
 
 **UPDATE**
 ````
-curl -i -H "Accept: application/json" -H "Content-Type: application/json" -X PUT /user/{userId}
+curl -i -H "Accept: application/json" -H "Content-Type: application/json" -u admin:admin -X PUT http://localhost:8080/user/{userId}
 ````
 _Body_
 ````json
@@ -212,7 +249,7 @@ _Response_ `200`
 ````
 **DELETE**
 ````
-curl -i  -X DELETE /user/{userId}
+curl -i -u admin:admin -X DELETE http://localhost:8080/user/{userId}
 ````
 _Response_ - `204`
 
